@@ -1,0 +1,6 @@
+# ghost filming: start, launch, then neutral stick, no fire
+120 0 0 0
+10 0 0 1
+100 0 0 0
+1 1 0 0
+100000 0 0 0

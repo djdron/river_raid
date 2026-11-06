@@ -14,6 +14,12 @@
  *
  * -bot: after the script's frames, an autopilot (bot_decide) drives the plane.
  * -bot-nofire: same autopilot without shooting or dodging (flies over fuel depots).
+ * -ghost: invulnerable plane (code patch in emulated RAM), for filming the level only.
+ * -screens A:B: raw 384x240 palette-index screens of frames A..B into <out>/screens.bin
+ * -strip Y: screen row Y (384 palette indices) of every frame into <out>/strip.bin, palette into
+ *           <out>/palette.bin (256 x RGB). The level scrolls one row per frame at normal speed,
+ *           so row 20 of consecutive frames stacks into a map of the level.
+ * -noram: do not write ram.bin (long filming runs)
  *
  * -seed sets POKEY's random counter at power-on (atari800 otherwise seeds it from the
  * wall clock, which makes runs non-reproducible). Default 0.
@@ -179,11 +185,25 @@ static void bot_decide(input_template_t *in, const UBYTE *ram)
 	else if (target > px + 3) in->joy0 = 8;
 }
 
+/* -ghost: make the plane invulnerable by patching the cartridge code in emulated memory.
+ * Used only to film the level (terrain generation does not depend on the plane).
+ *   A3E9/A424/A42E/A432: LDX <collision flag> -> LDX #$FF ("no collision")
+ *   A442: SBC #$20 (fuel burn) -> SBC #$00 */
+static void apply_ghost(void)
+{
+	UBYTE *m = libatari800_get_main_memory_ptr();
+	static const UWORD ldx[] = { 0xA3E9, 0xA424, 0xA42E, 0xA432 };
+	int k;
+	for (k = 0; k < 4; k++) { m[ldx[k]] = 0xA2; m[ldx[k] + 1] = 0xFF; }
+	m[0xA443] = 0x00;
+}
+
 int main(int argc, char **argv)
 {
 	const char *rom, *script, *out;
 	int frames, nseg, seg = 0, left, i, pal = 0;
-	int shots[256], nshots = 0, bot = 0, script_frames = 0;
+	int shots[256], nshots = 0, bot = 0, script_frames = 0, ghost = 0, scr_from = -1, scr_to = -1, strip_y = -1, noram = 0;
+	FILE *scr = NULL, *strip = NULL;
 	unsigned long seed = 0;
 	FILE *rec;
 	int rec_joy = -1, rec_fire = 0, rec_start = 0, rec_count = 0;
@@ -194,7 +214,7 @@ int main(int argc, char **argv)
 	emulator_state_t st;
 
 	if (argc < 5) {
-		fprintf(stderr, "usage: %s <rom> <script> <frames> <outdir> [-pal] [-seed N] [-bot|-bot-nofire] [-shot N,N,...]\n", argv[0]);
+		fprintf(stderr, "usage: %s <rom> <script> <frames> <outdir> [-pal] [-seed N] [-bot|-bot-nofire] [-ghost] [-noram] [-strip Y] [-screens A:B] [-shot N,N,...]\n", argv[0]);
 		return 1;
 	}
 	rom = argv[1]; script = argv[2]; frames = atoi(argv[3]); out = argv[4];
@@ -202,6 +222,10 @@ int main(int argc, char **argv)
 		if (!strcmp(argv[i], "-pal")) pal = 1;
 		else if (!strcmp(argv[i], "-seed") && i + 1 < argc) seed = strtoul(argv[++i], NULL, 0);
 		else if (!strcmp(argv[i], "-bot")) bot = 1;
+		else if (!strcmp(argv[i], "-ghost")) ghost = 1;
+		else if (!strcmp(argv[i], "-noram")) noram = 1;
+		else if (!strcmp(argv[i], "-strip") && i + 1 < argc) strip_y = atoi(argv[++i]);
+		else if (!strcmp(argv[i], "-screens") && i + 1 < argc) sscanf(argv[++i], "%d:%d", &scr_from, &scr_to);
 		else if (!strcmp(argv[i], "-bot-nofire")) { bot = 1; bot_fire = 0; }
 		else if (!strcmp(argv[i], "-shot") && i + 1 < argc) {
 			char *p = argv[++i];
@@ -231,7 +255,7 @@ int main(int argc, char **argv)
 	fprintf(rec, "# input actually applied, replayable as a script: <count> <joy> <fire> <start>\n");
 	fprintf(pokey_log, "# frame scanline xpos reg value\n");
 	fprintf(random_log, "# frame scanline xpos value\n");
-	fprintf(csv, "frame,joy,fire,start,pc,a,x,y,s,p\n");
+	fprintf(csv, "frame,joy,fire,start,pc,a,x,y,s,p,r60,r2F,r5D,rAA,rAB,rAC,r76\n");
 
 	libatari800_clear_input_array(&in);
 	for (cur_frame = 0; cur_frame < frames; cur_frame++) {
@@ -248,15 +272,33 @@ int main(int argc, char **argv)
 			if (rec_count) fprintf(rec, "%d %d %d %d\n", rec_count, rec_joy, rec_fire, rec_start);
 			rec_joy = in.joy0; rec_fire = in.trig0; rec_start = in.start; rec_count = 1;
 		}
+		if (ghost) apply_ghost();
 		libatari800_next_frame(&in);
+		if (cur_frame >= scr_from && cur_frame <= scr_to) {
+			if (!scr) { snprintf(path, sizeof path, "%s/screens.bin", out); scr = fopen(path, "wb"); }
+			if (scr) fwrite(libatari800_get_screen_ptr(), 1, 384 * 240, scr);
+		}
 
-		fwrite(libatari800_get_main_memory_ptr(), 1, 0x4000, ram);
+		if (!noram) fwrite(libatari800_get_main_memory_ptr(), 1, 0x4000, ram);
+		if (strip_y >= 0) {
+			if (!strip) {
+				FILE *pf;
+				int k;
+				snprintf(path, sizeof path, "%s/strip.bin", out); strip = fopen(path, "wb");
+				snprintf(path, sizeof path, "%s/palette.bin", out); pf = fopen(path, "wb");
+				for (k = 0; pf && k < 256; k++) { fputc((Colours_table[k] >> 16) & 255, pf); fputc((Colours_table[k] >> 8) & 255, pf); fputc(Colours_table[k] & 255, pf); }
+				if (pf) fclose(pf);
+			}
+			if (strip) fwrite(libatari800_get_screen_ptr() + strip_y * 384, 1, 384, strip);
+		}
 		libatari800_get_current_state(&st);
 		{
 			cpu_state_t *cpu = (cpu_state_t *)&st.state[st.tags.cpu];
 			pc_state_t *pc = (pc_state_t *)&st.state[st.tags.pc];
-			fprintf(csv, "%d,%d,%d,%d,%04X,%02X,%02X,%02X,%02X,%02X\n", cur_frame, in.joy0, in.trig0, in.start,
-			        pc->PC, cpu->A, cpu->X, cpu->Y, cpu->S, cpu->P);
+			const UBYTE *m = libatari800_get_main_memory_ptr();
+			fprintf(csv, "%d,%d,%d,%d,%04X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X\n", cur_frame, in.joy0, in.trig0, in.start,
+			        pc->PC, cpu->A, cpu->X, cpu->Y, cpu->S, cpu->P,
+			        m[0x60], m[0x2F], m[0x5D], m[0xAA], m[0xAB], m[0xAC], m[0x76]);
 		}
 		for (i = 0; i < nshots; i++)
 			if (shots[i] == cur_frame) save_ppm(out, cur_frame);
@@ -265,6 +307,8 @@ int main(int argc, char **argv)
 	}
 	if (rec_count) fprintf(rec, "%d %d %d %d\n", rec_count, rec_joy, rec_fire, rec_start);
 	fclose(rec);
+	if (scr) fclose(scr);
+	if (strip) fclose(strip);
 	fclose(ram); fclose(pokey_log); fclose(csv); fclose(random_log);
 	pokey_log = random_log = NULL;
 	libatari800_exit();

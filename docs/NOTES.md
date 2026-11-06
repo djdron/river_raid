@@ -129,6 +129,13 @@ Timing subtlety: the slots and `$4E` are taken as at the start of the frame, whi
 
 **Drawing (from code, not verified).** A line is built from runs of characters (subroutines `AFEC`–`B03B`): bank, water, island (with bit 7 of `$2D`), water, bank. The position divided by 4 gives the character column, the low 2 bits select the bank edge character. Whether the right bank mirrors the left one is not verified yet: it looks like it, but bank decorations spoil measurements from screenshots.
 
+## Level map
+- The bank generator does not depend on the plane: object avoidance looks at the type `$050B`, which does not change when an object is shot. `$60` (section number) grows every 1024 lines, when the bridge is generated, not when it is destroyed (in the bot game `$60` changed at frame 1133, the bridge was destroyed at 1177).
+- So the whole level can be filmed with an invulnerable plane: `rr_oracle -ghost` patches 5 bytes in emulated memory (A3E9/A424/A42E/A432 `LDX flag` → `LDX #$FF`, A443 fuel burn $20 → 0). No deaths in 120 000 frames.
+- At normal speed the level moves exactly 1 screen line per frame, and the new line appears in screen row 20. A strip of row 20 from every frame matches the live screen except for moving objects.
+- `$60` grows to $50 (80), then alternates $4F/$50; the LFSR state at section boundaries did not repeat over 117 sections, so the river does not loop, but difficulty stops growing after section 80.
+- Building the per-section pictures: `tools/level_map.py`. The viewer is published as the page "Карта реки River Raid".
+
 ## Method
 A rule is first read from the listing, then checked against a reference trace (`tools/verify_trace.py`). If the trace does not match, look for the misreading. Example: refuelling was derived from code A3E9–A453 (including the non-obvious +2 instead of +1 because of the carry flag) and confirmed on the trace; the only mismatch showed that the collision check happens before objects move between slots.
 

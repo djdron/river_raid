@@ -25,6 +25,13 @@ The script plays first (for example `start_only.txt`: power-on, START, wait), th
 
 The input actually applied in any run is written to `inputs.txt` in script format. Feeding it back without `-bot` gives a byte-identical trace (checked on 8000 frames).
 
+## Options for filming the level
+- `-ghost` — invulnerable plane (5-byte code patch in emulated memory, for filming only).
+- `-strip Y` — screen row Y of every frame into `strip.bin`, palette into `palette.bin`.
+- `-screens A:B` — full screens of frames A…B into `screens.bin`.
+- `-noram` — do not write `ram.bin` (for long runs).
+- `frames.csv` now has the columns `$60, $2F, $5D, $AA, $AB, $AC, $76`.
+
 ## Scripts
 | File | What |
 |---|---|
@@ -34,6 +41,7 @@ The input actually applied in any run is written to `inputs.txt` in script forma
 | `probe_lr.txt`, `probe_hold.txt` | short taps / holds for finding variables |
 | `bot_run_8000.txt` | recorded bot run: 2 bridges, 5 deaths, game over, new start |
 | `refuel_first_depot.txt` | flying over the first depot without firing (refuelling) |
+| `ghost_film.txt` | start and fly without input; with `-ghost -noram -strip 20` films the level map |
 
 ## Input script
 Each line: `<frames> <joystick> <fire> [start]`; `#` starts a comment. The last line repeats until the end of the run.
