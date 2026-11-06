@@ -91,10 +91,49 @@ A slot is a horizontal band of the screen, not a permanent object number: when s
 
 - `oracle/scripts/refuel_first_depot.txt`: flying over the first depot without shooting (32 frames over the depot, the tank reaches $FFFF).
 
+## Terrain generation (code A6FD–A9D7, drawing AA8C–AB4B)
+The bank is not stored as a picture but as a few numbers per line. Each new screen line is one generator step, after which the line is drawn into the screen's ring buffer (the line address comes from the display list, $3F04/$3F05).
+
+**Scrolling (from code).** Every frame the speed `$59` is added twice to the accumulator `$30`, and each overflow produces one new line. At speed 128 that is exactly 1 line per frame; with `$59 ≥ $FE` a line is produced without accumulating.
+
+**Structure (from code).**
+- `$2F` — line number within the block, 0…31.
+- `$5A` — blocks left in the section (2).
+- `$5D` — sections left to the bridge, reloaded with 16; `sub_B194` is called at the end.
+- The LFSR `sub_B183` steps on every line except lines with bit 7 set in `$23` (straight bridge approaches).
+- At a section boundary a new width target `$5F` is taken from the low nibble of `$AA` with limits (minimum 2, maximum 15/14/8 depending on `$2D`, `$60`, `$B5`), then `$34 = $5F·4`.
+
+**Numbers per line.**
+| Address | What | Status |
+|---|---|---|
+| $52 | bank position | verified (random walk, below) |
+| $C3 | walk direction: +1, $FF (−1) or 0 | verified |
+| $54 | half width of the island / inner part | verified (smoothing) |
+| $53 | water width; changes by −2 × the `$54` step, so the total width is kept | verified |
+| $34, $35 | target for `$54` and the step toward it (±1 if the difference is < 32, else ±2) | verified |
+| $2D | bit 7 — island mode (changes drawing), bit 6 | from code |
+| $C4, $C5 | limits of `$52`: $1C…$24 when `$60 < 3`, otherwise wider (1…$40 with variants by `$60`, `$052D`, `$36`) | from code, 28…36 seen in traces |
+| $23 bit 7 | near the bridge the bank follows the table `$BA8F[$2F] + $52`, no randomness | from code, not part of the check |
+| $052D | ≠ 0: the bank is pulled into the corridor $18…$28 | from code, not part of the check |
+
+**Bank random walk (A84F–A96A), verified.** Each line takes the low nibble `n = $AC & 15` (the LFSR byte after this line's step):
+- if `$C3 = 0`, movement starts: +1 when `n ≥ 8`, otherwise −1;
+- if the bank is already moving: with `n < 8` it holds; with `n = $D` it turns around and steps; with `n = $F` it holds if `$0E` (`$0D` on an island) is less than `$5F` or `$2C`; with any other value it steps;
+- a step that would cross the limits `$C4/$C5` or run into the object in the current slot `$4E` (type ≥ 8; the boundary uses `$54/$34`, `$0516+X`, `$B5`, `$0521+X`) is replaced by turning around in place.
+
+Timing subtlety: the slots and `$4E` are taken as at the start of the frame, while `$54/$34/$2D/$B5/$37` are the values already recomputed in this frame. With this rule the model matches the traces on all 4669 lines.
+
+**Island smoothing (A7FB–A824), verified.** While `$35 ≠ 0`, each line does `$54 += $35` and `$53 −= 2·$35`. When `$54` reaches `$34`, the step `$35` is cleared. Checked on 4825 lines, 1195 of which actually changed.
+
+**Objects (from code).** Placed at the start of a block (`$2F = 0`) when bit 5 of `$AC` is set. Type and parameters come from the tables `$BBCC`, `$BBD4`, `$BBB2`, `$BBEB` by `$AA` and `$5F`.
+
+**Drawing (from code, not verified).** A line is built from runs of characters (subroutines `AFEC`–`B03B`): bank, water, island (with bit 7 of `$2D`), water, bank. The position divided by 4 gives the character column, the low 2 bits select the bank edge character. Whether the right bank mirrors the left one is not verified yet: it looks like it, but bank decorations spoil measurements from screenshots.
+
 ## Method
 A rule is first read from the listing, then checked against a reference trace (`tools/verify_trace.py`). If the trace does not match, look for the misreading. Example: refuelling was derived from code A3E9–A453 (including the non-obvious +2 instead of +1 because of the carry flag) and confirmed on the trace; the only mismatch showed that the collision check happens before objects move between slots.
 
 ## Next steps
-1. Finish $42+X: enemy movement, when it switches on, the role of bit $40 and $60. Same method: code, then trace.
-2. Analyse the collision checks $1B/$1E/$21/$50 at A424–A434 (banks, bridge, tank).
+1. Finish the terrain: bridge approach (`$BA8F`), corridor `$052D`, choice of `$5F`, `$C4/$C5`, object placement, line drawing and the mirroring question.
+2. Finish $42+X: enemy movement, when it switches on, the role of bit $40 and $60.
+3. Analyse the collision checks $1B/$1E/$21/$50 at A424–A434 (banks, bridge, tank).
 3. C++ skeleton (CMake): `GameState`, level generator, score, fuel; frame-by-frame comparison with `ram.bin`.

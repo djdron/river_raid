@@ -33,7 +33,8 @@ A C++ port of River Raid (Activision, Atari 800, 1983, by Carol Shaw) for Window
 3. **RANDOM ($D20A).** Read by game logic only at A205: every 16 frames a random enemy slot (0–10) gets bit $40 in `$42,X`. B362 and B3D0 use it for sound noise. With different seeds over 1000 frames only $42–$4C, $07 and the stack differ.
 4. **Modes.** PAL/NTSC is detected from $D014 and kept in $BF. The font is copied from the OS ROM ($E000/$E100/$E300); the reference runner uses the built-in AltirraOS.
 5. **Variables.** Table with status in `docs/NOTES.md`, section "Variables". Checked by script: plane X $57, fuel $5B:$5C (burn $20 per frame regardless of speed, +2 to $5B per frame over a depot, capped at $FFFF, reset on respawn), score $63–$65 (BCD ÷10) from the points table $BB0B[type], object types $050B+X, lives $6A, bridge number $61/$62.
-6. **Reference runner.** atari800 seeds POKEY from the clock; `rr_oracle -seed` (default 0) makes runs byte-identical. The game starts with the START key. The atari800 build fails with `-Werror` on a ULONG redefinition; `build.sh` builds with `CFLAGS="-g -O2 -DNETSIO"`. Tested atari800 commit: 98cc2dc.
+6. **Terrain.** The bank is a random walk of `$52` (direction `$C3`) driven by the LFSR nibble `$AC & 15`, with limits `$C4/$C5` and avoidance of objects; the island `$54` and water width `$53` move smoothly toward the target `$34`. Both models are checked on every line of the traces (`verify_trace.py`). The bridge approach, the corridor `$052D` and line drawing were read from code but not verified. Details: `docs/NOTES.md`, "Terrain generation".
+7. **Reference runner.** atari800 seeds POKEY from the clock; `rr_oracle -seed` (default 0) makes runs byte-identical. The game starts with the START key. The atari800 build fails with `-Werror` on a ULONG redefinition; `build.sh` builds with `CFLAGS="-g -O2 -DNETSIO"`. Tested atari800 commit: 98cc2dc.
 
 ## Environment limits
 - `oracle/build.sh` uses `-Wl,--wrap` (GNU ld): builds on Linux/WSL/MSYS2, not with Apple's linker on macOS. The reference runner currently runs in Claude's cloud session.
@@ -54,6 +55,6 @@ A rule is read from the listing, then checked against a reference trace with `to
 - Purpose of tables $BAAF, $BAC5, $BB24, $BB40 and the copies at $1000/$06C0/$0818/$08D0/$07D0.
 
 ## Next steps
-1. Analyse $42+X (enemy movement) and collisions A424–A434: code first, then a trace check.
+1. Finish the terrain (bridge, corridor, line drawing), then $42+X (enemy movement) and collisions A424–A434: code first, then a trace check.
 2. C++ project skeleton (CMake, SDL3): `GameState`, `update(input)`, level generator, a test comparing with `ram.bin`.
 3. Port the subsystems in order: river generator → objects and collisions → fuel and score → sound (VBI driver + POKEY core) → rendering.

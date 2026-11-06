@@ -109,6 +109,80 @@ for f in range(1, len(r)):
 		bad += 1
 report('score += points[$BB0B + type]', ok, bad, f'(bridge+tank bonus at frames {special})' if special else '')
 
+# 6/7. terrain generation, one check per generated line (frames where the line counter $2F
+#      advanced by exactly 1; block boundaries every 32 lines reload targets and are skipped)
+def one_line(f):
+	return (r[f, 0x2F] - r[f - 1, 0x2F]) % 256 == 1 and r[f, 0x76] == 0 and r[f - 1, 0x76] == 0
+
+lines = [f for f in range(init + 2, len(r)) if one_line(f)]
+
+# 6. bank random walk, A84F-A96A: $52 bank position, $C3 direction (+1 / $FF / 0)
+#    nibble = $AC & 15 (LFSR byte after this line's step)
+#    stopped: start moving, +1 if nibble >= 8 else -1
+#    moving:  nibble < 8 -> hold; $D -> reverse and step; $F -> hold if $0E (or $0D on island) < $5F or < $2C
+#    a step that would cross limits $C4 (min) / $C5 (max) or run into the object in slot $4E reverses instead
+def bank_blocked(m, b, neg):
+	x = m[0x4E]
+	if x >= 0x0B or m[0x50B + x] < 8:
+		return False
+	c9 = max(m[0x54], m[0x34])
+	c8 = ((0x40 - c9) * 2) & 0xFF
+	island, t37 = m[0x2D] & 0x80, m[0x37] & 0x80
+	if neg:
+		a = ((b + 0x80) if t37 else ((c8 >> 1) + b)) if island else (b + c8 + c9)
+		obj = m[0x516 + x] - 0x17 + m[0xB5] + (8 if m[0x521 + x] else 0)
+		return (obj & 0xFF) >= (a & 0xFF)
+	a = ((b + 0x40 + c9) if t37 else b) if island else (b + c9)
+	obj = m[0x516 + x] - 0x20 - m[0xB5]
+	return (obj & 0xFF) < ((a + 2) & 0xFF)
+
+ok = bad = 0
+for f in lines:
+	p, c = r[f - 1], r[f]
+	if c[0x23] & 0x80 or c[0x52D]:
+		continue            # table-driven bank near bridges / forced corridor: not modelled yet
+	m = p.copy()            # slots and $4E as at the start of the frame ...
+	for a in (0x54, 0x34, 0x2D, 0xB5, 0x37):
+		m[a] = c[a]         # ... these are recomputed earlier in the same frame
+	b, d, nib = p[0x52], p[0xC3], c[0xAC] & 15
+	move = True
+	if d == 0:
+		d = 1 if nib >= 8 else 0xFF
+	elif nib < 8:
+		move = False
+	elif nib == 0x0D:
+		d ^= 0xFE
+	elif nib == 0x0F and (0x0E - (1 if c[0x2D] & 0x80 else 0)) in range(0, max(c[0x5F], c[0x2C])):
+		move = False
+	nb = b
+	if move:
+		if d == 0xFF:
+			if b < c[0xC4] or bank_blocked(m, b, True):
+				d ^= 0xFE
+			else:
+				nb = b - 1
+		else:
+			if b >= c[0xC5] or bank_blocked(m, b, False):
+				d ^= 0xFE
+			else:
+				nb = b + 1
+	ok, bad = (ok + 1, bad) if (nb, d) == (c[0x52], c[0xC3]) else (ok, bad + 1)
+report('terrain: bank random walk $52/$C3', ok, bad)
+
+# 7. island / water width smoothing, A7FB-A824: $54 moves toward target $34 by step $35
+#    (+1/+2 or $FF/$FE), $53 changes by -2*step; step clears when the target is reached
+ok = bad = 0
+for f in lines:
+	p, c = r[f - 1], r[f]
+	s, i, w, t = p[0x35], p[0x54], p[0x53], c[0x34]
+	if s:
+		if (i >= t) if s < 0x80 else (t >= i):
+			s = 0
+		else:
+			i, w = (i + s) & 0xFF, (w - 2 * s) & 0xFF
+	ok, bad = (ok + 1, bad) if (s, i, w) == (c[0x35], c[0x54], c[0x53]) else (ok, bad + 1)
+report('terrain: island/water smoothing $54/$53/$35', ok, bad)
+
 # 5. plane X $57 moves only while stick is left/right (fraction in $58)
 ok = bad = 0
 for f in flying:
