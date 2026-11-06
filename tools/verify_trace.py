@@ -27,8 +27,9 @@ def report(name, ok, bad, extra=''):
 	print(f"{'PASS' if bad == 0 else 'FAIL'}  {name}: {ok} ok, {bad} bad {extra}")
 
 
-# frames where the plane is flying ($76 == 0)
-flying = [f for f in range(1, len(r)) if r[f, 0x76] == 0 and r[f - 1, 0x76] == 0]
+# frames where the plane is flying ($76 == 0), after the game first initialised RAM ($76 != 0 once)
+init = next((f for f in range(len(r)) if r[f, 0x76] != 0), len(r))
+flying = [f for f in range(init + 1, len(r)) if r[f, 0x76] == 0 and r[f - 1, 0x76] == 0]
 
 # 1. level LFSR (sub_B183) on $AA/$AB/$AC: every change is 1-2 steps or a reload of $66-$68
 def step(aa, ab, ac):
@@ -47,17 +48,36 @@ for f in range(1, len(r)):
 		bad += 1
 report('level LFSR $AA/$AB/$AC', ok, bad)
 
-# 2. fuel $5B:$5C is a 16-bit counter; while flying at neutral stick it burns 32 per frame
-ok = bad = 0
+# 2. fuel $5B:$5C (16-bit), code A3E9-A453. Every flying frame:
+#    - over a fuel depot (collision slot $1D has kind $0500 == $0F): $5B += 2, capped at $FFFF
+#      (ADC #1 with carry left set by CMP #$0E)
+#    - then always: $5C -= $20, borrow decrements $5B (independent of speed)
+def fuel_model(hi, lo, refuel):
+	if refuel:
+		hi += 2
+		if hi > 255:
+			hi, lo = 255, 255
+	lo -= 0x20
+	if lo < 0:
+		lo += 256
+		hi -= 1
+	return hi, lo
+
+ok = bad = refuels = 0
 for f in flying:
-	if inp[f]['joy'] != '0':
+	if r[f, 0x76] != 0:
 		continue
-	d = (r[f, 0x5B] * 256 + r[f, 0x5C]) - (r[f - 1, 0x5B] * 256 + r[f - 1, 0x5C])
-	if d == -32:
+	slot = r[f, 0x1D]
+	# the collision is handled before objects shift to the next slot band in this frame,
+	# so the slot kind must be taken from the start of the frame (previous snapshot)
+	refuel = slot < 11 and r[f - 1, 0x500 + slot] == 0x0F
+	want = fuel_model(r[f - 1, 0x5B], r[f - 1, 0x5C], refuel)
+	if want == (r[f, 0x5B], r[f, 0x5C]):
 		ok += 1
-	elif d < 0:
+		refuels += refuel
+	else:
 		bad += 1
-report('fuel burn -32/frame at neutral stick', ok, bad)
+report('fuel: burn $20/frame, +2 in $5B over depot, cap $FFFF', ok, bad, f'({refuels} refuel frames)')
 
 # 3. fuel is reset to $FFFF on respawn ($76 128 -> 127) and on game start ($76 -> 128, lives $6A == 4)
 ok = bad = 0

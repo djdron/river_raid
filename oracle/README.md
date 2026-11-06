@@ -12,7 +12,7 @@ The script clones atari800 (tested commit 98cc2dc), builds `libatari800.a` and l
 
 ## Run
 ```
-./rr_oracle <rom> <script> <frames> <outdir> [-pal] [-seed N] [-bot] [-shot N,N,...]
+./rr_oracle <rom> <script> <frames> <outdir> [-pal] [-seed N] [-bot|-bot-nofire] [-shot N,N,...]
 ./rr_oracle ../rom/River_Raid.rom scripts/start_and_fly.txt 1000 out -shot 240,500
 ./rr_oracle ../rom/River_Raid.rom scripts/start_only.txt 8000 out -bot      # bot
 ./rr_oracle ../rom/River_Raid.rom scripts/bot_run_8000.txt 8000 out         # replay of a bot run
@@ -20,6 +20,8 @@ The script clones atari800 (tested commit 98cc2dc), builds `libatari800.a` and l
 
 ## Bot (`-bot`)
 The script plays first (for example `start_only.txt`: power-on, START, wait), then the autopilot takes over. It steers toward the middle of the water ahead, dodges nearby objects, fires all the time, and pushes "up" while exploding or waiting at the bridge. The bot is simple and meant only for long traces, not high scores: it does not look for fuel and dies to helicopters coming from the side.
+
+`-bot-nofire`: the same autopilot without firing or dodging.
 
 The input actually applied in any run is written to `inputs.txt` in script format. Feeding it back without `-bot` gives a byte-identical trace (checked on 8000 frames).
 
@@ -31,6 +33,7 @@ The input actually applied in any run is written to `inputs.txt` in script forma
 | `start_only.txt` | power-on, START, wait; for `-bot` |
 | `probe_lr.txt`, `probe_hold.txt` | short taps / holds for finding variables |
 | `bot_run_8000.txt` | recorded bot run: 2 bridges, 5 deaths, game over, new start |
+| `refuel_first_depot.txt` | flying over the first depot without firing (refuelling) |
 
 ## Input script
 Each line: `<frames> <joystick> <fire> [start]`; `#` starts a comment. The last line repeats until the end of the run.

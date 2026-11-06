@@ -1,0 +1,8 @@
+# fly over the first fuel depot without shooting
+120 0 0 0
+10 0 0 1
+100 0 0 0
+1 1 0 0
+30 0 0 0
+16 4 0 0
+300 0 0 0

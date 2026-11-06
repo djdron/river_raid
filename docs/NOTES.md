@@ -56,7 +56,9 @@ Status: **verified** means the rule is checked by `tools/verify_trace.py` on ref
 | $57 | plane X (HPOS units; on the reference screen the centre ≈ 2·X−55 px) | verified: moves only while the stick is deflected |
 | $58 | fractional part of X; on overflow $57 moves by ±1 (A462–A493) | from code |
 | $59 | speed: 128 normal, up to ~142 with up, down to ~114 with down, back to 128 when released | from trace, no separate check |
-| $5B:$5C | fuel, 16 bits: $FFFF is a full tank; at neutral stick −32 per frame (−1 in $5B every 8 frames); fuel gauge needle HPOSM1 = $5B/8 + $5C (constant) in the DLI at B527 | verified (burn at neutral stick, reset to $FFFF) |
+| $5B:$5C | fuel, 16 bits, $FFFF is a full tank. Code A3E9–A453, every flying frame: over a depot `$5B += 2` (it is `ADC #1` with the carry left over from `CMP #$0E`), capped at $FFFF; then always `$5C −= $20` with borrow from `$5B` (−1 in $5B every 8 frames). If $5B is 0 on a borrow, the plane dies. Burn per frame does not depend on speed. The fuel gauge needle HPOSM1 = $5B/8 + $5C in the DLI at B527 (there $5C is the constant `#$5C`, not the variable) | verified, including refuelling: +480 per frame, capped at $FFFF |
+| $1D | slot the plane collided with; bit 7 = none | verified through refuelling |
+| $7A / $7B | sound event: 4 refuelling, 3 tank full (A40E–A422); $7B = 8 on a change, then the VBI counts it down | from code and trace |
 | $6A | spare lives: 4 at game start, 3 after take-off, 0 on the last life | from trace |
 | $76 | life phase: 128 at game start; 49/47 waiting at the bridge for take-off (any stick movement launches); 0 flying; 253 and then −3 per frame exploding; 130→127 respawn (fuel to $FFFF) | from trace |
 
@@ -72,10 +74,12 @@ Status: **verified** means the rule is checked by `tools/verify_trace.py` on ref
 Points are also awarded for the enemy the plane crashed into: its slot goes to state 3. Shot down by a missile it goes to state 2.
 
 ### Object slots (11, index X = 0…10)
+A slot is a horizontal band of the screen, not a permanent object number: when scrolling, an object moves to the next slot (in the trace a depot went through slots 8 → 9 → 10). The collision check in a frame happens before that move.
+
 | Address | What | Status |
 |---|---|---|
-| $0C+X | vertical position of the object (grows with scrolling; ≈ 240–247 for the slot at the plane) | hypothesis from trace |
-| $0500+X | state / animation frame: 0 empty, 8/9 helicopter frames, 2 explosion from a missile, 3 explosion from a collision; 1, 4–6, 13–15 also occur | partly verified (2 and 3 through points) |
+| $0C+X | vertical position of the object (+1 per frame at normal speed; ≈ 240–247 at the plane) | from trace |
+| $0500+X | current kind of the object. ≥ 7 is a live object: 7…$0D enemies (8/9 helicopter frames, $0D ship), $0E bridge, $0F depot. < 7 is empty or exploding: 2 shot by a missile, 3 collision; 0, 1, 4–6 also occur. On collision (A3E9): 7…$0D death, $0E death + `INC $2E`, $0F refuelling | verified (2/3 through points, $0F through refuelling) |
 | $050B+X | object type (index into the points table): 0, 1, 8, $0D, $0E, $0F in traces | verified through points |
 | $0516+X | object X | from code (A500–A511, compared with $39) |
 | $42+X | flags: bit 7, bit 6 ($40, set from RANDOM at A205), low bits | not analysed |
@@ -85,7 +89,12 @@ Points are also awarded for the enemy the plane crashed into: its slot goes to s
 - `oracle/scripts/bot_run_8000.txt`: input recorded by the bot (`rr_oracle -bot`), 8000 frames. Contains 2 bridges (one with a tank), 5 deaths, game over around frame 3300, then the title screen and a new start around 5323. No real refuelling: the bot shoots the depots.
 - Replaying this file without the bot gives byte-identical `ram.bin`, `pokey.log` and `random.log`.
 
+- `oracle/scripts/refuel_first_depot.txt`: flying over the first depot without shooting (32 frames over the depot, the tank reaches $FFFF).
+
+## Method
+A rule is first read from the listing, then checked against a reference trace (`tools/verify_trace.py`). If the trace does not match, look for the misreading. Example: refuelling was derived from code A3E9–A453 (including the non-obvious +2 instead of +1 because of the carry flag) and confirmed on the trace; the only mismatch showed that the collision check happens before objects move between slots.
+
 ## Next steps
-1. A run with refuelling (a bot that does not shoot depots) and with speeding up / slowing down: the refuelling rule and fuel burn at other speeds.
-2. Finish $42+X and $0500+X (enemy movement, when it switches on, the role of bit $40 and $60).
+1. Finish $42+X: enemy movement, when it switches on, the role of bit $40 and $60. Same method: code, then trace.
+2. Analyse the collision checks $1B/$1E/$21/$50 at A424–A434 (banks, bridge, tank).
 3. C++ skeleton (CMake): `GameState`, level generator, score, fuel; frame-by-frame comparison with `ram.bin`.

@@ -13,6 +13,7 @@
  *   rr_oracle <rom> <script> <frames> <outdir> [-pal] [-seed N] [-bot] [-shot N,N,...]
  *
  * -bot: after the script's frames, an autopilot (bot_decide) drives the plane.
+ * -bot-nofire: same autopilot without shooting or dodging (flies over fuel depots).
  *
  * -seed sets POKEY's random counter at power-on (atari800 otherwise seeds it from the
  * wall clock, which makes runs non-reproducible). Default 0.
@@ -129,13 +130,15 @@ static int water_run(const UBYTE *scr, int y, int x, int *l, int *r)
 	return 1;
 }
 
+static int bot_fire = 1;   /* -bot-nofire: never shoot, no dodging (used to fly over fuel depots) */
+
 static void bot_decide(input_template_t *in, const UBYTE *ram)
 {
 	const UBYTE *scr = libatari800_get_screen_ptr();
 	int px = 2 * ram[0x57] - 55;
 	int y, target = px, have = 0, l, r, lo = PF_LEFT, hi = PF_RIGHT;
 
-	in->joy0 = 0; in->trig0 = 1; in->start = 0;
+	in->joy0 = 0; in->trig0 = (UBYTE)bot_fire; in->start = 0;
 	/* $76 != 0: exploding, or waiting at the bridge for the player to move (any stick input launches) */
 	if (ram[0x76] != 0) { in->joy0 = 1; in->trig0 = 0; return; }
 
@@ -153,7 +156,7 @@ static void bot_decide(input_template_t *in, const UBYTE *ram)
 	if (have) target = (lo + hi) / 2;
 
 	/* dodge: objects (not water/bank/plane/shot) close to the plane's rows push the target away */
-	{
+	if (bot_fire) {
 		int x, dl = 0, dr = 0;
 		for (y = 128; y <= 176; y += 2)
 			for (x = px - 36; x <= px + 36; x++) {
@@ -191,7 +194,7 @@ int main(int argc, char **argv)
 	emulator_state_t st;
 
 	if (argc < 5) {
-		fprintf(stderr, "usage: %s <rom> <script> <frames> <outdir> [-pal] [-seed N] [-bot] [-shot N,N,...]\n", argv[0]);
+		fprintf(stderr, "usage: %s <rom> <script> <frames> <outdir> [-pal] [-seed N] [-bot|-bot-nofire] [-shot N,N,...]\n", argv[0]);
 		return 1;
 	}
 	rom = argv[1]; script = argv[2]; frames = atoi(argv[3]); out = argv[4];
@@ -199,6 +202,7 @@ int main(int argc, char **argv)
 		if (!strcmp(argv[i], "-pal")) pal = 1;
 		else if (!strcmp(argv[i], "-seed") && i + 1 < argc) seed = strtoul(argv[++i], NULL, 0);
 		else if (!strcmp(argv[i], "-bot")) bot = 1;
+		else if (!strcmp(argv[i], "-bot-nofire")) { bot = 1; bot_fire = 0; }
 		else if (!strcmp(argv[i], "-shot") && i + 1 < argc) {
 			char *p = argv[++i];
 			while (*p && nshots < 256) { shots[nshots++] = atoi(p); p = strchr(p, ','); if (!p) break; p++; }
