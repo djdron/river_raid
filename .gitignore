@@ -1,0 +1,16 @@
+# Original game ROM (Activision copyright) - bring your own dump
+rom/*.rom
+rom/*.bin
+rom/*.car
+# atari800 sources and builds are fetched by oracle/build.sh
+oracle/atari800/
+oracle/rr_oracle
+oracle/bin/
+# oracle run outputs (regenerable, large)
+oracle/out*/
+*.ppm
+ram.bin
+# misc
+__pycache__/
+.DS_Store
+build/

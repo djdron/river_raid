@@ -1,0 +1,8 @@
+# idle on title, then fire to start, then fly
+120 0 0
+10  0 1
+60  0 0
+60  1 1     # up (accelerate) + fire
+40  4 0     # left
+40  8 0     # right
+600 0 0

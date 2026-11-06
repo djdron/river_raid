@@ -1,0 +1,7 @@
+120 0 0 0
+10  0 0 1   # START
+100 0 0 0
+60  1 1 0   # up + fire
+40  4 1 0   # left + fire
+40  8 1 0   # right + fire
+600 0 0 0
