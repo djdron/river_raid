@@ -1,0 +1,14 @@
+# probe: start, wait, short left / right taps
+120 0 0 0
+10  0 0 1
+100 0 0 0
+8   4 0 0   # left
+20  0 0 0
+8   8 0 0   # right
+20  0 0 0
+8   1 0 0   # up (speed up)
+20  0 0 0
+8   2 0 0   # down (slow down)
+20  0 0 0
+6   0 1 0   # fire
+40  0 0 0

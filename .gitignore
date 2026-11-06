@@ -3,7 +3,7 @@ rom/*.rom
 rom/*.bin
 rom/*.car
 # atari800 sources and builds are fetched by oracle/build.sh
-oracle/atari800/
+oracle/atari800
 oracle/rr_oracle
 oracle/bin/
 # oracle run outputs (regenerable, large)

@@ -12,9 +12,25 @@ The script clones atari800 (tested commit 98cc2dc), builds `libatari800.a` and l
 
 ## Run
 ```
-./rr_oracle <rom> <script> <frames> <outdir> [-pal] [-seed N] [-shot N,N,...]
+./rr_oracle <rom> <script> <frames> <outdir> [-pal] [-seed N] [-bot] [-shot N,N,...]
 ./rr_oracle ../rom/River_Raid.rom scripts/start_and_fly.txt 1000 out -shot 240,500
+./rr_oracle ../rom/River_Raid.rom scripts/start_only.txt 8000 out -bot      # bot
+./rr_oracle ../rom/River_Raid.rom scripts/bot_run_8000.txt 8000 out         # replay of a bot run
 ```
+
+## Bot (`-bot`)
+The script plays first (for example `start_only.txt`: power-on, START, wait), then the autopilot takes over. It steers toward the middle of the water ahead, dodges nearby objects, fires all the time, and pushes "up" while exploding or waiting at the bridge. The bot is simple and meant only for long traces, not high scores: it does not look for fuel and dies to helicopters coming from the side.
+
+The input actually applied in any run is written to `inputs.txt` in script format. Feeding it back without `-bot` gives a byte-identical trace (checked on 8000 frames).
+
+## Scripts
+| File | What |
+|---|---|
+| `start_and_fly.txt` | START, acceleration, turns, firing (1000 frames) |
+| `attract_fire_only.txt` | fire on the title screen (the game does not start) |
+| `start_only.txt` | power-on, START, wait; for `-bot` |
+| `probe_lr.txt`, `probe_hold.txt` | short taps / holds for finding variables |
+| `bot_run_8000.txt` | recorded bot run: 2 bridges, 5 deaths, game over, new start |
 
 ## Input script
 Each line: `<frames> <joystick> <fire> [start]`; `#` starts a comment. The last line repeats until the end of the run.
@@ -27,7 +43,8 @@ The game starts with the START key; fire on the title screen does not start it.
 | `ram.bin` | $0000–$3FFF (16 KB) after every frame; frame N is at offset N*16384 |
 | `pokey.log` | every POKEY write: `frame scanline cycle register value` |
 | `random.log` | every RANDOM read: `frame scanline cycle value`. Scanline ~249 is sound (VBI), other scanlines are game logic (A205) |
-| `frames.csv` | input and CPU registers at the end of the frame |
+| `frames.csv` | applied input and CPU registers at the end of the frame |
+| `inputs.txt` | applied input in script format (for replay) |
 | `fNNNNN.ppm` | 384×240 screenshots |
 
 ## Determinism

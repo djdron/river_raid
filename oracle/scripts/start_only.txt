@@ -1,0 +1,4 @@
+# power-on, START, wait for take-off; use with -bot
+120 0 0 0
+10  0 0 1
+100 0 0 0

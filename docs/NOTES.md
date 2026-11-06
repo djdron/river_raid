@@ -1,4 +1,4 @@
-# River Raid (Atari 8-bit) — stage 1 results
+# River Raid (Atari 8-bit) — findings
 
 English | [Русский](NOTES.ru.md)
 
@@ -47,6 +47,45 @@ Purposes are tentative unless stated otherwise; only the way they are accessed i
 - With different POKEY seeds over 1000 frames, $AA–$AC, $66–$68, object types ($0500…) and their X ($0516…) are identical. Only the slot flags $42–$4C (bit $40 from A205), the scratch byte $07 and the stack differ.
 - Conclusion: the level is always the same. `RANDOM` only affects enemy behaviour (which one gets flag $40). Early in the game enemy movement seems to be off (the $60 check at A297), so it did not show in a short run.
 
+## Variables (stage 2)
+Status: **verified** means the rule is checked by `tools/verify_trace.py` on reference traces without exceptions. **from code** means the value was read from the listing without a separate trace check. **hypothesis** means a guess still to be confirmed.
+
+### Player
+| Address | What | Status |
+|---|---|---|
+| $57 | plane X (HPOS units; on the reference screen the centre ≈ 2·X−55 px) | verified: moves only while the stick is deflected |
+| $58 | fractional part of X; on overflow $57 moves by ±1 (A462–A493) | from code |
+| $59 | speed: 128 normal, up to ~142 with up, down to ~114 with down, back to 128 when released | from trace, no separate check |
+| $5B:$5C | fuel, 16 bits: $FFFF is a full tank; at neutral stick −32 per frame (−1 in $5B every 8 frames); fuel gauge needle HPOSM1 = $5B/8 + $5C (constant) in the DLI at B527 | verified (burn at neutral stick, reset to $FFFF) |
+| $6A | spare lives: 4 at game start, 3 after take-off, 0 on the last life | from trace |
+| $76 | life phase: 128 at game start; 49/47 waiting at the bridge for take-off (any stick movement launches); 0 flying; 253 and then −3 per frame exploding; 130→127 respawn (fuel to $FFFF) | from trace |
+
+### Score and bridges
+| Address | What | Status |
+|---|---|---|
+| $63/$64/$65 | score, BCD, most significant byte first, stored divided by 10 (950 on screen = `00 00 95`); on overflow 999999 and $6A = 0 (A563) | verified |
+| $BB0B + type | points/10 per object (BCD): 8 helicopter 60, $0D ship 30, $0E bridge 500, $0F fuel 80, $10 bridge with a tank 750; the table also has 7 → 100, $0A/$0B → 150 (not seen in traces) | verified for 8, $0D, $0E, $0F, $10 |
+| $61/$62 | current bridge number, BCD (as "BRIDGE n" on screen), +1 when a bridge is destroyed (A4F0) | from code and trace |
+| $38 bit 7 | the road tank was destroyed together with the bridge (A513–A517) | from code, 1 case in the trace |
+| $39 | X of the road tank (HPOSP1 in the DLI at B54D) | from code |
+
+Points are also awarded for the enemy the plane crashed into: its slot goes to state 3. Shot down by a missile it goes to state 2.
+
+### Object slots (11, index X = 0…10)
+| Address | What | Status |
+|---|---|---|
+| $0C+X | vertical position of the object (grows with scrolling; ≈ 240–247 for the slot at the plane) | hypothesis from trace |
+| $0500+X | state / animation frame: 0 empty, 8/9 helicopter frames, 2 explosion from a missile, 3 explosion from a collision; 1, 4–6, 13–15 also occur | partly verified (2 and 3 through points) |
+| $050B+X | object type (index into the points table): 0, 1, 8, $0D, $0E, $0F in traces | verified through points |
+| $0516+X | object X | from code (A500–A511, compared with $39) |
+| $42+X | flags: bit 7, bit 6 ($40, set from RANDOM at A205), low bits | not analysed |
+| $4E | slot index being processed (compared with #$0B) | from code |
+
+### Reference runs for mapping
+- `oracle/scripts/bot_run_8000.txt`: input recorded by the bot (`rr_oracle -bot`), 8000 frames. Contains 2 bridges (one with a tank), 5 deaths, game over around frame 3300, then the title screen and a new start around 5323. No real refuelling: the bot shoots the depots.
+- Replaying this file without the bot gives byte-identical `ram.bin`, `pokey.log` and `random.log`.
+
 ## Next steps
-1. Map the variables from the `ram.bin` trace: what $42–$4C, $0500–$0521, $5B/$5C, $50, $76 are.
-2. Port to C++ in order: river generator → objects and collisions → fuel and score → sound. For each subsystem add a frame-by-frame comparison with `ram.bin`.
+1. A run with refuelling (a bot that does not shoot depots) and with speeding up / slowing down: the refuelling rule and fuel burn at other speeds.
+2. Finish $42+X and $0500+X (enemy movement, when it switches on, the role of bit $40 and $60).
+3. C++ skeleton (CMake): `GameState`, level generator, score, fuel; frame-by-frame comparison with `ram.bin`.
