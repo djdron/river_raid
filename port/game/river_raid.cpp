@@ -213,7 +213,7 @@ void fail(const std::string &msg) {
 
 int main(int argc, char **argv) {
 	bool pal = false;
-	bool palColours = false;   // colours of a PAL machine (C switches)
+	bool palColours = true;    // colours of a PAL machine (C switches to NTSC)
 	rr::PaletteModel paletteModel = rr::PaletteModel::Altirra;   // V switches
 	const char *osPath = nullptr;
 	const char *shotPath = nullptr;   // testing: -shot file.bmp:N[:script] saves frame N and quits

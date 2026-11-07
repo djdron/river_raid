@@ -14,7 +14,7 @@ The core and the tools need only a C++17 compiler. The game `river_raid` and the
 On Windows with Visual Studio: `cmake --build build --config Release`, the programs end up in `build\Release\`. Tested on Linux (gcc); macOS and Windows not tested yet.
 
 ## The game
-`river_raid [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-seed N]`. `-colours pal` shows the colours of a PAL machine (`-pal` implies it); C switches NTSC/PAL colours while running. `-palette` chooses the colour model: `altirra` (default) or `atari800` (darker middle tones); V switches it while running. The window title shows the colours in use. The ROM is looked for in `rom/River_Raid.rom` of the current folder and up to three folders above (from the repository or from `port/build/Release` it starts without arguments).
+`river_raid [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-seed N]`. The colours are those of a PAL machine by default (`-colours ntsc` for NTSC); C switches NTSC/PAL colours while running. `-palette` chooses the colour model: `altirra` (default) or `atari800` (darker middle tones); V switches it while running. The window title shows the colours in use. The ROM is looked for in `rom/River_Raid.rom` of the current folder and up to three folders above (from the repository or from `port/build/Release` it starts without arguments).
 
 After power-on the attract mode flies over the river. START begins a game; SELECT (or OPTION) chooses games 1–8: even numbers are two-player games (the players take turns), games 3–4, 5–6 and 7–8 start at bridges 5, 20 and 50. Any key of the Atari keyboard pauses. After a game over the screen stays until the attract mode starts again (about 35 s).
 

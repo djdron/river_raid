@@ -19,6 +19,6 @@ enum class PaletteModel { Altirra, Atari800 };
 const char *paletteName(PaletteModel model);
 
 // sRGB colour of an Atari colour code.
-void atariRgb(uint8_t colour, uint8_t rgb[3], bool pal = false, PaletteModel model = PaletteModel::Altirra);
+void atariRgb(uint8_t colour, uint8_t rgb[3], bool pal = true, PaletteModel model = PaletteModel::Altirra);
 
 }  // namespace rr
