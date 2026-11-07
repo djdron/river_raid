@@ -14,7 +14,7 @@ The core and the tools need only a C++17 compiler. The game `river_raid` and the
 On Windows with Visual Studio: `cmake --build build --config Release`, the programs end up in `build\Release\`. Tested on Linux (gcc); macOS and Windows not tested yet.
 
 ## The game
-`river_raid [rom] [-os file] [-pal] [-seed N]`. The ROM is looked for in `rom/River_Raid.rom` of the current folder and up to three folders above (from the repository or from `port/build/Release` it starts without arguments).
+`river_raid [rom] [-os file] [-pal] [-colours ntsc|pal] [-seed N]`. `-colours pal` shows the colours of a PAL machine (`-pal` implies it); C switches NTSC/PAL colours while running. The ROM is looked for in `rom/River_Raid.rom` of the current folder and up to three folders above (from the repository or from `port/build/Release` it starts without arguments).
 
 After power-on the attract mode flies over the river. START begins a game; SELECT (or OPTION) chooses games 1–8: even numbers are two-player games (the players take turns), games 3–4, 5–6 and 7–8 start at bridges 5, 20 and 50. Any key of the Atari keyboard pauses. After a game over the screen stays until the attract mode starts again (about 35 s).
 
@@ -27,12 +27,13 @@ After power-on the attract mode flies over the river. START begins a game; SELEC
 | F2 | OPTION |
 | Space | a key of the keyboard: pause |
 | F, F11 or Alt+Enter | full screen |
+| C | NTSC / PAL colours |
 | Esc | quit |
 
 The keyboard drives both joysticks, so one person can play a two-player game too. Gamepads: the first is joystick 1 (and 2 while there is no second), the second is joystick 2; D-pad or left stick, A/B/X/Y or the right trigger to fire, Start = START, Back = SELECT.
 
 ## River viewer
-`river_view [rom] [-os file] [-pal] [-seed N]` shows the original's attract mode, the flight over the river it plays when nobody presses START: after power-on the screen fills with the river of game 1, which then scrolls 1 line per frame; ships and helicopters wake up and move, tanks drive to the bridges and fire, helicopters fire missiles (the ported game logic, `src/game.cpp`); below are the status panel and the scrolling line with the credits, "Press START key" and the rainbow Activision logo. The ROM is looked for in `rom/River_Raid.rom` of the current folder and up to three folders above, so running it from the repository or from `port/build/Release` works without arguments.
+`river_view [rom] [-os file] [-pal] [-colours ntsc|pal] [-seed N]` shows the original's attract mode, the flight over the river it plays when nobody presses START: after power-on the screen fills with the river of game 1, which then scrolls 1 line per frame; ships and helicopters wake up and move, tanks drive to the bridges and fire, helicopters fire missiles (the ported game logic, `src/game.cpp`); below are the status panel and the scrolling line with the credits, "Press START key" and the rainbow Activision logo. The ROM is looked for in `rom/River_Raid.rom` of the current folder and up to three folders above, so running it from the repository or from `port/build/Release` works without arguments.
 
 Letters and digits 1–9 come from the OS font, which is not in the cartridge. The port has the font of AltirraOS built in: the free replacement OS that ships with atari800 (licence: copying and modification permitted with the copyright notice kept, see `src/os_font.cpp`); the reference traces were made with it too. `-os file` takes the font of Atari's own OS from an OS ROM image (10 KB or 16 KB) or a 1 KB font file.
 
@@ -46,6 +47,7 @@ Letters and digits 1–9 come from the OS font, which is not in the cartridge. T
 | Home | start again |
 | F1 / F2 / F3 | sound test: explosion / firing / score sound through the game's sound driver (the attract mode itself is silent, as in the original) |
 | F | full screen |
+| C | NTSC / PAL colours |
 | Esc | quit |
 
 Compared with the original's screens (attract mode, frames 1000–2300, with the original's RANDOM values): the river area and the status panel match pixel for pixel, the scrolling line too apart from its outer columns (left of 24, right of 359), where the emulator handles fine scrolling at the edge differently.
@@ -56,7 +58,7 @@ Which object wakes up when is decided by POKEY's RANDOM register, a hardware cou
 | File | What |
 |---|---|
 | `src/river_gen.h/.cpp` | the generator: `RiverGen::startGame(n)`, then `nextLine(line)` — one screen line per call |
-| `src/river_draw.h/.cpp` | drawing a line as on screen: bank shades, roads at bridges, object sprites (`drawScreenLine`), Atari colours (`atariRgb`) |
+| `src/river_draw.h/.cpp` | drawing a line as on screen: bank shades, roads at bridges, object sprites (`drawScreenLine`), Atari colours of NTSC and PAL machines (`atariRgb`) |
 | `src/game.h/.cpp` | the game: the original's main loop and VBI frame by frame — attract mode, console keys, the plane, fuel, collisions, explosions, score, lives, players, death and restart, game over, high scores, sound driver |
 | `src/display.cpp` | the river display as the DLI drives it: one sprite re-used for every object, collisions per object, drawing of the river area |
 | `src/pokey_random.h` | POKEY's RANDOM counter |
@@ -146,4 +148,4 @@ port/build/sound_render out/pokey.log port.wav
 - The code is readable but in places follows the original down to the carry flag. Next step: rewrite it more clearly while keeping the match (the check will confirm it).
 - Power-on itself (A000–A17C: the first 38 frames before the attract mode) is drawn as an empty screen; `Game::powerOn` is not exact yet.
 - The PAL machine (`-pal`): the generator knows it, the display list and timing do not.
-- `atariRgb` is an approximate NTSC palette (YIQ model), not a measured one.
+- `atariRgb` follows atari800's model of the GTIA output (NTSC and PAL), not a palette measured on a real TV; how bright it looks depends on the TV's settings as much as on the machine.

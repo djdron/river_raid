@@ -1,6 +1,6 @@
 // River Raid (Activision, 1982, Atari 8-bit), the game, C++ port with SDL3.
 //
-// usage: river_raid [rom] [-os file] [-pal] [-seed N]
+// usage: river_raid [rom] [-os file] [-pal] [-colours ntsc|pal] [-seed N]
 //   rom: the cartridge image; by default rom/River_Raid.rom is looked for in the current
 //   folder and up to three folders above it.
 //   -os file: an Atari OS ROM (10 KB or 16 KB) or its 1 KB font, for Atari's own letters;
@@ -189,7 +189,9 @@ private:
 std::string findRom(int argc, char **argv) {
 	for (int i = 1; i < argc; i++) {
 		if (argv[i][0] == '-') {
-			if (!std::strcmp(argv[i], "-os") || !std::strcmp(argv[i], "-seed") || !std::strcmp(argv[i], "-shot")) i++;
+			if (!std::strcmp(argv[i], "-os") || !std::strcmp(argv[i], "-seed") || !std::strcmp(argv[i], "-shot") ||
+				!std::strcmp(argv[i], "-colours"))
+				i++;
 			continue;
 		}
 		return argv[i];
@@ -211,13 +213,15 @@ void fail(const std::string &msg) {
 
 int main(int argc, char **argv) {
 	bool pal = false;
+	bool palColours = false;   // colours of a PAL machine (C switches)
 	const char *osPath = nullptr;
 	const char *shotPath = nullptr;   // testing: -shot file.bmp:N[:script] saves frame N and quits
 	long shotFrame = 0;
 	std::string shotScript;
 	uint32_t seed = uint32_t(uint64_t(std::time(nullptr)) ^ uint64_t(SDL_GetPerformanceCounter()));
 	for (int i = 1; i < argc; i++) {
-		if (!std::strcmp(argv[i], "-pal")) pal = true;
+		if (!std::strcmp(argv[i], "-pal")) pal = palColours = true;
+		else if (!std::strcmp(argv[i], "-colours") && i + 1 < argc) palColours = !std::strcmp(argv[++i], "pal");
 		else if (!std::strcmp(argv[i], "-os") && i + 1 < argc) osPath = argv[++i];
 		else if (!std::strcmp(argv[i], "-seed") && i + 1 < argc) seed = uint32_t(std::strtoul(argv[++i], nullptr, 0));
 		else if (!std::strcmp(argv[i], "-shot") && i + 1 < argc) {
@@ -271,11 +275,14 @@ int main(int argc, char **argv) {
 	if (audio) SDL_ResumeAudioStreamDevice(audio);
 
 	uint32_t palette[256];
-	for (int c = 0; c < 256; c++) {
-		uint8_t rgb[3];
-		rr::atariRgb(uint8_t(c), rgb);
-		palette[c] = (uint32_t(rgb[0]) << 16) | (uint32_t(rgb[1]) << 8) | rgb[2];
-	}
+	auto makePalette = [&]() {
+		for (int c = 0; c < 256; c++) {
+			uint8_t rgb[3];
+			rr::atariRgb(uint8_t(c), rgb, palColours);
+			palette[c] = (uint32_t(rgb[0]) << 16) | (uint32_t(rgb[1]) << 8) | rgb[2];
+		}
+	};
+	makePalette();
 
 	Atari atari(rom, osFont, pal, seed);
 	Controls controls;
@@ -307,6 +314,10 @@ int main(int argc, char **argv) {
 				if (e.key.key == SDLK_ESCAPE) running = false;
 				else if (e.key.key == SDLK_F || e.key.key == SDLK_F11 || (alt && e.key.key == SDLK_RETURN))
 					SDL_SetWindowFullscreen(window, !(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN));
+				else if (e.key.key == SDLK_C) {
+					palColours = !palColours;
+					makePalette();
+				}
 			}
 		}
 

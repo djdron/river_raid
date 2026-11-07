@@ -1,7 +1,7 @@
 // River viewer (SDL3): the game's attract mode, the flight over the river that the original
 // shows when nobody presses START.
 //
-// usage: river_view [rom] [-os file] [-pal] [-seed N]
+// usage: river_view [rom] [-os file] [-pal] [-colours ntsc|pal] [-seed N]
 //   rom: path to the cartridge image; by default rom/River_Raid.rom is looked for in the
 //   current folder and up to three folders above it.
 //   -os file: an Atari OS ROM (10 KB or 16 KB) or its 1 KB font, for Atari's own letters;
@@ -184,7 +184,9 @@ private:
 std::string findRom(int argc, char **argv) {
 	for (int i = 1; i < argc; i++) {
 		if (argv[i][0] == '-') {
-			if (!std::strcmp(argv[i], "-os") || !std::strcmp(argv[i], "-shot") || !std::strcmp(argv[i], "-seed")) i++;
+			if (!std::strcmp(argv[i], "-os") || !std::strcmp(argv[i], "-shot") || !std::strcmp(argv[i], "-seed") ||
+				!std::strcmp(argv[i], "-colours"))
+				i++;
 			continue;
 		}
 		return argv[i];
@@ -206,12 +208,14 @@ void fail(const std::string &msg) {
 
 int main(int argc, char **argv) {
 	bool pal = false;
+	bool palColours = false;   // colours of a PAL machine (C switches)
 	const char *osPath = nullptr;
 	const char *shotPath = nullptr;   // testing: -shot file.bmp:N saves frame N as BMP (.raw: screen buffer) and quits
 	long shotFrame = 0;
 	uint32_t seed = uint32_t(SDL_GetTicks() ^ uint64_t(std::time(nullptr)));   // like POKEY at power-on
 	for (int i = 1; i < argc; i++) {
-		if (!std::strcmp(argv[i], "-pal")) pal = true;
+		if (!std::strcmp(argv[i], "-pal")) pal = palColours = true;
+		else if (!std::strcmp(argv[i], "-colours") && i + 1 < argc) palColours = !std::strcmp(argv[++i], "pal");
 		else if (!std::strcmp(argv[i], "-os") && i + 1 < argc) osPath = argv[++i];
 		else if (!std::strcmp(argv[i], "-seed") && i + 1 < argc) seed = uint32_t(std::strtoul(argv[++i], nullptr, 0));
 		else if (!std::strcmp(argv[i], "-shot") && i + 1 < argc) {
@@ -261,11 +265,14 @@ int main(int argc, char **argv) {
 	SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
 
 	uint32_t palette[256];
-	for (int c = 0; c < 256; c++) {
-		uint8_t rgb[3];
-		rr::atariRgb(uint8_t(c), rgb);
-		palette[c] = (uint32_t(rgb[0]) << 16) | (uint32_t(rgb[1]) << 8) | rgb[2];
-	}
+	auto makePalette = [&]() {
+		for (int c = 0; c < 256; c++) {
+			uint8_t rgb[3];
+			rr::atariRgb(uint8_t(c), rgb, palColours);
+			palette[c] = (uint32_t(rgb[0]) << 16) | (uint32_t(rgb[1]) << 8) | rgb[2];
+		}
+	};
+	makePalette();
 
 	Attract attract(rom, osFont, pal, seed);
 	static uint8_t screen[rr::kScreenHeight][rr::kScreenWidth];
@@ -291,6 +298,7 @@ int main(int argc, char **argv) {
 				switch (e.key.key) {
 				case SDLK_ESCAPE: running = false; break;
 				case SDLK_SPACE: paused = !paused; break;
+				case SDLK_C: palColours = !palColours; makePalette(); break;
 				case SDLK_UP: speedIndex = std::min(speedIndex + 1, kSpeedCount - 1); break;
 				case SDLK_DOWN: speedIndex = std::max(speedIndex - 1, 0); break;
 				case SDLK_PAGEUP: back += rr::kRiverRows; break;
