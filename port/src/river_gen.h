@@ -107,6 +107,9 @@ public:
 	// Respawn at the last checkpoint ($A3C8): the river continues from the saved bridge.
 	void restoreCheckpoint();
 
+	// sub $B194: remember the current river position as the restart point, next level.
+	void sectionCheckpoint();
+
 	// Generate one line; writes the bitmap into line[0..47].
 	void nextLine(uint8_t line[kLineBytes]);
 
@@ -120,7 +123,6 @@ public:
 private:
 	const Rom &rom_;
 	void stepLfsr();
-	void sectionCheckpoint();   // sub $B194
 	void structureAndWidth();   // $A711-$A7FA
 	void smoothIsland();        // $A7FB-$A825
 	void moveBank();            // $A826-$A96B

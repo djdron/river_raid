@@ -60,5 +60,5 @@ A rule is read from the listing, then checked against a reference trace with `to
 
 ## Next steps
 1. Make the generator code more readable while keeping it byte-exact (`terrain_check`).
-2. The game with a player on top of `src/game.cpp` (attract mode done: movement, tank, missiles, DLI collisions): plane and firing (A3E9–A5B4), collisions A424–A434, restart after a death (`sub_B1C0`).
-3. Remaining subsystems: plane, fuel and score; sound is done (driver + POKEY model, `src/pokey_sound.cpp`) and plays as soon as the game sets its triggers.
+2. The game is complete and playable (`port/game/river_raid.cpp`), checked frame by frame against bot and two-player runs; remaining: the CPU-timing races listed in `port/README.md` (would need a cycle count of the frame), the exact power-on sequence (`Game::powerOn`), PAL.
+3. Test the game on Windows and macOS (only built and run headless on Linux so far); then make the game code more readable while keeping `game_check` at zero differences.

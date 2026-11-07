@@ -45,10 +45,11 @@ The input actually applied in any run is written to `inputs.txt` in script forma
 | `bot_run_8000.txt` | recorded bot run: 2 bridges, 5 deaths, game over, new start |
 | `refuel_first_depot.txt` | flying over the first depot without firing (refuelling) |
 | `attract_idle.txt` | power-on and no input: the attract mode (river of game 1, scrolling credits) |
+| `two_players.txt` | SELECT to game 2, START; both players fly straight on, firing, until all planes are lost; the pause key twice |
 | `ghost_film.txt` | start and fly without input; with `-ghost -noram -strip 20` films the level map |
 
 ## Input script
-Each line: `<frames> <joystick> <fire> [start]`; `#` starts a comment. The last line repeats until the end of the run.
+Each line: `<frames> <joystick> <fire> [start] [select] [option] [joystick2] [fire2] [key]`; `#` starts a comment. The last line repeats until the end of the run. `key` holds the space bar (any key pauses River Raid).
 Joystick bits: 1 up, 2 down, 4 left, 8 right, 0 centred.
 The game starts with the START key; fire on the title screen does not start it.
 
@@ -58,7 +59,7 @@ The game starts with the START key; fire on the title screen does not start it.
 | `ram.bin` | $0000–$3FFF (16 KB) after every frame; frame N is at offset N*16384 |
 | `pokey.log` | every POKEY write: `frame scanline cycle register value` |
 | `random.log` | every RANDOM read: `frame scanline cycle value`. Scanline ~249 is sound (VBI), other scanlines are game logic (A205) |
-| `frames.csv` | applied input and CPU registers at the end of the frame |
+| `frames.csv` | applied input (joystick, fire, START, then after the CPU columns SELECT, OPTION, joystick 2, fire 2, key) and CPU registers at the end of the frame |
 | `inputs.txt` | applied input in script format (for replay) |
 | `fNNNNN.ppm` | 384×240 screenshots |
 

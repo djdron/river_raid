@@ -1,0 +1,12 @@
+# power-on, SELECT once (game 2: two players), START; both players fly straight on, firing,
+# until all planes are lost; the space bar is pressed twice on the way (pause; any stick
+# input ends a pause at once, so it only flickers)
+120 0 0 0
+20 0 0 0 1
+60 0 0 0
+10 0 0 1
+1500 1 1 0 0 0 1 1
+5 1 1 0 0 0 1 1 1
+90 1 1 0 0 0 1 1
+5 1 1 0 0 0 1 1 1
+6000 1 1 0 0 0 1 1

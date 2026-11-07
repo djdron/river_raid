@@ -29,8 +29,9 @@
  * wall clock, which makes runs non-reproducible). Default 0.
  *
  * Script format (one line per segment, '#' starts a comment):
- *   <count> <joy> <fire> [start]
- *   joy: bits 1=up 2=down 4=left 8=right (0 = centered); fire/start: 0 or 1
+ *   <count> <joy> <fire> [start] [select] [option] [joy2] [fire2] [key]
+ *   joy: bits 1=up 2=down 4=left 8=right (0 = centered); the others 0 or 1; joy2/fire2: the
+ *   second joystick; key: the space bar held (River Raid's pause)
  *   The last line repeats until <frames> is reached.
  */
 #include <stdio.h>
@@ -84,7 +85,7 @@ UBYTE POKEY_GetByte(UWORD addr, int no_side_effects)
 	return v;
 }
 
-typedef struct { int count, joy, fire, start; } seg_t;
+typedef struct { int count, joy, fire, start, select, option, joy1, fire1, key; } seg_t;
 
 static seg_t *load_script(const char *path, int *n)
 {
@@ -95,10 +96,11 @@ static seg_t *load_script(const char *path, int *n)
 	*n = 0;
 	if (!f) { perror(path); exit(1); }
 	while (fgets(line, sizeof line, f)) {
-		seg_t t = {0, 0, 0, 0};
+		seg_t t = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 		char *c = strchr(line, '#');
 		if (c) *c = 0;
-		if (sscanf(line, "%d %d %d %d", &t.count, &t.joy, &t.fire, &t.start) < 3)
+		if (sscanf(line, "%d %d %d %d %d %d %d %d %d", &t.count, &t.joy, &t.fire, &t.start, &t.select, &t.option,
+		           &t.joy1, &t.fire1, &t.key) < 3)
 			continue;
 		if (*n == cap) { cap = cap ? cap * 2 : 16; s = realloc(s, cap * sizeof *s); }
 		s[(*n)++] = t;
@@ -106,6 +108,16 @@ static seg_t *load_script(const char *path, int *n)
 	fclose(f);
 	if (*n == 0) { fprintf(stderr, "empty script\n"); exit(1); }
 	return s;
+}
+
+/* One line of inputs.txt; the optional columns only when used. */
+static void write_rec(FILE *f, int count, const int *v)
+{
+	int n = 8;
+	while (n > 3 && v[n - 1] == 0) n--;
+	fprintf(f, "%d", count);
+	for (int i = 0; i < n; i++) fprintf(f, " %d", v[i]);
+	fprintf(f, "\n");
 }
 
 static void save_ppm(const char *dir, int frame)
@@ -243,7 +255,7 @@ int main(int argc, char **argv)
 	FILE *scr = NULL, *strip = NULL;
 	unsigned long seed = 0;
 	FILE *rec;
-	int rec_joy = -1, rec_fire = 0, rec_start = 0, rec_count = 0;
+	int rec_in[8] = {0}, rec_count = 0;
 	seg_t *s;
 	char path[1024];
 	FILE *ram, *csv;
@@ -293,10 +305,10 @@ int main(int argc, char **argv)
 	if (want_vbi) { snprintf(path, sizeof path, "%s/vbi.bin", out); vbi_log = fopen(path, "wb"); }
 	snprintf(path, sizeof path, "%s/inputs.txt", out); rec = fopen(path, "w");
 	if (!ram || !pokey_log || !csv || !random_log || !rec) { perror(out); return 1; }
-	fprintf(rec, "# input actually applied, replayable as a script: <count> <joy> <fire> <start>\n");
+	fprintf(rec, "# input actually applied, replayable as a script: <count> <joy> <fire> <start> [select option joy2 fire2 key]\n");
 	fprintf(pokey_log, "# frame scanline xpos reg value\n");
 	fprintf(random_log, "# frame scanline xpos value\n");
-	fprintf(csv, "frame,joy,fire,start,pc,a,x,y,s,p,r60,r2F,r5D,rAA,rAB,rAC,r76,r52,r53,r54,r2D,r4E\n");
+	fprintf(csv, "frame,joy,fire,start,pc,a,x,y,s,p,r60,r2F,r5D,rAA,rAB,rAC,r76,r52,r53,r54,r2D,r4E,select,option,joy2,fire2,key\n");
 
 	libatari800_clear_input_array(&in);
 	for (cur_frame = 0; cur_frame < frames; cur_frame++) {
@@ -307,11 +319,20 @@ int main(int argc, char **argv)
 			in.joy0 = (UBYTE)t->joy;
 			in.trig0 = (UBYTE)t->fire;
 			in.start = (UBYTE)t->start;
+			in.select = (UBYTE)t->select;
+			in.option = (UBYTE)t->option;
+			in.joy1 = (UBYTE)t->joy1;
+			in.trig1 = (UBYTE)t->fire1;
+			in.keychar = t->key ? ' ' : 0;
 		}
-		if (in.joy0 == rec_joy && in.trig0 == rec_fire && in.start == rec_start) rec_count++;
-		else {
-			if (rec_count) fprintf(rec, "%d %d %d %d\n", rec_count, rec_joy, rec_fire, rec_start);
-			rec_joy = in.joy0; rec_fire = in.trig0; rec_start = in.start; rec_count = 1;
+		{
+			const int cur[8] = {in.joy0, in.trig0, in.start, in.select, in.option, in.joy1, in.trig1, in.keychar == ' '};
+			if (rec_count && !memcmp(cur, rec_in, sizeof cur)) rec_count++;
+			else {
+				if (rec_count) write_rec(rec, rec_count, rec_in);
+				memcpy(rec_in, cur, sizeof cur);
+				rec_count = 1;
+			}
 		}
 		if (ghost) apply_ghost();
 		libatari800_next_frame(&in);
@@ -350,17 +371,19 @@ int main(int argc, char **argv)
 			cpu_state_t *cpu = (cpu_state_t *)&st.state[st.tags.cpu];
 			pc_state_t *pc = (pc_state_t *)&st.state[st.tags.pc];
 			const UBYTE *m = libatari800_get_main_memory_ptr();
-			fprintf(csv, "%d,%d,%d,%d,%04X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X\n", cur_frame, in.joy0, in.trig0, in.start,
+			fprintf(csv, "%d,%d,%d,%d,%04X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%d,%d,%d,%d,%d\n",
+			        cur_frame, in.joy0, in.trig0, in.start,
 			        pc->PC, cpu->A, cpu->X, cpu->Y, cpu->S, cpu->P,
 			        m[0x60], m[0x2F], m[0x5D], m[0xAA], m[0xAB], m[0xAC], m[0x76],
-			        m[0x52], m[0x53], m[0x54], m[0x2D], m[0x4E]);
+			        m[0x52], m[0x53], m[0x54], m[0x2D], m[0x4E],
+			        in.select, in.option, in.joy1, in.trig1, in.keychar == ' ');
 		}
 		for (i = 0; i < nshots; i++)
 			if (shots[i] == cur_frame) save_ppm(out, cur_frame);
 
 		if (--left <= 0 && seg + 1 < nseg) left = s[++seg].count;
 	}
-	if (rec_count) fprintf(rec, "%d %d %d %d\n", rec_count, rec_joy, rec_fire, rec_start);
+	if (rec_count) write_rec(rec, rec_count, rec_in);
 	fclose(rec);
 	if (scr) fclose(scr);
 	if (strip) fclose(strip);

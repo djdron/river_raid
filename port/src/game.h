@@ -12,8 +12,10 @@
 //      the generator);
 //   4. vbi(): the vertical blank interrupt (B2A5): sound driver, frame counter, timers.
 //
-// So far the attract mode is ported (the game running without a player, $76 = $FF, $29 bit 7):
-// the plane, firing, fuel and scoring paths are not.
+// Everything the original does is ported: the attract mode (no player, $76 = $FF, $29 bit 7),
+// starting a game (START), choosing the game (SELECT / OPTION), the plane, its speed, firing,
+// fuel, collisions, explosions, score and lives, two-player games, death, respawn, game over,
+// the high score of each game, pause (any key).
 //
 // Field comments give the original RAM address, for comparing with traces (tools/game_check).
 #pragma once
@@ -24,6 +26,7 @@
 
 #include "river_draw.h"
 #include "river_gen.h"
+#include "status_bar.h"
 
 namespace rr {
 
@@ -57,6 +60,24 @@ struct Collisions {
 	uint8_t p1pf = 0xFF;    // $20 tank with the river edge
 	uint8_t m0p2 = 0xFF;    // $21 helicopter missile with the plane
 	uint8_t m0pf = 0xFF;    // $22 helicopter missile with bank or edge
+};
+
+// Controls, as the original reads them every frame.
+struct Input {
+	uint8_t stick[2] = {0x0F, 0x0F};   // PORTA nibbles, joysticks 1 and 2: bit 0 up, 1 down, 2 left,
+	                                   // 3 right; 0 = pressed
+	bool trigger[2] = {false, false};  // fire buttons
+	bool start = false, select = false, option = false;
+	bool key = false;                  // any key of the keyboard (pause)
+};
+
+// The data of one player ($60-$6A; the other player's copy is at $6B-$75).
+struct PlayerData {
+	uint8_t level = 0;          // $60 (gen.s.level for the active player)
+	uint8_t bridges[2] = {};    // $61-$62 bridges destroyed, BCD
+	uint8_t score[3] = {};      // $63-$65 score, BCD, high byte first
+	uint8_t save[4] = {};       // $66-$69 restart point (gen.s.save for the active player)
+	uint8_t lives = 0;          // $6A
 };
 
 struct GameState {
@@ -95,6 +116,25 @@ struct GameState {
 	uint8_t soundFire = 0;      // $7D
 	uint8_t soundScore = 0;     // $7E
 	uint8_t deathPitch = 0;     // $052C
+	// the plane and its bullet
+	uint8_t planeXFrac = 0;     // $58
+	uint8_t planeAccel = 0;     // $2B sideways acceleration
+	uint8_t bulletY = 0;        // $56 (missile 2), < $1C: no bullet
+	// players
+	uint8_t bridges[2] = {};    // $61-$62
+	uint8_t score[3] = {};      // $63-$65
+	uint8_t lives = 0;          // $6A
+	PlayerData other;           // $6B-$75 the other player in a two-player game
+	uint8_t respawned = 0;      // $79
+	uint8_t powerOnDone = 0;    // $28
+	uint8_t screenOn = 0;       // $C7 0 while the screen is being cleared (colours off)
+	uint8_t highScore[16] = {}; // $80-$8F 3 BCD bytes for each pair of games, at 4-byte steps
+	uint8_t checksum[16] = {};  // $90-$9F check of the high scores (kept over a reset)
+	uint8_t panel[60] = {};     // $1000-$103B status panel characters
+	Scroller scroller;          // $3FB3/$26/$27 the scrolling line below the panel (VBI B44B)
+	uint8_t logoShown = 0;      // the logo position the display uses this frame
+	// playfield colours the VBI sets for the next frame (COLPF0 bank, COLPF1 edge, COLPF2 water)
+	uint8_t colourBank = 0xD6, colourEdge = 0x20, colourWater = 0x84;
 	PokeyRegs pokey;            // what the sound driver last wrote
 	Collisions hit;
 	PmMemory pm;
@@ -117,13 +157,21 @@ public:
 	// the first river line generated.
 	void startAttract(bool pal = false);
 
-	// One frame. random() returns the next value read from POKEY RANDOM ($D20A).
-	void frame(const std::function<uint8_t()> &random);
+	// Power-on (A000-A17C): clears the RAM (keeping the high scores if their check is right),
+	// sets up the panel and game 1; the attract mode starts by itself a few frames later.
+	void powerOn(bool pal = false);
 
-	// Parts of frame(), in order.
+	// One frame. random() returns the next value read from POKEY RANDOM ($D20A).
+	void frame(const Input &input, const std::function<uint8_t()> &random);
+
+	// Called in frame() right after display(), e.g. to draw the frame.
+	std::function<void()> afterDisplay;
+	bool busy() const { return busy_ > 0; }
+
+	// Parts of frame(), in order (frame() also handles the frames of a reset).
 	void prepare();
 	void display();
-	void logic(const std::function<uint8_t()> &random);
+	void logic(const Input &input, const std::function<uint8_t()> &random);
 	void vbi(const std::function<uint8_t()> &random);
 	// The sound part of the VBI (B2A5-B3D8): sets g.pokey from the game state.
 	void soundDriver(const std::function<uint8_t()> &random);
@@ -143,6 +191,37 @@ public:
 
 private:
 	const Rom &rom_;
+	bool pal_ = false;
+	void logicPass(const Input &input, const std::function<uint8_t()> &random);   // A197-A6EA
+	void logicTail(const Input &input, const std::function<uint8_t()> &random);   // A5B7-A6EA
+	void finishReset(const Input &input, const std::function<uint8_t()> &random);
+	void finishRespawn();        // A3C1-A3E3
+	// sub $B0F1 clears memory for this many frames; the main loop continues in the last one
+	static constexpr int kResetFrames = 13;
+	enum class Resume { None, NewGame, Respawn };
+	Resume resume_ = Resume::None;
+	int busy_ = 0;
+	bool gameOverText_ = false;
+	void newGame();              // A688-A17E
+	void reset(bool full);       // sub $B0F1 ($4D-$5F, or $4D-$76 for a new game)
+	void selectGame();           // A699-A6DC
+	bool respawnOrGameOver();    // A36E-A3B6
+	void alive(const Input &input);   // A3E9-A5B4
+	void crash(uint8_t sound, uint8_t length);   // sub $B1C0
+	void explode(int slot, uint8_t kind);       // A4E0-A589
+	void moveBullet(const Input &input, int y); // A5AA-A5B4
+	void drawBullet(uint8_t bits);               // sub $B223
+	void clearBullet();                          // sub $B221
+	void swapPlayers();          // sub $B247
+	void updateHighScore(bool otherPlayer);     // sub $B261
+	void showLives();            // sub $AF5B
+	void setUpGame();            // sub $AF80
+	void printBcd(const uint8_t *digits, int bytes, int at, uint8_t base);   // B086-B0C6
+	void showBridges();          // sub $B05C
+	void showScore();            // sub $B07C
+	void showOtherScore();       // sub $B068
+	void showHighScore();        // sub $B06E
+	void gameOverScreen();       // sub $B21A
 	void moveObjects();          // A1F9-A2ED
 	void tankOnRoad();           // A21B-A26A
 	void helicopterMissile();    // A5B7-A605

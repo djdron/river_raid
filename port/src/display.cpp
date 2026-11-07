@@ -141,7 +141,7 @@ void Game::display() {
 		sl.p3colour = beam.colourP3;
 		sl.bankColour = beam.bankColour;
 	};
-	beam.bankColour = bankColour(s);   // set by sub $AFD0 at the top of the frame
+	beam.bankColour = g.colourBank;   // set by the VBI (sub $AFD0)
 	beam.hposP[3] = 0;                 // VBI (B411)
 	beam.sizeP[3] = s.slot[kSlots - 1].size;
 	// B510
@@ -250,8 +250,6 @@ void Game::display() {
 
 void Game::drawRiver(uint8_t out[240][kRowWidth]) const {
 	const RiverState &s = gen.s;
-	// COLPF2: water, flashing red while a destroyed bridge flashes (VBI B414-B427)
-	const uint8_t water = (g.state24 < 2 && g.bridgeFlash && (g.bridgeFlash & 1)) ? 0x42 : 0x84;
 	auto put = [&](uint8_t *row, int x0, int w, uint8_t c) {
 		for (int x = std::max(0, x0); x < std::min(kRowWidth, x0 + w); x++) row[x] = c;
 	};
@@ -264,7 +262,7 @@ void Game::drawRiver(uint8_t out[240][kRowWidth]) const {
 		const int line = kRiverFirstLine + k;
 		uint8_t *row = out[line - 8];
 		const Scanline &sc = scan[size_t(line)];
-		const uint8_t colours[4] = {0x00, sc.bankColour, 0x20, water};
+		const uint8_t colours[4] = {0x00, sc.bankColour, g.colourEdge, g.colourWater};
 		if (size_t(k) < screen.size()) {
 			const uint8_t *src = screen[size_t(k)].data();
 			for (int p = 0; p < kLineBytes * 4; p++) row[2 * p] = row[2 * p + 1] = colours[(src[p >> 2] >> (6 - 2 * (p & 3))) & 3];
@@ -273,6 +271,11 @@ void Game::drawRiver(uint8_t out[240][kRowWidth]) const {
 		}
 		// players over the playfield (PRIOR 1), player 0 on top
 		player(row, sc.p3, sc.p3x, sc.p3size, sc.p3colour);
+		const uint8_t planeColour = g.player ? 0x8E : 0x1E;                 // COLPM2 (B542)
+		player(row, g.pm.player(2, line), g.planeX, 0, planeColour);        // the plane
+		const uint8_t m2 = (g.pm.missiles(line) >> 4) & 0x03;               // its bullet
+		for (int b = 0; b < 2; b++)
+			if (m2 & (2 >> b)) put(row, 2 * (g.planeX + 4 + b - 32), 2, planeColour);
 		player(row, g.pm.player(1, line), s.roadX, 0, 0x00);                // tank, COLPM1 = 0
 		const uint8_t m0 = g.pm.missiles(line) & 0x03;                      // helicopter missile, double width
 		for (int b = 0; b < 2; b++)

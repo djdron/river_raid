@@ -58,9 +58,9 @@ add_executable(status_check tools/status_check.cpp)
 target_link_libraries(status_check rrcore)
 target_compile_options(status_check PRIVATE ${RR_WARNINGS})
 
-# River viewer (SDL3): the generated river scrolling in a window.
+# The game (river_raid) and the river viewer (river_view), SDL3.
 # Uses an installed SDL3 if CMake finds one, otherwise downloads and builds SDL3 (static).
-option(RR_VIEWER "Build the SDL3 river viewer" ON)
+option(RR_VIEWER "Build the SDL3 game and river viewer" ON)
 if(RR_VIEWER)
 	find_package(SDL3 CONFIG QUIET)
 	if(NOT SDL3_FOUND)
@@ -75,6 +75,9 @@ if(RR_VIEWER)
 		)
 		FetchContent_MakeAvailable(SDL3)
 	endif()
+	add_executable(river_raid WIN32 game/river_raid.cpp)
+	target_link_libraries(river_raid rrcore SDL3::SDL3)
+	target_compile_options(river_raid PRIVATE ${RR_WARNINGS})
 	add_executable(river_view WIN32 viewer/river_view.cpp)
 	target_link_libraries(river_view rrcore SDL3::SDL3)
 	target_compile_options(river_view PRIVATE ${RR_WARNINGS})

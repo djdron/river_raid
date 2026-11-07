@@ -101,7 +101,7 @@ public:
 			game_.prepare();
 			game_.display();
 			game_.drawRiver(live_);
-			game_.logic([this] { return random_.read(192, 13); });   // A205, after scanline 160
+			game_.logic(rr::Input(), [this] { return random_.read(192, 13); });   // A205, after scanline 160
 			game_.vbi([this] { return random_.read(248, 30); });
 		}
 		// sound: the registers the VBI set at the end of the previous frame play for one frame

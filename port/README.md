@@ -2,16 +2,34 @@
 
 English | [Русский](README.ru.md)
 
-So far this is the river generator and the drawing of the river as the game shows it. The generator produces the same result as the original, byte for byte; the drawing matches the original screen row for row (see Verification).
+The whole game: `river_raid` plays River Raid as the original does — attract mode, game selection, one and two players, the plane, fuel, enemies, bridges, score, lives, high scores, pause and sound. The river generator and the game logic produce the same RAM state as the original frame by frame, the drawing the same screen (see Verification).
 
 ## Build
 ```
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
-The core and the tools need only a C++17 compiler. The viewer `river_view` needs SDL3: CMake uses an installed SDL3 if it finds one, otherwise it downloads SDL 3.2.24 from GitHub during configuration (needs git and internet) and links it statically. On Linux, building SDL from source needs the X11/Wayland development packages (see SDL's `docs/README-linux.md`). Without the viewer: `cmake -S . -B build -DRR_VIEWER=OFF`.
+The core and the tools need only a C++17 compiler. The game `river_raid` and the viewer `river_view` need SDL3: CMake uses an installed SDL3 if it finds one, otherwise it downloads SDL 3.2.24 from GitHub during configuration (needs git and internet) and links it statically. On Linux, building SDL from source needs the X11/Wayland development packages (see SDL's `docs/README-linux.md`). Without them: `cmake -S . -B build -DRR_VIEWER=OFF`.
 
 On Windows with Visual Studio: `cmake --build build --config Release`, the programs end up in `build\Release\`. Tested on Linux (gcc); macOS and Windows not tested yet.
+
+## The game
+`river_raid [rom] [-os file] [-pal] [-seed N]`. The ROM is looked for in `rom/River_Raid.rom` of the current folder and up to three folders above (from the repository or from `port/build/Release` it starts without arguments).
+
+After power-on the attract mode flies over the river. START begins a game; SELECT (or OPTION) chooses games 1–8: even numbers are two-player games (the players take turns), games 3–4, 5–6 and 7–8 start at bridges 5, 20 and 50. Any key of the Atari keyboard pauses. After a game over the screen stays until the attract mode starts again (about 35 s).
+
+| Key | Atari |
+|---|---|
+| arrows or W A S D | joystick: left/right steer, up faster, down slower; any direction launches the plane at the bridge |
+| Left/Right Ctrl, Z, X | fire |
+| F4 or Enter | START |
+| F3 | SELECT |
+| F2 | OPTION |
+| Space | a key of the keyboard: pause |
+| F11 or Alt+Enter | full screen |
+| Esc | quit |
+
+The keyboard drives both joysticks, so one person can play a two-player game too. Gamepads: the first is joystick 1 (and 2 while there is no second), the second is joystick 2; D-pad or left stick, A/B/X/Y or the right trigger to fire, Start = START, Back = SELECT.
 
 ## River viewer
 `river_view [rom] [-os file] [-pal] [-seed N]` shows the original's attract mode, the flight over the river it plays when nobody presses START: after power-on the screen fills with the river of game 1, which then scrolls 1 line per frame; ships and helicopters wake up and move, tanks drive to the bridges and fire, helicopters fire missiles (the ported game logic, `src/game.cpp`); below are the status panel and the scrolling line with the credits, "Press START key" and the rainbow Activision logo. The ROM is looked for in `rom/River_Raid.rom` of the current folder and up to three folders above, so running it from the repository or from `port/build/Release` works without arguments.
@@ -39,18 +57,19 @@ Which object wakes up when is decided by POKEY's RANDOM register, a hardware cou
 |---|---|
 | `src/river_gen.h/.cpp` | the generator: `RiverGen::startGame(n)`, then `nextLine(line)` — one screen line per call |
 | `src/river_draw.h/.cpp` | drawing a line as on screen: bank shades, roads at bridges, object sprites (`drawScreenLine`), Atari colours (`atariRgb`) |
-| `src/game.h/.cpp` | the game frame: object activation and movement, tank and its shell, helicopter missile, scrolling (attract mode so far) |
+| `src/game.h/.cpp` | the game: the original's main loop and VBI frame by frame — attract mode, console keys, the plane, fuel, collisions, explosions, score, lives, players, death and restart, game over, high scores, sound driver |
 | `src/display.cpp` | the river display as the DLI drives it: one sprite re-used for every object, collisions per object, drawing of the river area |
 | `src/pokey_random.h` | POKEY's RANDOM counter |
 | `src/pokey_sound.h/.cpp` | POKEY sound: four channels, dividers and noise counters, generated cycle by cycle |
 | `src/status_bar.h/.cpp` | status panel and scrolling line: character sets, panel, scroller step, drawing |
 | `src/os_font.h/.cpp` | OS font: AltirraOS built in, or loaded from an OS ROM |
 | `src/river_state_io.cpp` | mapping of fields to the original's RAM addresses, loading and comparison (for verification) |
+| `game/river_raid.cpp` | the game (SDL3): picture, sound, keyboard and gamepads |
 | `viewer/river_view.cpp` | the river viewer (SDL3), see below |
 | `tools/river_map.cpp` | generates the river and saves a PNG as the game shows it: `river_map <rom> <game 1..8> <lines> out.png [-pal] [-flat]` (`-flat`: bitmap only, fixed colours) |
 | `tools/sound_check.cpp` | compares the sound driver with the original's POKEY writes (`rr_oracle -vbi`) |
 | `tools/sound_render.cpp` | renders a POKEY write log to WAV with the port's POKEY, to compare with the emulator's sound (`rr_oracle -wav`) |
-| `tools/game_check.cpp` | compares the game frame with a RAM trace of the original, frame by frame (and the river area with its screens) |
+| `tools/game_check.cpp` | compares the game with a RAM trace of the original frame by frame, with the original's input and RANDOM values (and the river area with its screens) |
 | `tools/status_check.cpp` | compares the panel and scrolling line with full screens of the original (`rr_oracle -screens A:B -ram A:B`) |
 | `tools/render_check.cpp` | compares the drawing with the original screen (`oracle/rr_oracle -ghost -strip 20`) |
 | `tools/terrain_check.cpp` | comparison with a reference trace (`oracle/rr_oracle -ram A:B`) |
@@ -100,6 +119,21 @@ oracle/rr_oracle rom/River_Raid.rom oracle/scripts/attract_idle.txt 20000 out -s
 port/build/game_check rom/River_Raid.rom out/ram.bin out/random.log 38 19900 -attract
 ```
 
+The game with a player (`game_check` on runs with input). From the attract mode's state the port is given the original's input and RANDOM values and runs on its own, never reloaded; every frame its RAM is compared with the original's (generator, slots, plane, fuel, bullet, collisions, score, lives, both players, high scores and their check bytes, panel, scrolling line, player-missile memory, screen lines):
+- one-player bot game (`start_only.txt -bot -seed 3`, 8 950 frames: attract mode, START, 4 planes, bridges, deaths and restarts, game over, attract mode again): identical except 2 frames;
+- two-player game with SELECT and the pause key (`two_players.txt`, up to the game over at frame 3 007): identical except 1 frame;
+- the river area drawn by the port (plane, bullet, enemies, explosions, tank, shells) equals the original's screens in all 1 565 compared frames of a bot game.
+
+The remaining differences are moments where the original's result depends on how many CPU cycles a frame takes, which the port does not count:
+- the frame after the start of a game, when the river is refilled at 2 lines per frame: the original finishes the second line after the end of the frame (the RAM snapshot sees it a frame later; nothing visible);
+- a bullet touching an object only on the scanline where the DLI reads the collision register: in the original it counts if the beam has passed that point (1 frame in 8 950);
+- the game over: the high-score check ends near the vertical blank, so the original sets the frame counter to $FF just before, just after or one frame after the VBI, depending on the objects on screen. The port does it before; afterwards the frame counter can differ by one, which shifts the attract mode by a frame.
+
+```
+oracle/rr_oracle rom/River_Raid.rom oracle/scripts/start_only.txt 9000 out -bot -seed 3
+port/build/game_check rom/River_Raid.rom out/ram.bin out/random.log 38 8950 -attract
+```
+
 Sound. The sound driver (VBI B2A5–B3D8, `Game::soundDriver`) was run on the RAM the original had at the start of each VBI of a bot game (2989 frames, 2199 with sound: engine, low-fuel warning, explosions, firing, score, tank shell): every AUDF/AUDC value equals what the original wrote. The POKEY model (`src/pokey_sound.cpp`) was compared with atari800's sound for the same register writes: the same loudness over time (envelope correlation 0.95), the same pure tones at the same pitch, noise with the same spectrum shape (smoothed spectra cosine 0.94); the noise's sample-by-sample pattern differs, as it depends on where the noise counters happen to be.
 
 ```
@@ -110,6 +144,6 @@ port/build/sound_render out/pokey.log port.wav
 
 ## Not done yet
 - The code is readable but in places follows the original down to the carry flag. Next step: rewrite it more clearly while keeping the match (the check will confirm it).
-- Restart after a death in the middle of a section (`sub_B1C0`: going back to the previous checkpoint, decrementing `$60`).
-- The game with a player: the plane, firing, fuel, collisions with the plane, explosions, score (`src/game.cpp` covers the attract mode so far).
+- Power-on itself (A000–A17C: the first 38 frames before the attract mode) is drawn as an empty screen; `Game::powerOn` is not exact yet.
+- The PAL machine (`-pal`): the generator knows it, the display list and timing do not.
 - `atariRgb` is an approximate NTSC palette (YIQ model), not a measured one.
