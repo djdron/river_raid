@@ -176,8 +176,6 @@ void Game::logicPass(const Input &input, const std::function<uint8_t()> &random)
 	}
 	if (g.idleTime & 0x80) return;   // A1F5: screen off after a long time without input
 
-	// A1F9: objects move on alternate frames, odd and even slots in turn
-	s.vB1 = g.frameCount ^ s.slotParity;   // $B1
 	// A1FF: every 16 frames a random slot is woken up (bit 6: it may move)
 	if ((g.frameCount & 0x0F) == 0) {
 		uint8_t x = random() & 0x0F;
@@ -449,7 +447,7 @@ void Game::moveObjects() {
 		if (kind != 7) {
 			if (kind < 7) continue;                       // explosions, fuel depots
 			if (kind == 0x0C && (g.frameCount & 2)) continue;
-			if ((x ^ s.vB1) & 1) continue;             // every other frame
+			if ((x ^ g.frameCount ^ s.slotParity) & 1) continue;   // A1F9: odd and even slots in turn
 			const uint8_t f = sl.flags;
 			if (!(f & 0x40)) continue;                    // not woken up yet
 			if (f & 0x01) {                               // touching the bank edge (DLI collision bit)
@@ -878,7 +876,6 @@ void Game::explode(int slot, uint8_t kind) {
 	// A547: score (BCD), points from the table at $BB0B by type
 	{
 		const uint8_t thousands = g.score[1] & 0xF0;
-		s.vB1 = thousands;                        // $B1
 		int c = 0;
 		auto bcdAdd = [](uint8_t a, uint8_t b, int &carry) {
 			int lo4 = (a & 0x0F) + (b & 0x0F) + carry;
@@ -1019,7 +1016,6 @@ void Game::showLives() {
 
 // B086-B0C6: BCD bytes as digits in the panel, leading zeros blank; nothing in the attract mode.
 void Game::printBcd(const uint8_t *d, int bytes, int at, uint8_t base) {
-	gen.s.vB1 = base;   // $B1 holds the base character
 	if (attract(g)) return;
 	int y = at;
 	bool leading = true;

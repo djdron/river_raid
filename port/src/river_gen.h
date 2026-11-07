@@ -16,20 +16,34 @@
 #include <string>
 #include <vector>
 
+#include "rom.h"
+
 namespace rr {
 
-// Read-only access to the cartridge image ($A000-$BFFF); the port never ships game data.
-class Rom {
-public:
-	bool load(const std::string &path);
-	uint8_t at(uint16_t addr) const { return data_[addr - 0xA000]; }
-	uint16_t word(uint16_t addr) const { return uint16_t(at(addr) | (at(addr + 1) << 8)); }
-private:
-	std::array<uint8_t, 0x2000> data_{};
-};
-
 constexpr int kSlots = 11;         // object slots, one horizontal band each
+constexpr uint8_t kNoSlot = 11;    // "no slot" in slot numbers
 constexpr int kLineBytes = 48;     // one screen line: 192 pixels, 4 per byte
+
+// RiverState::blockFlags (bits also copied into the flags of a new slot)
+constexpr uint8_t kBridgeBlock = 0x80;   // the straight run-up to a bridge (the bridge's slot)
+constexpr uint8_t kNewBlock = 0x10;      // set at each block start
+constexpr uint8_t kBankShade = 0x04;     // which of the two bank greens ($D6/$D2) this level has
+
+// Slot::flags
+namespace slotflag {
+constexpr uint8_t kBridge = 0x80;        // the slot holds a bridge (road colours next to it)
+constexpr uint8_t kAwake = 0x40;         // the object may move
+constexpr uint8_t kTurned = 0x10;        // turned round at the bank edge, until it leaves it
+constexpr uint8_t kFacingLeft = 0x08;    // moves left (and its shape is mirrored)
+constexpr uint8_t kTouchingEdge = 0x01;  // set by the display: the sprite touched the bank edge
+}  // namespace slotflag
+
+// RiverState::islandFlags: 0 no island; $40 the island opens in the next section (this one has
+// width 0); $C0 island; $80 the island closes (width 0 again).
+constexpr uint8_t kIsland = 0x80;
+constexpr uint8_t kIslandOpening = 0x40;
+// RiverState::decoFlags
+constexpr uint8_t kDecoLeft = 0x80;
 
 struct Slot {
 	uint8_t y = 0;        // $0C+i  vertical position, +1 per generated line
@@ -97,8 +111,6 @@ struct RiverState {
 	uint8_t missileY = 0;           // $C2
 	uint8_t flashLines = 0;         // $4F  a hit bridge: the bank flashes on this many new lines
 	uint8_t depotLevelLimit = 0x2E; // $CB  levels past it don't make fuel depots rarer ($2E NTSC, $2F PAL)
-	// scratch values the original keeps in RAM (kept for byte-exact comparison)
-	uint8_t vB1 = 0, vB7 = 0, vC8 = 0, vC9 = 0, vCA = 0;
 };
 
 class RiverGen {
@@ -130,14 +142,19 @@ public:
 
 private:
 	const Rom &rom_;
-	void stepLfsr();
-	void structureAndWidth();   // $A711-$A7FA
-	void smoothIsland();        // $A7FB-$A825
-	void moveBank();            // $A826-$A96B
-	void startDecoration();     // $A96C-$A9D6
-	void drawLine(uint8_t line[kLineBytes]);   // $AA8C-$AB75
-	void scrollObjects();       // $AB76-$ABF2
-	void placeObject();         // $ABF3-$AE96
+	void stepLfsr();                          // sub $B183
+	void countLines();                        // $A711-$A7FA
+	uint8_t chooseSectionWidth();             // $A781-$A7DB (even levels)
+	void changeIsland();                      // $A7FB-$A825
+	void moveBank();                          // $A826-$A96B
+	bool bankWouldHitObject(bool movingLeft) const;
+	void startDecoration();                   // $A96C-$A9D6
+	void drawLine(uint8_t line[kLineBytes]);  // $AA8C-$AB75
+	void scrollObjects();                     // $AB76-$ABF2
+	void placeObject();                       // $ABF3-$AD8D
+	uint8_t chooseEnemy();                    // $AC62-$AC8B
+	void positionObject(uint8_t &type, uint8_t &x, bool &facingLeft);   // $AC8C-$AD28
+	void placeTank();                         // $AD8E-$AE93
 };
 
 }  // namespace rr

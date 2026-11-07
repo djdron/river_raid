@@ -65,11 +65,6 @@ const Field kFields[] = {
 	F("missileY", 0xC2, true, s.missileY),
 	F("flashLines", 0x4F, true, s.flashLines),
 	F("depotLevelLimit", 0xCB, false, s.depotLevelLimit),
-	F("vB1", 0xB1, true, s.vB1),
-	F("vB7", 0xB7, true, s.vB7),
-	F("vC8", 0xC8, false, s.vC8),
-	F("vC9", 0xC9, false, s.vC9),
-	F("vCA", 0xCA, false, s.vCA),
 };
 #undef F
 
