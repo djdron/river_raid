@@ -62,8 +62,8 @@ struct RiverState {
 	uint8_t level = 0;              // $60  bridge number, 1..$50 (stops growing at $50)
 	uint8_t blockFlags = 0;         // $23  kBridgeBlock, kBankShade, $10; copied into new slots
 	uint8_t islandFlags = 0;        // $2D  kIsland: this section has an island; $40: next one may
-	uint8_t corridor = 0;           // $052D non-zero: the bank is pulled into $18..$28 (bit 7: also
-	                                //       for object positions)
+	// $052D non-zero: the bank is pulled into $18..$28 (bit 7: object positions too)
+	uint8_t corridor = 0;
 	uint8_t bridgeHit = 0;          // $2E  the bridge ahead was hit (restart point after a crash)
 	// pseudo-random generator: 24-bit LFSR (sub $B183); the river is the same in every game
 	uint8_t rndA = 0, rndB = 0, rndC = 0;     // $AA $AB $AC

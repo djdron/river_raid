@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
 		if (firstBad < 0) firstBad = f;
 	}
 	std::printf("frames %d..%ld: %ld rows compared, %ld exact (%.2f%%)", from, last, compared, exact,
-	            compared ? 100.0 * exact / compared : 0.0);
+		compared ? 100.0 * exact / compared : 0.0);
 	if (ram) std::printf(", %ld differ while the road tank is active, %ld other", tank, compared - exact - tank);
 	std::printf("\n");
 	if (firstBad >= 0) std::printf("first unexplained difference at frame %ld\n", firstBad);

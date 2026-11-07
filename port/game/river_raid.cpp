@@ -57,8 +57,8 @@ constexpr int kSampleRate = 48000;
 class Atari {
 public:
 	Atari(const rr::Rom &rom, const uint8_t osFont[rr::kOsFontBytes], bool pal, uint32_t seed)
-	    : rom_(rom), game_(rom), pal_(pal), random_(seed), pokey_(kSampleRate),
-	      charsets_(rr::buildCharsets(rom, osFont)) {
+		: rom_(rom), game_(rom), pal_(pal), random_(seed), pokey_(kSampleRate),
+		charsets_(rr::buildCharsets(rom, osFont)) {
 		rr::initialPanel(rom, powerOnPanel_);
 		std::memset(screen_, 0, sizeof screen_);
 		game_.afterDisplay = [this] {
@@ -179,8 +179,8 @@ private:
 		if (SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_DPAD_LEFT) || ax < -kDead) stick &= ~4;
 		if (SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_DPAD_RIGHT) || ax > kDead) stick &= ~8;
 		fire = SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_SOUTH) || SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_EAST) ||
-		       SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_WEST) || SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_NORTH) ||
-		       SDL_GetGamepadAxis(p, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) > 16000;
+			SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_WEST) || SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_NORTH) ||
+			SDL_GetGamepadAxis(p, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) > 16000;
 		in.start = in.start || SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_START);
 		in.select = in.select || SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_BACK);
 	}
@@ -264,17 +264,17 @@ int main(int argc, char **argv) {
 	SDL_Window *window = nullptr;
 	SDL_Renderer *renderer = nullptr;
 	if (!SDL_CreateWindowAndRenderer("River Raid", int(kViewWidth * kScale * kPixelAspect), kViewHeight * kScale,
-	                                 SDL_WINDOW_RESIZABLE, &window, &renderer)) {
+		SDL_WINDOW_RESIZABLE, &window, &renderer)) {
 		std::fprintf(stderr, "SDL_CreateWindowAndRenderer: %s\n", SDL_GetError());
 		return 1;
 	}
 	SDL_SetRenderVSync(renderer, 1);
 	SDL_Texture *texture =
-	    SDL_CreateTexture(renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, kViewWidth, kViewHeight);
+		SDL_CreateTexture(renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, kViewWidth, kViewHeight);
 	SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
 	SDL_AudioSpec spec{SDL_AUDIO_S16, 1, kSampleRate};
 	SDL_AudioStream *audio =
-	    shotPath ? nullptr : SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, nullptr, nullptr);
+		shotPath ? nullptr : SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, nullptr, nullptr);
 	if (audio) SDL_ResumeAudioStreamDevice(audio);
 
 	uint32_t palette[256];

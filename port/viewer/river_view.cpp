@@ -65,7 +65,7 @@ constexpr int kSampleRate = 48000;
 class Attract {
 public:
 	Attract(const rr::Rom &rom, const uint8_t osFont[rr::kOsFontBytes], bool pal, uint32_t seed)
-	    : rom_(rom), game_(rom), pal_(pal), seed_(seed), charsets_(rr::buildCharsets(rom, osFont)) {
+		: rom_(rom), game_(rom), pal_(pal), seed_(seed), charsets_(rr::buildCharsets(rom, osFont)) {
 		rr::initialPanel(rom, panel_);
 		game_.afterLine = [this](const uint8_t *line) {
 			// look-back map: each line as it enters the screen, objects where they were placed
@@ -122,7 +122,7 @@ public:
 		switch (which) {
 		case 0: game_.g.soundExplosion = 0x17; break;   // explosion, as A4E6 sets it
 		case 1: game_.g.soundFire = 0x0F; break;        // firing (A5A6)
-		case 2: game_.g.soundScore = 0x40; break;       // score (A587)
+		case 2: game_.g.soundBonus = 0x40; break;       // score (A587)
 		default: break;
 		}
 	}
@@ -255,7 +255,7 @@ int main(int argc, char **argv) {
 	SDL_Window *window = nullptr;
 	SDL_Renderer *renderer = nullptr;
 	if (!SDL_CreateWindowAndRenderer("River Raid", int(kViewWidth * kScale * kPixelAspect), kViewHeight * kScale,
-	                                 SDL_WINDOW_RESIZABLE, &window, &renderer)) {
+		SDL_WINDOW_RESIZABLE, &window, &renderer)) {
 		std::fprintf(stderr, "SDL_CreateWindowAndRenderer: %s\n", SDL_GetError());
 		return 1;
 	}
@@ -264,7 +264,7 @@ int main(int argc, char **argv) {
 	SDL_AudioStream *audio = shotPath ? nullptr : SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, nullptr, nullptr);
 	if (audio) SDL_ResumeAudioStreamDevice(audio);
 	SDL_Texture *texture =
-	    SDL_CreateTexture(renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, kViewWidth, kViewHeight);
+		SDL_CreateTexture(renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, kViewWidth, kViewHeight);
 	SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
 
 	uint32_t palette[256];
@@ -413,7 +413,7 @@ int main(int argc, char **argv) {
 		char buf[160];
 		const long shown = attract.lines() - 1 - back;
 		std::snprintf(buf, sizeof buf, "River Raid - bridge %d - line %ld - speed x%g%s%s", attract.level(shown), shown,
-		              kSpeeds[speedIndex], back ? " - looking back" : "", paused ? " - paused" : "");
+			kSpeeds[speedIndex], back ? " - looking back" : "", paused ? " - paused" : "");
 		if (title != buf) {
 			title = buf;
 			SDL_SetWindowTitle(window, buf);

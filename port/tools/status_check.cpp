@@ -82,7 +82,7 @@ int main(int argc, char **argv) {
 		if (panelSame && scrollerSame) exactFrames++;
 	}
 	std::printf("%ld frames: %ld identical; panel differs in %ld; scrolling line differs in %ld (%ld of them only in "
-	            "columns <24 or >=360); scroller state differs in %ld\n",
-	            compared, exactFrames, panelBad, scrollerBad, edgeOnly, stateBad);
+		"columns <24 or >=360); scroller state differs in %ld\n",
+		compared, exactFrames, panelBad, scrollerBad, edgeOnly, stateBad);
 	return charsetsOk && !panelBad && !stateBad ? 0 : 1;
 }

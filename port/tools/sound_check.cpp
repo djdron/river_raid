@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
 		g.startBeep = mem[0xC6]; g.pauseState = mem[0x24]; g.eventSound = mem[0x7A]; g.eventSoundTime = mem[0x7B];
 		g.planeState = mem[0x76]; g.fuel = mem[0x5B]; g.fuelFrac = mem[0x5C]; g.speed = mem[0x59];
 		g.crashPitch = mem[0x052C]; g.joystick = mem[0x19]; g.soundExplosion = mem[0x7C];
-		g.soundMissile = mem[0x7F]; g.attractFlags = mem[0x29]; g.soundFire = mem[0x7D]; g.soundScore = mem[0x7E];
+		g.soundMissile = mem[0x7F]; g.attractFlags = mem[0x29]; g.soundFire = mem[0x7D]; g.soundBonus = mem[0x7E];
 		// registers not written in this VBI keep the original's values
 		for (int c = 0; c < 4; c++) { g.pokey.audf[c] = regs[2 * c]; g.pokey.audc[c] = regs[2 * c + 1]; }
 		std::deque<uint8_t> &rq = randoms[frame];
@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
 				std::printf("frame %d:", frame);
 				for (int c = 0; c < 4; c++)
 					std::printf("  ch%d port %02X/%02X orig %02X/%02X", c + 1, game.g.pokey.audf[c], game.g.pokey.audc[c],
-					            regs[2 * c], regs[2 * c + 1]);
+						regs[2 * c], regs[2 * c + 1]);
 				std::printf("\n");
 			}
 		}

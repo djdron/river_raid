@@ -315,7 +315,7 @@ void Game::newGame() {
 	g.player = g.gameNumber & 1;
 	// A15D with X = $79: $79-$7F cleared
 	g.respawned = 0;
-	g.eventSound = g.eventSoundTime = g.soundExplosion = g.soundFire = g.soundScore = g.soundMissile = 0;
+	g.eventSound = g.eventSoundTime = g.soundExplosion = g.soundFire = g.soundBonus = g.soundMissile = 0;
 	reset(true);   // the rest (AF80, A17E) when the reset ends: finishReset()
 	resume_ = Resume::NewGame;
 }
@@ -731,8 +731,8 @@ void Game::soundDriver(const std::function<uint8_t()> &random) {
 		pitch = lo(uint8_t(twice << 1) + twice + (twice >> 7));   // 6 times, with the carry of the shift
 		control = 0xA8;
 	}
-	if (g.soundScore) {                           // B399: a bonus life
-		const uint8_t t = --g.soundScore;
+	if (g.soundBonus) {                           // B399: a bonus life
+		const uint8_t t = --g.soundBonus;
 		control = uint8_t((t & 0x0F) + 0xA0);
 		pitch = rom_.scorePitch(t >> 4);
 	}
@@ -923,7 +923,7 @@ void Game::explode(int n, uint8_t kind) {
 	}
 	if ((g.score[1] & 0xF0) != tenThousands && g.lives != 9) {
 		g.lives++;
-		g.soundScore = 0x40;
+		g.soundBonus = 0x40;
 	}
 	moveBullet(1);                                // A589: the bullet is used up
 }
@@ -1027,7 +1027,7 @@ void Game::updateHighScore(bool otherPlayer) {
 // sub $AF5B: the lives as plane symbols in the panel (the newest blinks while the bonus sounds).
 void Game::showLives() {
 	int shown = g.lives;
-	if (shown && (g.soundScore & 0x08)) shown--;
+	if (shown && (g.soundBonus & 0x08)) shown--;
 	for (int i = 0; i < 9; i++) g.panel[kPanelLives + i] = i < shown ? kLifeSymbol : 0;
 }
 
