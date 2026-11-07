@@ -39,7 +39,7 @@ A C++ port of River Raid (Activision, Atari 800, 1983, by Carol Shaw) for Window
 8. **Reference runner.** atari800 seeds POKEY from the clock; `rr_oracle -seed` (default 0) makes runs byte-identical. The game starts with the START key. The atari800 build fails with `-Werror` on a ULONG redefinition; `build.sh` builds with `CFLAGS="-g -O2 -DNETSIO"`. Tested atari800 commit: 98cc2dc.
 
 ## Environment limits
-- `oracle/build.sh` uses `-Wl,--wrap` (GNU ld): builds on Linux/WSL/MSYS2, not with Apple's linker on macOS. The reference runner currently runs in Claude's cloud session.
+- `oracle/build.sh` builds on Linux, macOS, WSL and MSYS2 (intercepted emulator functions are renamed at compile time, no GNU `--wrap`). The reference runner currently runs in Claude's cloud session.
 - The ROM is not in the repository (`.gitignore`); put your dump at `rom/River_Raid.rom`.
 - On Windows the reference runner builds only under WSL or MSYS2; the C++ part (`port/`) builds with plain CMake + MSVC.
 - Code is indented with tabs (`.editorconfig`). Documentation is bilingual: `X.md` in English, `X.ru.md` in Russian.
