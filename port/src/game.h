@@ -76,18 +76,19 @@ struct PlayerData {
 	uint8_t level = 0;          // $60 (gen.s.level for the active player)
 	uint8_t bridges[2] = {};    // $61-$62 bridges destroyed, BCD
 	uint8_t score[3] = {};      // $63-$65 score, BCD, high byte first
-	uint8_t save[4] = {};       // $66-$69 restart point (gen.s.save for the active player)
+	uint8_t checkpoint[4] = {}; // $66-$69 restart point (gen.s.checkpoint for the active player)
 	uint8_t lives = 0;          // $6A
 };
 
 struct GameState {
 	uint8_t frameCount = 0;     // $18 +1 per frame (VBI)
-	uint8_t flags29 = 0;        // $29 bit 7: attract mode; bits 2-0 count $18 wraps
+	uint8_t attractFlags = 0;   // $29 bit 7: attract mode; bits 2-0 count frameCount wraps
 	uint8_t attractTimer = 0;   // $2A counts down every 8 frames while not playing
-	uint8_t deathTimer = 0;     // $76 $FF: no plane (attract), 0: flying
-	uint8_t idle = 0;           // $78 +1 every 2048 frames without input; bit 7: screen off
-	uint8_t state24 = 0;        // $24
-	uint8_t optionDelay = 0;    // $25
+	uint8_t planeState = 0;     // $76 0 flying; $FE-$80 exploding; $7F-$30 river refilling; $2F
+	                            //     waiting for the player; $FF no plane (attract, game over)
+	uint8_t idleTime = 0;       // $78 +1 every 2048 frames without input; bit 7: screen off
+	uint8_t pauseState = 0;     // $24 3 key pressed, 2 paused, 1 key pressed again, 0 playing
+	uint8_t selectDelay = 0;    // $25 frames until SELECT/OPTION changes the game again
 	uint8_t gameNumber = 0;     // $09 0..7
 	uint8_t player = 0;         // $77
 	uint8_t speed = 0;          // $59 scroll speed, lines per frame x 256 / 2
@@ -95,9 +96,9 @@ struct GameState {
 	// tank shell ($50 in RiverState is its timer)
 	uint8_t shellFrame = 0;     // $3B
 	uint8_t shellX = 0;         // $3C
-	uint8_t shellXLo = 0;       // $3D
+	uint8_t shellXFrac = 0;     // $3D
 	// helicopter missile ($C1 x, $C2 y in RiverState)
-	uint8_t missileDx = 0;      // $C0
+	uint8_t missileStep = 0;    // $C0
 	// plane (only drawn in the attract mode)
 	uint8_t planeX = 0;         // $57
 	uint8_t planeFrame = 0;     // $5E
@@ -109,13 +110,13 @@ struct GameState {
 	uint8_t fuel = 0;           // $5B
 	uint8_t joystick = 0x0F;    // $19 last stick bits (1 = not pressed)
 	uint8_t joystickPrev = 0;   // $B9 previous stick bits << 4
-	uint8_t c6 = 0;             // $C6 start beep (frames)
-	uint8_t fuelLo = 0;         // $5C
-	uint8_t sound7A = 0;        // $7A event sound on channel 1 (1-4: refuel, full tank...)
-	uint8_t sound7B = 0;        // $7B its length / the low-fuel beep counter
+	uint8_t startBeep = 0;      // $C6 start beep (frames)
+	uint8_t fuelFrac = 0;       // $5C
+	uint8_t eventSound = 0;     // $7A sound on channel 1: 1 crash, 2 out of fuel, 3 tank full, 4 refuelling
+	uint8_t eventSoundTime = 0; // $7B its length; also the low-fuel beep counter
 	uint8_t soundFire = 0;      // $7D
 	uint8_t soundScore = 0;     // $7E
-	uint8_t deathPitch = 0;     // $052C
+	uint8_t crashPitch = 0;     // $052C engine pitch falling after a crash
 	// the plane and its bullet
 	uint8_t planeXFrac = 0;     // $58
 	uint8_t planeAccel = 0;     // $2B sideways acceleration
@@ -129,7 +130,7 @@ struct GameState {
 	uint8_t powerOnDone = 0;    // $28
 	uint8_t screenOn = 0;       // $C7 0 while the screen is being cleared (colours off)
 	uint8_t highScore[16] = {}; // $80-$8F 3 BCD bytes for each pair of games, at 4-byte steps
-	uint8_t checksum[16] = {};  // $90-$9F check of the high scores (kept over a reset)
+	uint8_t highScoreCheck[16] = {};  // $90-$9F check bytes of the high scores (kept over a reset)
 	uint8_t panel[60] = {};     // $1000-$103B status panel characters
 	Scroller scroller;          // $3FB3/$26/$27 the scrolling line below the panel (VBI B44B)
 	uint8_t logoShown = 0;      // the logo position the display uses this frame

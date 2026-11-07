@@ -26,10 +26,10 @@ constexpr uint16_t kRoadColours = 0xB4E5;    // bank colour per row next to a br
 }  // namespace
 
 uint8_t bankColour(const RiverState &s) {
-	uint8_t c = uint8_t((s.mode & 4) ^ 0xD6);
+	uint8_t c = uint8_t((s.blockFlags & 4) ^ 0xD6);
 	// While a bridge object is still being drawn in near the top, the shade is switched.
-	if (s.newSlot < kSlots) {
-		const Slot &sl = s.slot[s.newSlot];
+	if (s.enteringSlot < kSlots) {
+		const Slot &sl = s.slot[s.enteringSlot];
 		if ((sl.flags & 0x80) && sl.y < 0x5C) c ^= 4;
 	}
 	return c;

@@ -41,55 +41,62 @@ struct Slot {
 };
 
 struct RiverState {
-	// level structure
-	uint8_t lineInBlock = 0;    // $2F  0..31
-	uint8_t blocksLeft = 0;     // $5A  blocks left in the section (2 per section)
-	uint8_t sectionsLeft = 0;   // $5D  sections left until the bridge (16)
-	uint8_t level = 0;          // $60  bridge number, 1..$50
-	uint8_t mode = 0;           // $23  bit 7: straight bridge approach, bit 4, bit 2
-	uint8_t shape = 0;          // $2D  bit 7: island, bit 6
-	uint8_t corridor = 0;       // $052D non-zero: banks forced into $18..$28
-	uint8_t bridgeHit = 0;      // $2E
-	// pseudo-random generator, 24-bit LFSR (sub $B183)
-	uint8_t rndA = 0, rndB = 0, rndC = 0;      // $AA $AB $AC
-	uint8_t save[4] = {};       // $66-$69 checkpoint: $AA $AB $AC $52 at the last bridge
-	uint8_t savePrev[4] = {};   // $AD-$B0 previous checkpoint
-	// geometry of the current line
-	uint8_t bank = 0;           // $52  bank position
-	uint8_t bankDir = 0;        // $C3  +1, $FF or 0
-	uint8_t bankMin = 0;        // $C4
-	uint8_t bankMax = 0;        // $C5
-	uint8_t water = 0;          // $53  water width
-	uint8_t islandW = 0;        // $54  island / inner width
-	uint8_t islandTarget = 0;   // $34
-	uint8_t islandStep = 0;     // $35  +1/+2/$FF/$FE or 0
-	uint8_t widthCode = 0;      // $5F  target width code of the section (x4 = $34)
-	uint8_t widthCodePrev = 0;  // $2C
-	uint8_t margin = 0;         // $B5  0 or 6 (levels below 9 keep objects away from banks)
+	// level structure: a block is 32 lines, a section 2 blocks, 16 sections lead to a bridge
+	uint8_t lineInBlock = 0;        // $2F  0..31
+	uint8_t blocksLeft = 0;         // $5A  blocks left in the section
+	uint8_t sectionsLeft = 0;       // $5D  sections left until the bridge
+	uint8_t level = 0;              // $60  bridge number, 1..$50 (stops growing at $50)
+	uint8_t blockFlags = 0;         // $23  kBridgeBlock, kBankShade, $10; copied into new slots
+	uint8_t islandFlags = 0;        // $2D  kIsland: this section has an island; $40: next one may
+	uint8_t corridor = 0;           // $052D non-zero: the bank is pulled into $18..$28 (bit 7: also
+	                                //       for object positions)
+	uint8_t bridgeHit = 0;          // $2E  the bridge ahead was hit (restart point after a crash)
+	// pseudo-random generator: 24-bit LFSR (sub $B183); the river is the same in every game
+	uint8_t rndA = 0, rndB = 0, rndC = 0;     // $AA $AB $AC
+	uint8_t checkpoint[4] = {};     // $66-$69 restart point: LFSR A, B, C and bank at the last bridge
+	uint8_t prevCheckpoint[4] = {}; // $AD-$B0 the one before
+	// geometry of the current line (horizontal values in pixels of the 192-pixel line / 2)
+	uint8_t bank = 0;               // $52  left bank: where the water starts
+	uint8_t bankDir = 0;            // $C3  bank walk direction: +1, $FF (-1) or 0
+	uint8_t bankMin = 0;            // $C4  walk limits
+	uint8_t bankMax = 0;            // $C5
+	uint8_t waterWidth = 0;         // $53
+	uint8_t islandWidth = 0;        // $54  island (or, without an island, extra bank) width
+	uint8_t islandTargetWidth = 0;  // $34
+	uint8_t islandStep = 0;         // $35  +1/+2/$FF/$FE per line while changing, or 0
+	uint8_t sectionWidth = 0;       // $5F  width code of the section (x4 = island target width)
+	uint8_t prevSectionWidth = 0;   // $2C
+	uint8_t bankMargin = 0;         // $B5  6 below level 9: objects keep away from the banks
 	// bank decoration (house, mountain) being drawn
-	uint8_t deco = 0;           // $36  0 none, bit 7 left side, low bits
-	uint8_t deco37 = 0;         // $37
-	uint16_t decoPtr = 0;       // $BA/$BB bitmap rows
-	uint8_t decoW = 0;          // $BC  bytes per row
-	uint8_t decoOfs = 0;        // $BD  offset in bytes from the line edge
-	uint8_t decoRows = 0;       // $BE  rows
+	uint8_t decoFlags = 0;          // $36  0: none; bit 7: on the left bank
+	uint8_t islandObjectSide = 0;   // $37  bit 7: the newest object is right of the island
+	uint16_t decoBitmap = 0;        // $BA/$BB ROM address of the next bitmap row
+	uint8_t decoWidth = 0;          // $BC  bytes per row
+	uint8_t decoOffset = 0;         // $BD  bytes from the line edge
+	uint8_t decoRows = 0;           // $BE  rows
 	// objects
 	std::array<Slot, kSlots> slot{};
-	uint8_t firstSlot = 0;      // $4D  first slot in use (slots fill from 10 down)
-	uint8_t newSlot = 0;        // $4E  slot of the object still being drawn in, $0B = none
-	uint8_t jetSlot = 0;        // $51
-	uint8_t objLines = 0;       // $32  lines left to draw the newest object
-	uint8_t toggle33 = 0;       // $33
-	uint8_t bridgeFlags = 0;    // $0B
-	uint8_t objFlag = 0;        // $B8
-	uint8_t objWidth = 0;       // $B3
-	// object on the bank road (tank) and others the generator starts
-	uint8_t roadKind = 0;       // $38
-	uint8_t roadX = 0;          // $39
-	uint8_t roadY = 0;          // $3A
-	uint8_t v3E = 0, v3F = 0, v40 = 0, v41 = 0, v50 = 0, vC1 = 0, vC2 = 0;
-	uint8_t flash = 0;          // $4F  bridge flash: colours switch while non-zero
-	uint8_t vCB = 0x2E;         // $CB  set at power-on: $2E on NTSC, $2F on PAL (fuel depot odds)
+	uint8_t firstSlot = 0;          // $4D  first slot in use (slots fill from 10 down)
+	uint8_t enteringSlot = 0;       // $4E  slot of the object still being drawn in, kNoSlot = none
+	uint8_t shooterSlot = 0;        // $51  slot of the helicopter that fires missiles, kNoSlot = none
+	uint8_t enteringLines = 0;      // $32  lines left until the newest object is fully drawn in
+	uint8_t slotParity = 0;         // $33  flips when the slots shift (objects move on alternate frames)
+	uint8_t sectionBankColour = 0;  // $0B  bank colour of the section ($D2/$D6)
+	uint8_t wideObject = 0;         // $B8  non-zero while placing a bridge (7) or a ship (5)
+	uint8_t placeWidth = 0;         // $B3  river width code used to place the object
+	// the tank on the bank road, its shell, and the helicopter's missile
+	uint8_t tankKind = 0;           // $38  0 none; 5/6 facing right/left (animated); bit 7: destroyed
+	uint8_t tankX = 0;              // $39
+	uint8_t tankY = 0;              // $3A
+	uint8_t tankFires = 0;          // $41  bit 7: drives to the river and fires
+	uint8_t shellSpeed = 0;         // $3E  shell's sideways speed per frame, whole part
+	uint8_t shellSpeedFrac = 0;     // $3F  and fraction (/256)
+	uint8_t shellY = 0;             // $40
+	uint8_t shellTimer = 0;         // $50  bit 7: no shell; 0 launch; 1-$10 flight; $11-$38 explosion
+	uint8_t missileX = 0;           // $C1  0: no missile
+	uint8_t missileY = 0;           // $C2
+	uint8_t flashLines = 0;         // $4F  a hit bridge: the bank flashes on this many new lines
+	uint8_t depotLevelLimit = 0x2E; // $CB  levels past it don't make fuel depots rarer ($2E NTSC, $2F PAL)
 	// scratch values the original keeps in RAM (kept for byte-exact comparison)
 	uint8_t vB1 = 0, vB7 = 0, vC8 = 0, vC9 = 0, vCA = 0;
 };

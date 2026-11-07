@@ -247,8 +247,8 @@ void Game::display() {
 	beam.op(2 + 2); beam.op(4); beam.hposM[2] = uint8_t(g.planeX + 4);                        // B537
 	beam.op(2); beam.op(4);                                                                   // COLPM1
 	beam.op(2 + 3); beam.branch(g.player != 0); if (!g.player) beam.op(2); beam.op(4);        // COLPM2
-	beam.op(3); beam.op(4); beam.hposP[1] = s.roadX;                                          // B54D
-	beam.op(3); beam.op(4); beam.hposM[0] = s.vC1;                                            // B552
+	beam.op(3); beam.op(4); beam.hposP[1] = s.tankX;                                          // B54D
+	beam.op(3); beam.op(4); beam.hposM[0] = s.missileX;                                            // B552
 	beam.op(3); beam.op(4); beam.hposP[0] = g.shellX;                                         // B557
 	beam.op(3 + 2); beam.branch(true);                                                        // B55C-B560
 
@@ -338,7 +338,7 @@ void Game::display() {
 		beam.op(4); beam.wsync();                           // B5F3
 		beam.op(3);
 		if (!beam.branch(!(flags & 0x80), true)) {          // bridge: bank colour back
-			beam.op(3); beam.op(4); beam.bankColour = s.bridgeFlags;
+			beam.op(3); beam.op(4); beam.bankColour = s.sectionBankColour;
 			beam.op(3);
 		} else {
 			beam.op(4);
@@ -404,9 +404,9 @@ void Game::display() {
 		if (!beam.branch(g.player == 0)) beam.op(2);
 	}
 	beam.op(4 + 3);
-	if (!beam.branch(g.deathTimer == 0)) {
+	if (!beam.branch(g.planeState == 0)) {
 		beam.op(3);
-		if (!beam.branch(((g.deathTimer | g.flags29) & 0x80) != 0)) {
+		if (!beam.branch(((g.planeState | g.attractFlags) & 0x80) != 0)) {
 			beam.op(3 + 2);
 			if (!beam.branch((g.frameCount & 0x30) != 0)) beam.op(2 + 5);
 		}
@@ -469,10 +469,10 @@ void Game::drawRiver(uint8_t out[240][kRowWidth]) const {
 		const uint8_t m2 = (g.pm.missiles(line) >> 4) & 0x03;               // its bullet
 		for (int b = 0; b < 2; b++)
 			if (m2 & (2 >> b)) put(row, 2 * (g.planeX + 4 + b - 32), 2, planeColour);
-		player(row, g.pm.player(1, line), s.roadX, 0, 0x00);                // tank, COLPM1 = 0
+		player(row, g.pm.player(1, line), s.tankX, 0, 0x00);                // tank, COLPM1 = 0
 		const uint8_t m0 = g.pm.missiles(line) & 0x03;                      // helicopter missile, double width
 		for (int b = 0; b < 2; b++)
-			if (m0 & (2 >> b)) put(row, 2 * (s.vC1 + b * 2 - 32), 4, g.shellColour);
+			if (m0 & (2 >> b)) put(row, 2 * (s.missileX + b * 2 - 32), 4, g.shellColour);
 		player(row, g.pm.player(0, line), g.shellX, 0, g.shellColour);      // tank shell
 		std::fill(row, row + 24, 0);
 		std::fill(row + 360, row + kRowWidth, 0);

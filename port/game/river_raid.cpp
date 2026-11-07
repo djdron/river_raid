@@ -85,7 +85,7 @@ public:
 				game_.frame(input, [this, &reads] { return random_.read(reads++ ? 249 : 192, 13); });
 			}
 			const rr::GameState &g = game_.g;
-			if (g.idle & 0x80) {
+			if (g.idleTime & 0x80) {
 				std::memset(screen_, 0, sizeof screen_);   // screen off after a long time unused
 			} else {
 				rr::drawStatusBar(rom_, charsets_, g.panel, g.fuel, g.scroller, g.logoShown, screen_);

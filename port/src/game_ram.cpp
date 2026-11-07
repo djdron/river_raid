@@ -13,17 +13,17 @@ namespace {
 std::vector<std::pair<std::pair<const char *, uint16_t>, uint8_t *>> gameFields(const Game &game) {
 	GameState &g = const_cast<GameState &>(game.g);
 	return {
-	    {{"frameCount", 0x18}, &g.frameCount}, {{"flags29", 0x29}, &g.flags29},
-	    {{"attractTimer", 0x2A}, &g.attractTimer}, {{"deathTimer", 0x76}, &g.deathTimer},
-	    {{"idle", 0x78}, &g.idle}, {{"speed", 0x59}, &g.speed}, {{"scrollFrac", 0x30}, &g.scrollFrac},
-	    {{"shellFrame", 0x3B}, &g.shellFrame}, {{"shellX", 0x3C}, &g.shellX}, {{"shellXLo", 0x3D}, &g.shellXLo},
-	    {{"missileDx", 0xC0}, &g.missileDx}, {{"planeX", 0x57}, &g.planeX}, {{"planeFrame", 0x5E}, &g.planeFrame},
+	    {{"frameCount", 0x18}, &g.frameCount}, {{"attractFlags", 0x29}, &g.attractFlags},
+	    {{"attractTimer", 0x2A}, &g.attractTimer}, {{"planeState", 0x76}, &g.planeState},
+	    {{"idleTime", 0x78}, &g.idleTime}, {{"speed", 0x59}, &g.speed}, {{"scrollFrac", 0x30}, &g.scrollFrac},
+	    {{"shellFrame", 0x3B}, &g.shellFrame}, {{"shellX", 0x3C}, &g.shellX}, {{"shellXFrac", 0x3D}, &g.shellXFrac},
+	    {{"missileStep", 0xC0}, &g.missileStep}, {{"planeX", 0x57}, &g.planeX}, {{"planeFrame", 0x5E}, &g.planeFrame},
 	    {{"soundExplosion", 0x7C}, &g.soundExplosion}, {{"soundMissile", 0x7F}, &g.soundMissile},
 	    {{"bridgeFlash", 0x31}, &g.bridgeFlash}, {{"fuel", 0x5B}, &g.fuel}, {{"joystick", 0x19}, &g.joystick},
-	    {{"joystickPrev", 0xB9}, &g.joystickPrev}, {{"c6", 0xC6}, &g.c6}, {{"state24", 0x24}, &g.state24},
-	    {{"optionDelay", 0x25}, &g.optionDelay}, {{"gameNumber", 0x09}, &g.gameNumber}, {{"player", 0x77}, &g.player},
-	    {{"fuelLo", 0x5C}, &g.fuelLo}, {{"sound7A", 0x7A}, &g.sound7A}, {{"sound7B", 0x7B}, &g.sound7B},
-	    {{"soundFire", 0x7D}, &g.soundFire}, {{"soundScore", 0x7E}, &g.soundScore}, {{"deathPitch", 0x052C}, &g.deathPitch},
+	    {{"joystickPrev", 0xB9}, &g.joystickPrev}, {{"startBeep", 0xC6}, &g.startBeep}, {{"pauseState", 0x24}, &g.pauseState},
+	    {{"selectDelay", 0x25}, &g.selectDelay}, {{"gameNumber", 0x09}, &g.gameNumber}, {{"player", 0x77}, &g.player},
+	    {{"fuelFrac", 0x5C}, &g.fuelFrac}, {{"eventSound", 0x7A}, &g.eventSound}, {{"eventSoundTime", 0x7B}, &g.eventSoundTime},
+	    {{"soundFire", 0x7D}, &g.soundFire}, {{"soundScore", 0x7E}, &g.soundScore}, {{"crashPitch", 0x052C}, &g.crashPitch},
 	    {{"hit.m2pf", 0x1A}, &g.hit.m2pf}, {{"hit.p2pf", 0x1B}, &g.hit.p2pf}, {{"hit.m2p3", 0x1C}, &g.hit.m2p3},
 	    {{"hit.p2p3", 0x1D}, &g.hit.p2p3}, {{"hit.p2p0", 0x1E}, &g.hit.p2p0}, {{"hit.p3p0", 0x1F}, &g.hit.p3p0},
 	    {{"hit.p1pf", 0x20}, &g.hit.p1pf}, {{"hit.m0p2", 0x21}, &g.hit.m0p2}, {{"hit.m0pf", 0x22}, &g.hit.m0pf},
@@ -33,9 +33,9 @@ std::vector<std::pair<std::pair<const char *, uint16_t>, uint8_t *>> gameFields(
 	    {{"lives", 0x6A}, &g.lives}, {{"other.level", 0x6B}, &g.other.level},
 	    {{"other.bridges0", 0x6C}, &g.other.bridges[0]}, {{"other.bridges1", 0x6D}, &g.other.bridges[1]},
 	    {{"other.score0", 0x6E}, &g.other.score[0]}, {{"other.score1", 0x6F}, &g.other.score[1]},
-	    {{"other.score2", 0x70}, &g.other.score[2]}, {{"other.save0", 0x71}, &g.other.save[0]},
-	    {{"other.save1", 0x72}, &g.other.save[1]}, {{"other.save2", 0x73}, &g.other.save[2]},
-	    {{"other.save3", 0x74}, &g.other.save[3]}, {{"other.lives", 0x75}, &g.other.lives},
+	    {{"other.score2", 0x70}, &g.other.score[2]}, {{"other.checkpoint0", 0x71}, &g.other.checkpoint[0]},
+	    {{"other.checkpoint1", 0x72}, &g.other.checkpoint[1]}, {{"other.checkpoint2", 0x73}, &g.other.checkpoint[2]},
+	    {{"other.checkpoint3", 0x74}, &g.other.checkpoint[3]}, {{"other.lives", 0x75}, &g.other.lives},
 	    {{"scroller.textLo", 0x3FB3}, &g.scroller.textLo}, {{"scroller.fineScroll", 0x26}, &g.scroller.fineScroll},
 	    {{"scroller.logoX", 0x27}, &g.scroller.logoX},
 	    {{"respawned", 0x79}, &g.respawned}, {{"powerOnDone", 0x28}, &g.powerOnDone}, {{"screenOn", 0xC7}, &g.screenOn},
@@ -45,7 +45,7 @@ std::vector<std::pair<std::pair<const char *, uint16_t>, uint8_t *>> gameFields(
 // Arrays compared with RAM: high scores and their check bytes, the panel.
 std::vector<std::tuple<const char *, uint16_t, uint8_t *, int>> gameArrays(const Game &game) {
 	GameState &g = const_cast<GameState &>(game.g);
-	return {{"highScore", 0x80, g.highScore, 16}, {"checksum", 0x90, g.checksum, 16}, {"panel", 0x1000, g.panel, 60}};
+	return {{"highScore", 0x80, g.highScore, 16}, {"highScoreCheck", 0x90, g.highScoreCheck, 16}, {"panel", 0x1000, g.panel, 60}};
 }
 
 // River lines in screen memory as the display list at $3F00 shows them (160 lines).
@@ -75,7 +75,7 @@ void Game::loadFromRam(const uint8_t *ram) {
 	screen = screenFromRam(ram);
 	g.screenTop = uint16_t(ram[0x3F04] | (ram[0x3F05] << 8));
 	// colours the VBI set (not in RAM): as it computes them
-	g.colourWater = (g.state24 < 2 && g.bridgeFlash && !((g.bridgeFlash + 1) & 1)) ? 0x42 : 0x84;
+	g.colourWater = (g.pauseState < 2 && g.bridgeFlash && !((g.bridgeFlash + 1) & 1)) ? 0x42 : 0x84;
 	g.colourEdge = 0x20;
 	g.colourBank = bankColour(gen.s);
 	if (!g.screenOn) g.colourBank = g.colourEdge = g.colourWater = 0;
