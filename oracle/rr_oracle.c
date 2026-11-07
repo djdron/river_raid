@@ -20,6 +20,7 @@
  *           <out>/palette.bin (256 x RGB). The level scrolls one row per frame at normal speed,
  *           so row 20 of consecutive frames stacks into a map of the level.
  * -noram: do not write ram.bin (long filming runs)
+ * -ram A:B: write ram.bin only for frames A..B (frame A at offset 0)
  *
  * -seed sets POKEY's random counter at power-on (atari800 otherwise seeds it from the
  * wall clock, which makes runs non-reproducible). Default 0.
@@ -202,7 +203,7 @@ int main(int argc, char **argv)
 {
 	const char *rom, *script, *out;
 	int frames, nseg, seg = 0, left, i, pal = 0;
-	int shots[256], nshots = 0, bot = 0, script_frames = 0, ghost = 0, scr_from = -1, scr_to = -1, strip_y = -1, noram = 0;
+	int shots[256], nshots = 0, bot = 0, script_frames = 0, ghost = 0, scr_from = -1, scr_to = -1, strip_y = -1, noram = 0, ram_from = 0, ram_to = 0x7fffffff;
 	FILE *scr = NULL, *strip = NULL;
 	unsigned long seed = 0;
 	FILE *rec;
@@ -214,7 +215,7 @@ int main(int argc, char **argv)
 	emulator_state_t st;
 
 	if (argc < 5) {
-		fprintf(stderr, "usage: %s <rom> <script> <frames> <outdir> [-pal] [-seed N] [-bot|-bot-nofire] [-ghost] [-noram] [-strip Y] [-screens A:B] [-shot N,N,...]\n", argv[0]);
+		fprintf(stderr, "usage: %s <rom> <script> <frames> <outdir> [-pal] [-seed N] [-bot|-bot-nofire] [-ghost] [-noram] [-ram A:B] [-strip Y] [-screens A:B] [-shot N,N,...]\n", argv[0]);
 		return 1;
 	}
 	rom = argv[1]; script = argv[2]; frames = atoi(argv[3]); out = argv[4];
@@ -224,6 +225,7 @@ int main(int argc, char **argv)
 		else if (!strcmp(argv[i], "-bot")) bot = 1;
 		else if (!strcmp(argv[i], "-ghost")) ghost = 1;
 		else if (!strcmp(argv[i], "-noram")) noram = 1;
+		else if (!strcmp(argv[i], "-ram") && i + 1 < argc) sscanf(argv[++i], "%d:%d", &ram_from, &ram_to);
 		else if (!strcmp(argv[i], "-strip") && i + 1 < argc) strip_y = atoi(argv[++i]);
 		else if (!strcmp(argv[i], "-screens") && i + 1 < argc) sscanf(argv[++i], "%d:%d", &scr_from, &scr_to);
 		else if (!strcmp(argv[i], "-bot-nofire")) { bot = 1; bot_fire = 0; }
@@ -255,7 +257,7 @@ int main(int argc, char **argv)
 	fprintf(rec, "# input actually applied, replayable as a script: <count> <joy> <fire> <start>\n");
 	fprintf(pokey_log, "# frame scanline xpos reg value\n");
 	fprintf(random_log, "# frame scanline xpos value\n");
-	fprintf(csv, "frame,joy,fire,start,pc,a,x,y,s,p,r60,r2F,r5D,rAA,rAB,rAC,r76\n");
+	fprintf(csv, "frame,joy,fire,start,pc,a,x,y,s,p,r60,r2F,r5D,rAA,rAB,rAC,r76,r52,r53,r54,r2D,r4E\n");
 
 	libatari800_clear_input_array(&in);
 	for (cur_frame = 0; cur_frame < frames; cur_frame++) {
@@ -279,7 +281,7 @@ int main(int argc, char **argv)
 			if (scr) fwrite(libatari800_get_screen_ptr(), 1, 384 * 240, scr);
 		}
 
-		if (!noram) fwrite(libatari800_get_main_memory_ptr(), 1, 0x4000, ram);
+		if (!noram && cur_frame >= ram_from && cur_frame <= ram_to) fwrite(libatari800_get_main_memory_ptr(), 1, 0x4000, ram);
 		if (strip_y >= 0) {
 			if (!strip) {
 				FILE *pf;
@@ -296,9 +298,10 @@ int main(int argc, char **argv)
 			cpu_state_t *cpu = (cpu_state_t *)&st.state[st.tags.cpu];
 			pc_state_t *pc = (pc_state_t *)&st.state[st.tags.pc];
 			const UBYTE *m = libatari800_get_main_memory_ptr();
-			fprintf(csv, "%d,%d,%d,%d,%04X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X\n", cur_frame, in.joy0, in.trig0, in.start,
+			fprintf(csv, "%d,%d,%d,%d,%04X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X\n", cur_frame, in.joy0, in.trig0, in.start,
 			        pc->PC, cpu->A, cpu->X, cpu->Y, cpu->S, cpu->P,
-			        m[0x60], m[0x2F], m[0x5D], m[0xAA], m[0xAB], m[0xAC], m[0x76]);
+			        m[0x60], m[0x2F], m[0x5D], m[0xAA], m[0xAB], m[0xAC], m[0x76],
+			        m[0x52], m[0x53], m[0x54], m[0x2D], m[0x4E]);
 		}
 		for (i = 0; i < nshots; i++)
 			if (shots[i] == cur_frame) save_ppm(out, cur_frame);

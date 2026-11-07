@@ -24,6 +24,7 @@ A C++ port of River Raid (Activision, Atari 800, 1983, by Carol Shaw) for Window
 | `tools/verify_trace.py` | re-checks every documented rule against a reference trace |
 | `oracle/` | reference runner on libatari800: `rr_oracle.c`, `build.sh`, `README.md`, input scripts, `-bot` autopilot |
 | `oracle/scripts/bot_run_8000.txt` | long recorded run (2 bridges, 5 deaths, game over) |
+| `port/` | C++ port: so far the river generator (`river_gen`), tools `river_map` and `terrain_check`, see `port/README.md` |
 | `docs/NOTES.md` | all findings with addresses |
 | `docs/oracle_demo.png` | frames from a reference run |
 
@@ -34,7 +35,8 @@ A C++ port of River Raid (Activision, Atari 800, 1983, by Carol Shaw) for Window
 4. **Modes.** PAL/NTSC is detected from $D014 and kept in $BF. The font is copied from the OS ROM ($E000/$E100/$E300); the reference runner uses the built-in AltirraOS.
 5. **Variables.** Table with status in `docs/NOTES.md`, section "Variables". Checked by script: plane X $57, fuel $5B:$5C (burn $20 per frame regardless of speed, +2 to $5B per frame over a depot, capped at $FFFF, reset on respawn), score $63–$65 (BCD ÷10) from the points table $BB0B[type], object types $050B+X, lives $6A, bridge number $61/$62.
 6. **Terrain.** The bank is a random walk of `$52` (direction `$C3`) driven by the LFSR nibble `$AC & 15`, with limits `$C4/$C5` and avoidance of objects; the island `$54` and water width `$53` move smoothly toward the target `$34`. Both models are checked on every line of the traces (`verify_trace.py`). The bridge approach, the corridor `$052D` and line drawing were read from code but not verified. Details: `docs/NOTES.md`, "Terrain generation".
-7. **Reference runner.** atari800 seeds POKEY from the clock; `rr_oracle -seed` (default 0) makes runs byte-identical. The game starts with the START key. The atari800 build fails with `-Werror` on a ULONG redefinition; `build.sh` builds with `CFLAGS="-g -O2 -DNETSIO"`. Tested atari800 commit: 98cc2dc.
+7. **C++ generator.** `port/src/river_gen.cpp` reproduces the river generation byte for byte: 119 758 lines with no differences; a start from scratch matches too. Generation depends neither on the player nor on `RANDOM`. The game number selects a starting point on the same river (bridges 1/5/20/50). The river differs slightly between PAL and NTSC (`$CB`).
+8. **Reference runner.** atari800 seeds POKEY from the clock; `rr_oracle -seed` (default 0) makes runs byte-identical. The game starts with the START key. The atari800 build fails with `-Werror` on a ULONG redefinition; `build.sh` builds with `CFLAGS="-g -O2 -DNETSIO"`. Tested atari800 commit: 98cc2dc.
 
 ## Environment limits
 - `oracle/build.sh` uses `-Wl,--wrap` (GNU ld): builds on Linux/WSL/MSYS2, not with Apple's linker on macOS. The reference runner currently runs in Claude's cloud session.
@@ -55,6 +57,6 @@ A rule is read from the listing, then checked against a reference trace with `to
 - Purpose of tables $BAAF, $BAC5, $BB24, $BB40 and the copies at $1000/$06C0/$0818/$08D0/$07D0.
 
 ## Next steps
-1. Finish the terrain (bridge, corridor, line drawing), then $42+X (enemy movement) and collisions A424–A434: code first, then a trace check.
-2. C++ project skeleton (CMake, SDL3): `GameState`, `update(input)`, level generator, a test comparing with `ram.bin`.
-3. Port the subsystems in order: river generator → objects and collisions → fuel and score → sound (VBI driver + POKEY core) → rendering.
+1. Make the generator code more readable while keeping it byte-exact (`terrain_check`).
+2. Restart after a death (`sub_B1C0`), then enemies ($42+X, movement) and collisions A424–A434.
+3. Remaining subsystems: objects and collisions → fuel and score → sound (VBI driver + POKEY core) → rendering and platform (SDL3).

@@ -14,3 +14,6 @@ ram.bin
 __pycache__/
 .DS_Store
 build/
+
+# C++ build output
+port/build/

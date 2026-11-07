@@ -129,6 +129,16 @@ Timing subtlety: the slots and `$4E` are taken as at the start of the frame, whi
 
 **Drawing (from code, not verified).** A line is built from runs of characters (subroutines `AFEC`–`B03B`): bank, water, island (with bit 7 of `$2D`), water, bank. The position divided by 4 gives the character column, the low 2 bits select the bank edge character. Whether the right bank mirrors the left one is not verified yet: it looks like it, but bank decorations spoil measurements from screenshots.
 
+## C++ generator (`port/`)
+- All per-line processing (A711–AE96 and subroutines) is ported to `port/src/river_gen.cpp`. The check `port/tools/terrain_check` compares every generator field and the 48 bytes of each new screen line with the original.
+- Result: 119 758 lines of the whole river without differences; a start from scratch (`startGame`) matches too.
+- The generator depends neither on the player (bot vs. flying without input) nor on `RANDOM` (3 seeds, 120 000 frames, byte-identical including the screen strip).
+- Screen: ANTIC mode E bitmap, 48 bytes per line (192 pixels, 4 per byte), ring buffer, address of the new line in `$3F04/$3F05`, −$30 per line. Pixel values: 1 bank, 3 water, 2 edge, 0 rarely (inside edge pieces).
+- Games 1–8: `$09` selects a row of the tables `$B494`–`$B4A8`: LFSR, bank and starting section. Games 1–2 start at bridge 1, 3–4 at 5, 5–6 at 20, 7–8 at 50. These are checkpoints of the same river: C++ reaches bridge 5/20/50 with exactly the table values.
+- `$CB` = $2E on NTSC and $2F on PAL (A077, from the PAL register); it affects the depot odds at the start of a block (AC48). The river differs slightly between PAL and NTSC.
+- Start and respawn: `sub_B0F1` loads $4D–$5F from `$BAE1`, clears $2B–$4C and $0500–$05FF, puts the starting bridge into slot 10 (type $0E, y=$4A, height $17), mode $23 = $84/$80. Then A3C8 restores LFSR and bank from the checkpoint $66–$69. After that the game generates 160–165 lines at 2 per frame (speed $FE) to fill the screen.
+- A verification pitfall: while the screen is being filled at 2 lines per frame, the emulator's frame boundary can fall between lines, so frame-by-frame comparison is wrong in those frames. In normal play (one line per frame) the snapshot is always on a line boundary.
+
 ## Level map
 - The bank generator does not depend on the plane: object avoidance looks at the type `$050B`, which does not change when an object is shot. `$60` (section number) grows every 1024 lines, when the bridge is generated, not when it is destroyed (in the bot game `$60` changed at frame 1133, the bridge was destroyed at 1177).
 - So the whole level can be filmed with an invulnerable plane: `rr_oracle -ghost` patches 5 bytes in emulated memory (A3E9/A424/A42E/A432 `LDX flag` → `LDX #$FF`, A443 fuel burn $20 → 0). No deaths in 120 000 frames.
