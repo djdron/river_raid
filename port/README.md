@@ -2,7 +2,7 @@
 
 English | [Русский](README.ru.md)
 
-So far this is only the river generator. It is the first part of the game ported to C++, and it produces the same result as the original, byte for byte.
+So far this is the river generator and the drawing of the river as the game shows it. The generator produces the same result as the original, byte for byte; the drawing matches the original screen row for row (see Verification).
 
 ## Build
 ```
@@ -15,8 +15,10 @@ No dependencies, only a C++17 compiler. On Windows with Visual Studio: `cmake --
 | File | What |
 |---|---|
 | `src/river_gen.h/.cpp` | the generator: `RiverGen::startGame(n)`, then `nextLine(line)` — one screen line per call |
+| `src/river_draw.h/.cpp` | drawing a line as on screen: bank shades, roads at bridges, object sprites (`drawScreenLine`), Atari colours (`atariRgb`) |
 | `src/river_state_io.cpp` | mapping of fields to the original's RAM addresses, loading and comparison (for verification) |
-| `tools/river_map.cpp` | generates the river and saves a PNG: `river_map <rom> <game 1..8> <lines> out.png [-pal]` |
+| `tools/river_map.cpp` | generates the river and saves a PNG as the game shows it: `river_map <rom> <game 1..8> <lines> out.png [-pal] [-flat]` (`-flat`: bitmap only, fixed colours) |
+| `tools/render_check.cpp` | compares the drawing with the original screen (`oracle/rr_oracle -ghost -strip 20`) |
 | `tools/terrain_check.cpp` | comparison with a reference trace (`oracle/rr_oracle -ram A:B`) |
 
 The generator reads tables and graphics from the user's ROM (`rom/River_Raid.rom`); there is no game data in the code.
@@ -43,7 +45,17 @@ oracle/rr_oracle rom/River_Raid.rom oracle/scripts/ghost_film.txt 30001 out -gho
 port/build/terrain_check rom/River_Raid.rom out/ram.bin 0 240 29760 5 -fresh 1 145
 ```
 
+Drawing: every frame where a new line enters screen row 20, the row of the original is compared with `drawScreenLine()` of the line from the C++ generator (started from scratch).
+- With the objects where the generator placed them: 96.8% of rows identical over 29 000 frames (95.3% over 120 000). The others differ where the game has moved an object.
+- With object positions taken from the running game (`-ram`, slot x, flags, kind): 98.1% identical; every remaining row differs only while the tank on the road (`$38`) is active, which the game logic draws. 0 unexplained rows in 29 600.
+
+```
+oracle/rr_oracle rom/River_Raid.rom oracle/scripts/ghost_film.txt 30001 out -ghost -strip 20 -ram 0:30000
+port/build/render_check rom/River_Raid.rom out/strip.bin out/frames.csv -ram out/ram.bin
+```
+
 ## Not done yet
 - The code is readable but in places follows the original down to the carry flag. Next step: rewrite it more clearly while keeping the match (the check will confirm it).
 - Restart after a death in the middle of a section (`sub_B1C0`: going back to the previous checkpoint, decrementing `$60`).
-- Colours: on screen they are set per line by the DLI. `river_map` uses a fixed palette for now.
+- The tank on the road (`$38`–`$3A`), enemy movement and explosions: game logic, not ported yet.
+- `atariRgb` is an approximate NTSC palette (YIQ model), not a measured one.

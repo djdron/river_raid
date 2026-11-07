@@ -1,18 +1,18 @@
 // Generate the river with the C++ generator alone and save it as a picture.
 //
-// usage: river_map <rom> <game 1..8> <lines> <out.png> [-pal] [-raw lines.bin]
+// usage: river_map <rom> <game 1..8> <lines> <out.png> [-pal] [-flat] [-raw lines.bin]
 //   The picture has the start at the bottom, like the game scrolls. Each generated line is
-//   one row of 192 pixels (4 per byte, 2 bits per pixel), drawn 2x wide.
+//   one row, drawn as the game shows it (river_draw.h): bank shades, roads at bridges and the
+//   objects, in the visible 336 columns of the screen.
+//   -flat draws only the bitmap with a fixed colour per 2-bit value (no road, no objects).
 //   -raw writes the 48-byte lines in generation order, for comparing with the original.
-//
-// Colours: the 2-bit values select playfield colour registers; the game sets those per
-// screen area, so a fixed palette close to the river colours is used here.
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
 
+#include "../src/river_draw.h"
 #include "../src/river_gen.h"
 
 namespace {
@@ -77,37 +77,41 @@ bool writePng(const std::string &path, int w, int h, const std::vector<uint8_t> 
 
 int main(int argc, char **argv) {
 	if (argc < 5) {
-		std::fprintf(stderr, "usage: %s <rom> <game 1..8> <lines> <out.png> [-pal] [-raw lines.bin]\n", argv[0]);
+		std::fprintf(stderr, "usage: %s <rom> <game 1..8> <lines> <out.png> [-pal] [-flat] [-raw lines.bin]\n", argv[0]);
 		return 2;
 	}
 	rr::Rom rom;
 	if (!rom.load(argv[1])) { std::fprintf(stderr, "cannot read ROM %s\n", argv[1]); return 2; }
 	const int game = std::atoi(argv[2]), lines = std::atoi(argv[3]);
-	bool pal = false;
+	bool pal = false, flat = false;
 	const char *rawPath = nullptr;
 	for (int i = 5; i < argc; i++) {
 		if (!std::strcmp(argv[i], "-pal")) pal = true;
+		else if (!std::strcmp(argv[i], "-flat")) flat = true;
 		else if (!std::strcmp(argv[i], "-raw") && i + 1 < argc) rawPath = argv[++i];
 	}
 	rr::RiverGen gen(rom);
 	gen.startGame(game, pal);
 	std::vector<uint8_t> all(size_t(lines) * rr::kLineBytes);
-	for (int i = 0; i < lines; i++) gen.nextLine(&all[size_t(i) * rr::kLineBytes]);
+	const int w = rr::kVisibleLast + 1 - rr::kVisibleFirst;
+	std::vector<uint8_t> rgb(size_t(w) * lines * 3);
+	// flat colours: 0 background, 1 bank, 2 bank edge / island, 3 water
+	static const uint8_t flatColours[4] = {0x00, 0xD2, 0x20, 0x84};
+	for (int i = 0; i < lines; i++) {
+		uint8_t *src = &all[size_t(i) * rr::kLineBytes];
+		gen.nextLine(src);
+		uint8_t screen[rr::kRowWidth];
+		if (flat) {
+			for (int p = 0; p < rr::kRowWidth; p++) screen[p] = flatColours[(src[p >> 3] >> (6 - 2 * ((p >> 1) & 3))) & 3];
+		} else {
+			rr::drawScreenLine(rom, gen.s, src, screen);
+		}
+		uint8_t *row = &rgb[size_t(lines - 1 - i) * w * 3];   // newest line at the top
+		for (int x = 0; x < w; x++) rr::atariRgb(screen[rr::kVisibleFirst + x], row + x * 3);
+	}
 	if (rawPath) {
 		FILE *f = std::fopen(rawPath, "wb");
 		if (f) { std::fwrite(all.data(), 1, all.size(), f); std::fclose(f); }
-	}
-	// 0 background, 1 bank, 2 bank edge / island, 3 water
-	static const uint8_t pal4[4][3] = {{0, 0, 0}, {0x00, 0x3B, 0x00}, {0x1C, 0x08, 0x00}, {0x2C, 0x24, 0x92}};
-	const int w = 192 * 2;
-	std::vector<uint8_t> rgb(size_t(w) * lines * 3);
-	for (int i = 0; i < lines; i++) {
-		const uint8_t *src = &all[size_t(i) * rr::kLineBytes];
-		uint8_t *row = &rgb[size_t(lines - 1 - i) * w * 3];   // newest line at the top
-		for (int px = 0; px < 192; px++) {
-			int v = (src[px >> 2] >> (6 - 2 * (px & 3))) & 3;
-			for (int d = 0; d < 2; d++) std::memcpy(row + (px * 2 + d) * 3, pal4[v], 3);
-		}
 	}
 	initCrc();
 	if (!writePng(argv[4], w, lines, rgb)) { std::fprintf(stderr, "cannot write %s\n", argv[4]); return 1; }

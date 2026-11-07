@@ -24,7 +24,7 @@ A C++ port of River Raid (Activision, Atari 800, 1983, by Carol Shaw) for Window
 | `tools/verify_trace.py` | re-checks every documented rule against a reference trace |
 | `oracle/` | reference runner on libatari800: `rr_oracle.c`, `build.sh`, `README.md`, input scripts, `-bot` autopilot |
 | `oracle/scripts/bot_run_8000.txt` | long recorded run (2 bridges, 5 deaths, game over) |
-| `port/` | C++ port: so far the river generator (`river_gen`), tools `river_map` and `terrain_check`, see `port/README.md` |
+| `port/` | C++ port: so far the river generator (`river_gen`) and drawing (`river_draw`), tools `river_map`, `terrain_check`, `render_check`, see `port/README.md` |
 | `docs/NOTES.md` | all findings with addresses |
 | `docs/oracle_demo.png` | frames from a reference run |
 
@@ -56,7 +56,7 @@ A rule is read from the listing, then checked against a reference trace with `to
 - Slot flags $42+X; full list of states $0500+X; what $0C+X is exactly (vertical?); $50, $60, $24, $29.
 - What does bit $40 do, and when does enemy movement switch on ($60 ≥ 2, check at A297)?
 - Collision checks $1B/$1E/$21/$50 at A424–A434.
-- Purpose of tables $BAAF, $BAC5, $BB24, $BB40 and the copies at $1000/$06C0/$0818/$08D0/$07D0.
+- Purpose of tables $BAAF, $BAC5, $BB24 and the copies at $1000/$06C0/$0818/$08D0/$07D0.
 
 ## Next steps
 1. Make the generator code more readable while keeping it byte-exact (`terrain_check`).
