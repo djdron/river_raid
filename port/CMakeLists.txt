@@ -13,6 +13,7 @@ endif()
 add_library(rrcore
 	src/display.cpp
 	src/game.cpp
+	src/game_ram.cpp
 	src/os_font.cpp
 	src/pokey_sound.cpp
 	src/palette.cpp

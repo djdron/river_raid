@@ -92,6 +92,12 @@ void RiverGen::loadFromRam(const uint8_t *ram) {
 	forEachSlotField([&](const char *, int i, uint16_t addr, bool, uint8_t Slot::*m) { s.slot[i].*m = ram[addr]; });
 }
 
+void RiverGen::saveToRam(uint8_t *ram) const {
+	RiverState copy = s;
+	for (const Field &f : kFields) ram[f.addr] = *f.ref(copy);
+	forEachSlotField([&](const char *, int i, uint16_t addr, bool, uint8_t Slot::*m) { ram[addr] = copy.slot[i].*m; });
+}
+
 void RiverGen::loadGameOwned(const uint8_t *ram) {
 	for (const Field &f : kFields)
 		if (f.gameOwned) *f.ref(s) = ram[f.addr];

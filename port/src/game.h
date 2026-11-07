@@ -190,6 +190,13 @@ public:
 	// its shell and the helicopter missile.
 	void drawRiver(uint8_t screen[240][kRowWidth]) const;
 
+	// The state as the original keeps it in RAM ($0000-$3FFF), for the checks against traces
+	// of the original (src/game_ram.cpp). Colours the VBI sets are recomputed on loading.
+	void loadFromRam(const uint8_t *ram);
+	void saveToRam(uint8_t *ram) const;
+	// Differences from a RAM image ("name $addr: port=.. orig=.."), the screen lines included.
+	std::vector<std::string> diffWithRam(const uint8_t *ram) const;
+
 private:
 	const Rom &rom_;
 	bool pal_ = false;

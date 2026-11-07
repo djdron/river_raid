@@ -115,6 +115,7 @@ public:
 
 	// Load / compare with a 16 KB RAM image of the original ($0000-$3FFF).
 	void loadFromRam(const uint8_t *ram);
+	void saveToRam(uint8_t *ram) const;
 	// Load only the fields the rest of the game also changes (enemy movement, animation).
 	void loadGameOwned(const uint8_t *ram);
 	// Returns the list of fields that differ ("name $addr: port=.. orig=..").
