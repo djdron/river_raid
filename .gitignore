@@ -16,4 +16,4 @@ __pycache__/
 build/
 
 # C++ build output
-port/build/
+port/build*/
