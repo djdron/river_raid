@@ -26,7 +26,7 @@ After power-on the attract mode flies over the river. START begins a game; SELEC
 | F3 | SELECT |
 | F2 | OPTION |
 | Space | a key of the keyboard: pause |
-| F11 or Alt+Enter | full screen |
+| F, F11 or Alt+Enter | full screen |
 | Esc | quit |
 
 The keyboard drives both joysticks, so one person can play a two-player game too. Gamepads: the first is joystick 1 (and 2 while there is no second), the second is joystick 2; D-pad or left stick, A/B/X/Y or the right trigger to fire, Start = START, Back = SELECT.

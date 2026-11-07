@@ -20,7 +20,7 @@
 //   F3                        SELECT
 //   F2                        OPTION
 //   Space                     a key of the Atari keyboard: pause
-//   F11 or Alt+Enter          full screen
+//   F, F11 or Alt+Enter       full screen
 //   Esc                       quit
 // Gamepads: the first one is joystick 1 (and 2 while there is no second), the second one
 // joystick 2. D-pad or left stick: joystick; A, B, X, Y or the right trigger: fire;
@@ -305,7 +305,7 @@ int main(int argc, char **argv) {
 			else if (e.type == SDL_EVENT_KEY_DOWN && !e.key.repeat) {
 				const bool alt = (e.key.mod & SDL_KMOD_ALT) != 0;
 				if (e.key.key == SDLK_ESCAPE) running = false;
-				else if (e.key.key == SDLK_F11 || (alt && e.key.key == SDLK_RETURN))
+				else if (e.key.key == SDLK_F || e.key.key == SDLK_F11 || (alt && e.key.key == SDLK_RETURN))
 					SDL_SetWindowFullscreen(window, !(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN));
 			}
 		}
