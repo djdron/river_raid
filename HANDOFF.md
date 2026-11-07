@@ -60,5 +60,5 @@ A rule is read from the listing, then checked against a reference trace with `to
 
 ## Next steps
 1. Make the generator code more readable while keeping it byte-exact (`terrain_check`).
-2. The game is complete and playable (`port/game/river_raid.cpp`), checked frame by frame against bot and two-player runs; the DLI runs with cycle counts; remaining: the game-over timing race in `port/README.md` (would need a cycle count of the main loop), the exact power-on sequence (`Game::powerOn`), PAL.
+2. The game is complete and playable (`port/game/river_raid.cpp`), checked frame by frame against bot and two-player runs; the code is named by meaning (see `port/README.md`, Code); the DLI runs with cycle counts; remaining: the game-over timing race in `port/README.md` (would need a cycle count of the main loop), the exact power-on sequence (`Game::powerOn`), PAL.
 3. Test the game on Windows and macOS (only built and run headless on Linux so far); then make the game code more readable while keeping `game_check` at zero differences.

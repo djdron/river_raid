@@ -59,6 +59,7 @@ Which object wakes up when is decided by POKEY's RANDOM register, a hardware cou
 ## Contents
 | File | What |
 |---|---|
+| `src/rom.h` | the cartridge image and named accessors for every table the port reads from it (shapes, colours, points, generator tables, panel text...); object types |
 | `src/river_gen.h/.cpp` | the generator: `RiverGen::startGame(n)`, then `nextLine(line)` — one screen line per call |
 | `src/river_draw.h/.cpp` | drawing a line as on screen: bank shades, roads at bridges, object sprites (`drawScreenLine`) |
 | `src/palette.h/.cpp` | Atari colours of NTSC and PAL machines (`atariRgb`): the models of Altirra and atari800 |
@@ -68,7 +69,7 @@ Which object wakes up when is decided by POKEY's RANDOM register, a hardware cou
 | `src/pokey_sound.h/.cpp` | POKEY sound: four channels, dividers and noise counters, generated cycle by cycle |
 | `src/status_bar.h/.cpp` | status panel and scrolling line: character sets, panel, scroller step, drawing |
 | `src/os_font.h/.cpp` | OS font: AltirraOS built in, or loaded from an OS ROM |
-| `src/river_state_io.cpp` | mapping of fields to the original's RAM addresses, loading and comparison (for verification) |
+| `src/river_state_io.cpp`, `src/game_ram.cpp` | mapping of the generator's and the game's fields to the original's RAM addresses: loading, writing and comparison (for verification) |
 | `game/river_raid.cpp` | the game (SDL3): picture, sound, keyboard and gamepads |
 | `viewer/river_view.cpp` | the river viewer (SDL3), see below |
 | `tools/river_map.cpp` | generates the river and saves a PNG as the game shows it: `river_map <rom> <game 1..8> <lines> out.png [-pal] [-flat]` (`-flat`: bitmap only, fixed colours) |
@@ -78,17 +79,32 @@ Which object wakes up when is decided by POKEY's RANDOM register, a hardware cou
 | `tools/status_check.cpp` | compares the panel and scrolling line with full screens of the original (`rr_oracle -screens A:B -ram A:B`) |
 | `tools/render_check.cpp` | compares the drawing with the original screen (`oracle/rr_oracle -ghost -strip 20`) |
 | `tools/terrain_check.cpp` | comparison with a reference trace (`oracle/rr_oracle -ram A:B`) |
+| `tools/equivalence/` | refactoring check: an older commit of the port against the working tree, frame by frame (see Code) |
 
 The generator reads tables and graphics from the user's ROM (`rom/River_Raid.rom`); there is no game data in the code.
 
+## Code
+The port is written to be read without the original's listing at hand:
+- state fields, functions and constants are named by what they mean (`planeState`, `shellTimer`, `enteringSlot`, `positionObject`, `kFacingLeft`); each field's comment gives the original's RAM address and each function the code addresses it comes from, so the listing (`disasm/`) and the traces can still be followed;
+- the cartridge's tables are read through named accessors in `src/rom.h` (`rom.points(type)`, `rom.objectHeight(type)`, `rom.shellRise(t)`...), not by address;
+- values stay 8-bit with wrap-around where the original's do (`lo()`), because positions wrap round the screen; where the original carries the 6502's carry flag from one sum into the next, `addWithCarry`/`subtractWithBorrow` say so explicitly;
+- the display list interrupt (`display.cpp`) is the one part that stays close to the instructions: its timing within the scanline decides which collisions are seen, so it is executed with cycle counts.
+
+Changes that should not change behaviour are checked with `tools/equivalence`: it builds an older commit (from 06ffc73 on) next to the working tree and runs both on 150 000 river lines of every game (NTSC and PAL), on random play from power-on and from 194 states of the original's traces, comparing the whole state, the screen and the sound registers after every step. The renaming and restructuring of the generator, the game and the display were checked this way (0 differences), as well as with all the checks below.
+
+```
+port/tools/equivalence/build.sh 06ffc73
+port/build/eq/eq
+```
+
 ## How the generator works
 Each `nextLine()` call produces a new top line of the screen:
-1. `structureAndWidth`: line counting (a block is 32 lines, a section 2 blocks, 16 sections to a bridge), LFSR step, a new width target at the start of a section;
-2. `smoothIsland`: the island and the water width move smoothly toward the target;
-3. `moveBank`: the bank's random walk;
+1. `countLines`: line counting (a block is 32 lines, a section 2 blocks, 16 sections to a bridge), LFSR step, a new width target at the start of a section (`chooseSectionWidth`: islands open and close);
+2. `changeIsland`: the island and the water width move smoothly toward the target;
+3. `moveBank`: the bank's random walk, turning round at its limits and before the new object (`bankWouldHitObject`);
 4. `startDecoration`: a house or mountain on the bank;
 5. `drawLine`: the 48 bytes of the line (fills, edge pieces from the table at `$B800`, a decoration row);
-6. `scrollObjects` / `placeObject`: object slots shift, a new object is placed every 16 lines.
+6. `scrollObjects` / `placeObject`: object slots shift, a new object is placed every 16 lines (`chooseEnemy`, `positionObject`, `placeTank`).
 
 Generation depends neither on the player nor on `RANDOM`. This was checked on the reference runner: different POKEY seeds, and a bot run vs. flying without input, give the same state on every line.
 
@@ -148,7 +164,6 @@ port/build/sound_render out/pokey.log port.wav
 ```
 
 ## Not done yet
-- The code is readable but in places follows the original down to the carry flag. Next step: rewrite it more clearly while keeping the match (the check will confirm it).
 - Power-on itself (A000–A17C: the first 38 frames before the attract mode) is drawn as an empty screen; `Game::powerOn` is not exact yet.
 - The PAL machine (`-pal`): the generator knows it, the display list and timing do not.
 - The colours follow the emulators' models of the GTIA output (Altirra by default, atari800 on V; both checked byte for byte against the emulators' own palette code with their default settings, atari800 stretched from its video levels 16–235 to 0–255), not a palette measured on a real TV; how bright it looks depends on the TV's settings as much as on the machine.
