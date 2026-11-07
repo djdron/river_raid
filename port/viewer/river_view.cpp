@@ -16,9 +16,13 @@
 //
 // Keys:
 //   Space          pause / continue
-//   Up / Down      faster / slower (2x steps, 1/4x to 16x)
-//   mouse wheel    look back along the river (PgUp / PgDn by a screen), Backspace returns
-//   B              fly fast to the next bridge
+//   Up / Down      faster / slower, through a stop to flying backwards (x1/4 .. x16 either way)
+//   mouse wheel    scroll along the river by hand (PgUp / PgDn by a screen)
+//   Backspace      back to the newest line, normal speed
+//   B / Shift+B    next / previous bridge
+//
+// Going back shows lines already generated; flying forward again replays them before new ones
+// are generated. The scrolling line below the panel moves only when new lines are generated.
 //   Home           start again
 //   F              full screen
 //   Esc            quit
@@ -84,6 +88,17 @@ public:
 	}
 
 	long lines() const { return long(level_.size()); }
+	// First line of the bridge section before / after `line` (-1 if none generated yet).
+	long bridgeBefore(long line) const {
+		for (long i = std::min(line, lines() - 1); i > 0; i--)
+			if (level_[size_t(i)] != level_[size_t(i - 1)] && i < line) return i;
+		return 0;
+	}
+	long bridgeAfter(long line) const {
+		for (long i = std::max(line + 1, 1L); i < lines(); i++)
+			if (level_[size_t(i)] != level_[size_t(i - 1)]) return i;
+		return -1;
+	}
 	int level(long line) const { return line >= 0 && line < lines() ? level_[size_t(line)] : 0; }
 	int currentLevel() const { return gen_.s.level; }
 
@@ -196,7 +211,10 @@ int main(int argc, char **argv) {
 
 	Attract attract(rom, osFont, pal);
 	static uint8_t screen[rr::kScreenHeight][rr::kScreenWidth];
-	double speed = 1.0;    // original frames per real frame
+	// Speed in original frames per real frame; negative = backwards.
+	static const double kSpeeds[] = {-16, -8, -4, -2, -1, -0.5, -0.25, 0, 0.25, 0.5, 1, 2, 4, 8, 16};
+	const int kSpeedCount = int(sizeof kSpeeds / sizeof kSpeeds[0]);
+	int speedIndex = 10;   // x1
 	double pending = 0;    // original frames still to run
 	bool paused = false;
 	long back = 0;         // look-back in lines
@@ -215,17 +233,28 @@ int main(int argc, char **argv) {
 				switch (e.key.key) {
 				case SDLK_ESCAPE: running = false; break;
 				case SDLK_SPACE: paused = !paused; break;
-				case SDLK_UP: speed = std::min(speed * 2, 16.0); break;
-				case SDLK_DOWN: speed = std::max(speed / 2, 0.25); break;
+				case SDLK_UP: speedIndex = std::min(speedIndex + 1, kSpeedCount - 1); break;
+				case SDLK_DOWN: speedIndex = std::max(speedIndex - 1, 0); break;
 				case SDLK_PAGEUP: back += rr::kRiverRows; break;
 				case SDLK_PAGEDOWN: back -= rr::kRiverRows; break;
-				case SDLK_BACKSPACE: back = 0; break;
+				case SDLK_BACKSPACE: back = 0; speedIndex = 10; break;
 				case SDLK_HOME: attract.restart(); back = 0; break;
 				case SDLK_B: {
-					const int level = attract.currentLevel();
-					while (attract.currentLevel() == level) attract.frame();
-					for (int i = 0; i < 100; i++) attract.frame();   // bring the bridge into view
-					back = 0;
+					// the bridge line is shown a little above the bottom of the river area; Shift+B just
+					// after a bridge goes to the one before it
+					constexpr long kMargin = 100;
+					const long shown = attract.lines() - 1 - back - kMargin;
+					if (e.key.mod & SDL_KMOD_SHIFT) {
+						back = attract.lines() - 1 - (attract.bridgeBefore(shown - 64) + kMargin);
+					} else {
+						long next = attract.bridgeAfter(shown);
+						while (next < 0) {   // not generated yet: fly on
+							for (int i = 0; i < 64; i++) attract.frame();
+							next = attract.bridgeAfter(shown);
+						}
+						while (attract.lines() - 1 < next + kMargin) attract.frame();
+						back = attract.lines() - 1 - (next + kMargin);
+					}
 					break;
 				}
 				case SDLK_F:
@@ -240,10 +269,15 @@ int main(int argc, char **argv) {
 		const double dt = std::min(double(now - last) / 1e9, 0.1);
 		last = now;
 		if (!paused && !shotPath) {
-			pending += speed * dt * kFrameRate;
-			for (; pending >= 1; pending--) attract.frame();
+			pending += kSpeeds[speedIndex] * dt * kFrameRate;
+			for (; pending >= 1; pending--) {
+				if (back > 0) back--;   // replay lines already generated
+				else attract.frame();
+			}
+			for (; pending <= -1; pending++) back++;
 		}
 		back = std::clamp(back, 0L, std::max(0L, attract.lines() - 1));
+		if (attract.lines() > 0 && back == attract.lines() - 1 && kSpeeds[speedIndex] < 0) pending = 0;
 
 		attract.draw(back, screen);
 		void *pixels;
@@ -286,7 +320,7 @@ int main(int argc, char **argv) {
 		char buf[160];
 		const long shown = attract.lines() - 1 - back;
 		std::snprintf(buf, sizeof buf, "River Raid - bridge %d - line %ld - speed x%g%s%s", attract.level(shown), shown,
-		              speed, back ? " - looking back" : "", paused ? " - paused" : "");
+		              kSpeeds[speedIndex], back ? " - looking back" : "", paused ? " - paused" : "");
 		if (title != buf) {
 			title = buf;
 			SDL_SetWindowTitle(window, buf);

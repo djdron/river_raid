@@ -21,9 +21,10 @@ Letters and digits 1–9 come from the OS font, which is not in the cartridge. T
 | Key | Action |
 |---|---|
 | Space | pause |
-| Up / Down | faster / slower (1/4x to 16x) |
-| mouse wheel, PgUp / PgDn | look back along the river; Backspace returns |
-| B | fly fast to the next bridge |
+| Up / Down | faster / slower, through a stop to flying backwards (x1/4 to x16 either way) |
+| mouse wheel, PgUp / PgDn | scroll along the river by hand, by a screen |
+| Backspace | back to the newest line at normal speed |
+| B / Shift+B | next / previous bridge |
 | Home | start again |
 | F | full screen |
 | Esc | quit |
