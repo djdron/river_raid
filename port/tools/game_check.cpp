@@ -86,6 +86,7 @@ void load(rr::Game &game, const uint8_t *ram) {
 	for (auto &a : gameArrays(game)) std::memcpy(std::get<2>(a), ram + std::get<1>(a), size_t(std::get<3>(a)));
 	std::memcpy(game.g.pm.bytes.data(), ram + 0x0B00, game.g.pm.bytes.size());
 	game.screen = screenFromRam(ram);
+	game.g.screenTop = uint16_t(ram[0x3F04] | (ram[0x3F05] << 8));
 	// colours the VBI set (not in RAM): as it computes them
 	rr::GameState &g = game.g;
 	g.colourWater = (g.state24 < 2 && g.bridgeFlash && !((g.bridgeFlash + 1) & 1)) ? 0x42 : 0x84;
@@ -130,6 +131,7 @@ int main(int argc, char **argv) {
 	}
 	// input of each frame from frames.csv next to ram.bin (joy: 1 up 2 down 4 left 8 right)
 	std::map<long, rr::Input> inputs;
+	std::map<long, unsigned> pcs;   // where the original's CPU was at the end of each frame
 	{
 		std::string dir = argv[2];
 		const size_t slash = dir.find_last_of('/');
@@ -154,6 +156,8 @@ int main(int argc, char **argv) {
 					in.trigger[1] = extra[3] != 0;
 					in.key = extra[4] != 0;
 					inputs[fr] = in;
+					unsigned pc = 0;
+					if (std::sscanf(row, "%*d,%*d,%*d,%*d,%x", &pc) == 1) pcs[fr] = pc;
 				}
 			}
 			std::fclose(csv);
@@ -171,7 +175,7 @@ int main(int argc, char **argv) {
 	else if (fromStart) game.startAttract();
 	else load(game, mem.data());
 	std::map<std::string, long> diffCount;
-	long framesBad = 0, randomBad = 0, shown = 0, busyFrames = 0;
+	long framesBad = 0, randomBad = 0, shown = 0, busyFrames = 0, midFrames = 0;
 	for (long f = first + 1; f < first + 1 + count; f++) {
 		std::deque<uint8_t> &rq = randoms[f];
 		bool underflow = false;
@@ -230,6 +234,14 @@ int main(int argc, char **argv) {
 					              std::get<2>(a)[i], mem[std::get<1>(a) + i]);
 					diffs.push_back(b);
 				}
+		{
+			const uint16_t top = uint16_t(mem[0x3F04] | (mem[0x3F05] << 8));
+			if (game.g.screenTop != top) {
+				char b[64];
+				std::snprintf(b, sizeof b, "screenTop: port=%04X orig=%04X", game.g.screenTop, top);
+				diffs.push_back(b);
+			}
+		}
 		for (size_t i = 0; i < game.g.pm.bytes.size(); i++)
 			if (game.g.pm.bytes[i] != mem[0x0B00 + i]) {
 				char b[96];
@@ -244,6 +256,16 @@ int main(int argc, char **argv) {
 				diffs.push_back(b);
 				break;
 			}
+		// The RAM snapshot is taken at the end of the frame. Normally the original's main loop
+		// is then waiting for the next frame (AE99-AE9E); if it is still working (the river
+		// refill after a reset draws 2 lines per frame and can run past the end), the snapshot
+		// holds a half-done frame and is not compared.
+		const bool waiting = !pcs.count(f) || pcs[f] == 0xAE99 || pcs[f] == 0xAE9C || pcs[f] == 0xAE9E;
+		if (!diffs.empty() && !waiting) {
+			midFrames++;
+			std::printf("frame %ld: the original is still working at the end of the frame (pc $%04X), not compared\n", f, pcs[f]);
+			continue;
+		}
 		if (!diffs.empty()) {
 			framesBad++;
 			for (auto &d : diffs) diffCount[d.substr(0, d.find(':'))]++;
@@ -257,8 +279,8 @@ int main(int argc, char **argv) {
 		}
 		if (resync) load(game, mem.data());
 	}
-	std::printf("%ld frames (%ld of them during resets, not compared), %ld with differences%s, %ld with a different number of RANDOM reads\n",
-	            count, busyFrames, framesBad, fromStart ? "" : " (state reloaded from RAM after each)", randomBad);
+	std::printf("%ld frames (%ld of them during resets and %ld snapshots of a half-done frame, not compared), %ld with differences%s, %ld with a different number of RANDOM reads\n",
+	            count, busyFrames, midFrames, framesBad, fromStart ? "" : " (state reloaded from RAM after each)", randomBad);
 	if (scr) std::printf("screens: %ld frames compared, %ld with differences (%ld rows of the river area)\n", scrFrames, scrBadFrames, scrBadRows);
 	for (auto &d : diffCount) std::printf("  %-40s %ld\n", d.first.c_str(), d.second);
 	return framesBad ? 1 : 0;

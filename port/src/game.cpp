@@ -47,9 +47,22 @@ void Game::startAttract(bool pal) {
 		g.logoShown = g.scroller.logoX;
 		g.scroller.step(true);
 	}
+	pushLine();
+}
+
+// A new river line goes above the others. Screen memory is a ring of two 80-line blocks,
+// $2000-$2EFF and $3000-$3EFF; the address of the top line moves up by one line.
+void Game::pushLine() {
 	std::array<uint8_t, kLineBytes> line;
 	gen.nextLine(line.data());
 	screen.insert(screen.begin(), line);
+	if (screen.size() > 256) screen.pop_back();
+	uint8_t topLo = uint8_t(g.screenTop), topHi = uint8_t(g.screenTop >> 8);
+	if (topLo < kLineBytes) topHi--;
+	topLo = uint8_t(topLo - kLineBytes);
+	if (topHi < 0x20) topHi = 0x3E;
+	if (topHi == 0x2F) topHi = 0x2E;
+	g.screenTop = uint16_t(topLo | (topHi << 8));
 	if (afterLine) afterLine(line.data());
 }
 
@@ -538,11 +551,7 @@ void Game::scrollRiver() {
 			g.scrollFrac = lo(sum);
 			if (sum < 0x100) continue;
 		}
-		std::array<uint8_t, kLineBytes> line;
-		gen.nextLine(line.data());
-		screen.insert(screen.begin(), line);
-		if (screen.size() > 256) screen.pop_back();
-		if (afterLine) afterLine(line.data());
+		pushLine();
 	}
 }
 

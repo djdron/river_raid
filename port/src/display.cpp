@@ -9,11 +9,20 @@
 // then). After each object the DLI reads the collision registers and clears them, so every
 // collision is known per object slot.
 //
-// Timing model: the DLI's counter X is the scanline + $44 (it starts at $5D on scanline 25
-// and is incremented once per WSYNC, except in the waiting loop where it trails by one after
-// the first object). Register writes done right after a WSYNC (colours) apply to that
-// scanline, writes later in the scanline (position, size) to the next one.
+// Timing. Whether a register write still changes the current scanline, and whether a
+// collision read already sees it, depends on where in the scanline the instruction runs. The
+// model follows the reference emulator (atari800, without its "cycle exact" option), whose
+// traces the port is checked against. Per scanline of 114 machine cycles:
+//   - at the start ANTIC fetches player and missile data (5 cycles) and the display list
+//     instruction (1 cycle, 3 when it carries a screen address);
+//   - the CPU runs until cycle 28; an instruction that starts before that point runs in full;
+//   - the whole scanline is drawn with the registers as they are now, collisions included;
+//     ANTIC then takes 9 refresh cycles and its screen data (48 cycles for a river line);
+//   - the CPU runs to the end of the scanline; STA WSYNC makes it wait until cycle 106.
+// So display() executes the DLI's instructions with their cycle counts (branches, page
+// crossings) and lets the scanlines happen in between.
 #include <algorithm>
+#include <functional>
 
 #include "game.h"
 #include "river_draw.h"
@@ -24,23 +33,31 @@ namespace {
 // First scanline of the river (display list: 8 + 8 + 4 blank lines, then mode E from 28).
 constexpr int kRiverFirstLine = 28;
 constexpr int kRiverLines = 160;
+constexpr int kPanelFirstLine = 190;   // display list: 2 blank lines, then the panel (mode 6)
+
+constexpr int kLineCycles = 114;
+constexpr int kDrawCycle = 28;
+constexpr int kWsyncCycle = 106;
+constexpr int kRefreshCycles = 9;
 
 class Beam {
 public:
-	Beam(const Game &game, const std::vector<std::array<uint8_t, kLineBytes>> &screen, int line)
-	    : game_(game), screen_(screen), line_(line) { latch(); }
+	using Record = std::function<void(int line)>;
 
-	int line() const { return line_; }
+	// lmsLines: river rows whose display list instruction carries a screen address
+	Beam(const Game &game, const std::vector<std::array<uint8_t, kLineBytes>> &screen, int line, int xpos,
+	     const bool lmsLines[kRiverLines], Record record)
+	    : game_(game), screen_(screen), line_(line), xpos_(xpos), drawn_(xpos >= kDrawCycle), lms_(lmsLines),
+	      record_(std::move(record)) {
+		latch();
+	}
 
 	// Hardware registers (horizontal positions in colour clocks).
 	uint8_t hposP[4] = {}, hposM[4] = {}, sizeP[4] = {};
 	uint8_t sizeM = 0x01;      // SIZEM: missile 0 double width (A116)
 	uint8_t colourP3 = 0, bankColour = 0;
-	// Registers written late in a scanline: they take effect on the next one.
-	void setLateHposP3(uint8_t v) { pendingHpos_ = v; hasPendingHpos_ = true; }
-	void setLateSizeP3(uint8_t v) { pendingSize_ = v; hasPendingSize_ = true; }
 
-	// Collision registers, accumulated over finished scanlines since the last HITCLR.
+	// Collision registers, accumulated over the scanlines drawn since the last HITCLR.
 	uint8_t mpf[4] = {}, ppf[4] = {}, mpl[4] = {}, ppl[4] = {};
 	void hitclr() {
 		std::fill(std::begin(mpf), std::end(mpf), 0);
@@ -49,30 +66,88 @@ public:
 		std::fill(std::begin(ppl), std::end(ppl), 0);
 	}
 
-	// STA WSYNC: finish the current scanline and start the next.
-	template <class Record>
-	void wsync(Record &&record) {
-		finishLine();
-		record(line_);
-		line_++;
-		if (hasPendingHpos_) { hposP[3] = pendingHpos_; hasPendingHpos_ = false; }
-		if (hasPendingSize_) { sizeP[3] = pendingSize_; hasPendingSize_ = false; }
-		latch();
+	// One instruction of `cycles` cycles; its effect (the caller's next statement) happens
+	// after the scanline events that come before its start.
+	void op(int cycles) {
+		settle();
+		xpos_ += cycles;
 	}
-	uint8_t p3Shape() const { return p_[3]; }
+	// A branch: 2 cycles, 3 when taken, 4 when taken to another page.
+	bool branch(bool taken, bool otherPage = false) {
+		op(taken ? (otherPage ? 4 : 3) : 2);
+		return taken;
+	}
+	// STA WSYNC (after its op(4)): the CPU waits for cycle 106. In the reference emulator a
+	// write before the scanline is drawn halts the CPU there; the line is drawn and the CPU
+	// goes on at cycle 106 of the same line. A write after cycle 106 waits for the next line.
+	void wsync() {
+		if (drawn_ && xpos_ <= kWsyncCycle) {
+			xpos_ = kWsyncCycle;
+			return;
+		}
+		if (drawn_) {
+			xpos_ = kLineCycles;
+			settle();   // next scanline
+		}
+		xpos_ = kDrawCycle;
+		settle();       // draw it
+		xpos_ = kWsyncCycle;
+	}
+	// Run to the start of the next instruction (used before the end of the routine).
+	void finish() { settle(); }
 
 private:
 	const Game &game_;
 	const std::vector<std::array<uint8_t, kLineBytes>> &screen_;
 	int line_;
+	int xpos_;
+	bool drawn_;
+	const bool *lms_;
+	Record record_;
 	uint8_t p_[4] = {}, m_ = 0;   // player / missile graphics fetched at the start of the line
-	uint8_t pendingHpos_ = 0, pendingSize_ = 0;
-	bool hasPendingHpos_ = false, hasPendingSize_ = false;
 
+	int river(int line) const { return line - kRiverFirstLine; }
+	int startCycles(int line) const {
+		int c = 5;                                                   // player and missile DMA
+		const int r = river(line);
+		if (r >= 0 && r < kRiverLines) c += lms_[r] ? 3 : 1;          // one instruction per river line
+		else if (line == 24 || line == kRiverFirstLine + kRiverLines) c += 1;   // blank-line instructions
+		else if (line == kPanelFirstLine) c += 3;                    // panel: mode 6 with address
+		return c;
+	}
+	int screenCycles(int line) const {
+		const int r = river(line);
+		if (r >= 0 && r < kRiverLines) return 48;                    // wide mode E line
+		if (line == kPanelFirstLine) return 20;                      // first line of a mode 6 row
+		return 0;
+	}
+
+	void settle() {
+		for (;;) {
+			if (!drawn_ && xpos_ >= kDrawCycle) {
+				draw();
+			} else if (xpos_ >= kLineCycles) {
+				xpos_ -= kLineCycles;
+				line_++;
+				latch();
+				xpos_ += startCycles(line_);
+				drawn_ = false;
+			} else {
+				break;
+			}
+		}
+	}
+	void draw() {
+		collide();
+		record_(line_);
+		xpos_ += kRefreshCycles + screenCycles(line_);
+		drawn_ = true;
+	}
 	void latch() {
 		for (int n = 0; n < 4; n++) p_[n] = game_.g.pm.player(n, line_);
 		m_ = game_.g.pm.missiles(line_);
 	}
+	friend void recordScan(const Beam &, Game::Scanline &);
 
 	// Columns of the 384-column screen buffer (2 per colour clock) covered by a sprite.
 	static void playerMask(uint8_t bits, uint8_t hpos, uint8_t size, bool mask[kRowWidth]) {
@@ -92,7 +167,7 @@ private:
 		}
 	}
 
-	void finishLine() {
+	void collide() {
 		bool pl[4][kRowWidth] = {}, ms[4][kRowWidth] = {};
 		bool any = false;
 		for (int n = 0; n < 4; n++) {
@@ -103,7 +178,7 @@ private:
 		if (!any) return;
 		// playfield of this scanline: 2-bit values of the river line, 0 outside the river
 		uint8_t pf[kRowWidth] = {};
-		const int row = line_ - kRiverFirstLine;
+		const int row = river(line_);
 		if (row >= 0 && row < kRiverLines && size_t(row) < screen_.size()) {
 			const uint8_t *src = screen_[size_t(row)].data();
 			for (int p = 0; p < kLineBytes * 4; p++) pf[2 * p] = pf[2 * p + 1] = uint8_t((src[p >> 2] >> (6 - 2 * (p & 3))) & 3);
@@ -124,128 +199,246 @@ private:
 			}
 		}
 	}
+
+public:
+	uint8_t p3Shape() const { return p_[3]; }
 };
+
+bool crosses(uint16_t base, int index) { return ((base & 0xFF) + index) > 0xFF; }
 
 }  // namespace
 
 void Game::display() {
 	RiverState &s = gen.s;
 	scan = {};
-	Beam beam(*this, screen, 23);   // the DLI starts on the last blank line before the river
+	// river rows whose display list instruction has a screen address: the top row and the
+	// rows where screen memory continues in the other 4 KB block ($2000-$2EFF, $3000-$3EFF)
+	bool lms[kRiverLines] = {};
+	{
+		const int top = g.screenTop;
+		const int blockEnd = (top >> 8) >= 0x30 ? 0x3F00 : 0x2F00;
+		const int k1 = (blockEnd - top) / kLineBytes;
+		lms[0] = true;
+		if (k1 < kRiverLines) lms[k1] = true;
+		if (k1 + 80 < kRiverLines) lms[k1 + 80] = true;
+	}
+	Beam *bp = nullptr;
 	auto record = [&](int line) {
 		if (line < 0 || line >= int(scan.size())) return;
 		Scanline &sl = scan[size_t(line)];
-		sl.p3 = beam.p3Shape();
-		sl.p3x = beam.hposP[3];
-		sl.p3size = beam.sizeP[3];
-		sl.p3colour = beam.colourP3;
-		sl.bankColour = beam.bankColour;
+		sl.p3 = bp->p3Shape();
+		sl.p3x = bp->hposP[3];
+		sl.p3size = bp->sizeP[3];
+		sl.p3colour = bp->colourP3;
+		sl.bankColour = bp->bankColour;
 	};
+	// The DLI starts on scanline 23 (the last blank line before the river); B500-B51D take
+	// it to about cycle 76.
+	Beam beam(*this, screen, 23, 76, lms, record);
+	bp = &beam;
 	beam.bankColour = g.colourBank;   // set by the VBI (sub $AFD0)
 	beam.hposP[3] = 0;                 // VBI (B411)
 	beam.sizeP[3] = s.slot[kSlots - 1].size;
-	// B510
-	g.hit = Collisions();
-	beam.wsync(record);                // B51E
-	// B527-B559 (scanline 24)
-	beam.hposM[1] = uint8_t(g.fuel / 8 + 0x5C);
-	beam.hposP[2] = g.planeX;
-	beam.hposM[2] = uint8_t(g.planeX + 4);
-	beam.hposP[1] = s.roadX;
-	beam.hposM[0] = s.vC1;
-	beam.hposP[0] = g.shellX;
+	g.hit = Collisions();              // B510
+	beam.op(4); beam.wsync();          // B51E
+	beam.op(3 + 3 + 3);                // B521-B525
+	beam.op(3 + 2 + 2 + 2 + 2 + 2); beam.op(4); beam.hposM[1] = uint8_t(g.fuel / 8 + 0x5C);   // B527-B52F
+	beam.op(3); beam.op(4); beam.hposP[2] = g.planeX;                                         // B532
+	beam.op(2 + 2); beam.op(4); beam.hposM[2] = uint8_t(g.planeX + 4);                        // B537
+	beam.op(2); beam.op(4);                                                                   // COLPM1
+	beam.op(2 + 3); beam.branch(g.player != 0); if (!g.player) beam.op(2); beam.op(4);        // COLPM2
+	beam.op(3); beam.op(4); beam.hposP[1] = s.roadX;                                          // B54D
+	beam.op(3); beam.op(4); beam.hposM[0] = s.vC1;                                            // B552
+	beam.op(3); beam.op(4); beam.hposP[0] = g.shellX;                                         // B557
+	beam.op(3 + 2); beam.branch(true);                                                        // B55C-B560
 
 	auto slotY = [&](int y) -> uint8_t { return y < kSlots ? s.slot[y].y : 0xFF; };   // $0C,Y ($17 = $FF)
 	int X = 0x5D;
 	int Y = s.firstSlot;
 	int current = Y;            // $06
 	bool endedAtB664 = false;
+	// leaving the loop through B5E3 (BEQ to another page) and B60B
+	auto exitViaB5E3 = [&]() { beam.branch(true, true); beam.branch(true); };
 	for (;;) {
-		current = Y;                                        // B565
+		beam.op(3);                                         // B565 STY $06
+		current = Y;
 		// B567: wait for the scanline where the slot's object starts
 		bool end = false;
 		for (;;) {
-			beam.wsync(record);
-			if (X >= slotY(Y)) break;
-			if (++X == 0x100) { end = true; break; }
+			beam.op(4); beam.wsync();
+			beam.op(2 + 4);                                 // TXA, CMP $0C,Y
+			if (beam.branch(X >= slotY(Y))) break;
+			beam.op(2);                                     // INX
+			X = (X + 1) & 0xFF;
+			if (!beam.branch(X != 0)) {                     // BNE B567 / BEQ B5E3
+				beam.branch(true);
+				exitViaB5E3();
+				end = true;
+				break;
+			}
 		}
 		if (end) break;
-		const int start = X;                                // B575 $04
-		if (++X == 0x100) break;
+		const int start = X;                                // B575 STX $04
+		beam.op(3 + 2);
+		X = (X + 1) & 0xFF;
+		if (beam.branch(X == 0)) { exitViaB5E3(); break; }
 		const Slot sl = Y < kSlots ? s.slot[Y] : Slot{};
-		beam.setLateHposP3(sl.x);
-		g.pm.at(uint16_t(0x0EBC + X)) = 0;
-		g.pm.at(uint16_t(0x0EBD + X)) = 0;
-		const uint8_t flags = sl.flags;                     // $07
-		beam.wsync(record);                                 // B58D
+		beam.op(4); beam.op(4); beam.hposP[3] = sl.x;       // B57A-B57D
+		beam.op(2); beam.op(5); g.pm.at(uint16_t(0x0EBC + X)) = 0;
+		beam.op(5); g.pm.at(uint16_t(0x0EBD + X)) = 0;
+		const uint8_t flags = sl.flags;
+		beam.op(4 + 3);                                     // $07
+		beam.op(4); beam.wsync();                           // B58D
+		beam.op(2);
+		if (!beam.branch(!(flags & 0x08))) beam.op(2);
 		const int kind = sl.kind + ((flags & 0x08) ? 0x10 : 0);
 		const uint16_t shapes = uint16_t(0xB900 + rom_.at(uint16_t(0xBB40 + kind)));
-		if (++X == 0x100) break;
-		beam.setLateSizeP3(sl.size);
-		beam.wsync(record);                                 // B5B0
+		beam.op(2 + 4 + 2 + 4 + 3 + 2);                     // CLC ... INX
+		X = (X + 1) & 0xFF;
+		if (beam.branch(X == 0)) { exitViaB5E3(); break; }
+		beam.op(3 + 4); beam.op(4); beam.sizeP[3] = sl.size;   // B5A3-B5A8
+		beam.op(4 + 3);
+		beam.op(4); beam.wsync();                           // B5B0
 		const uint16_t colours = uint16_t(0xB700 + rom_.at(uint16_t(0xBB30 + sl.type)));
 		int row = uint8_t(sl.y + rom_.at(uint16_t(0xBB60 + sl.type)) - start);
-		if (++X == 0x100) break;
-		if (row >= 0x80) {                                  // B5C9: object already gone: next slot
+		beam.op(4 + 2 + 4 + 3 + 3 + 2 + 4 + 2 + 3 + 2);     // B5B3-B5C5
+		X = (X + 1) & 0xFF;
+		if (beam.branch(X == 0)) { exitViaB5E3(); break; }
+		beam.op(2);                                         // TAY
+		if (beam.branch(row >= 0x80)) {                     // B5C9: object already gone: next slot
+			beam.op(3 + 2);
 			Y = current + 1;
 			continue;
 		}
 		// B5CB: one shape row per scanline, bottom row first
 		bool wrapped = false;
 		for (;;) {
-			g.pm.at(uint16_t(0x0EBC + X)) = rom_.at(uint16_t(shapes + row));
-			beam.wsync(record);
-			if (flags & 0x80) beam.bankColour = rom_.at(uint16_t(0xB4E5 + row));   // bridge: road
-			beam.colourP3 = rom_.at(uint16_t(colours + row));
-			if (++X == 0x100) { wrapped = true; break; }
-			if (--row < 0) break;
+			beam.op(crosses(shapes, row) ? 6 : 5);
+			beam.op(5); g.pm.at(uint16_t(0x0EBC + X)) = rom_.at(uint16_t(shapes + row));
+			beam.op(4); beam.wsync();
+			beam.op(3);                                     // BIT $07
+			if (!beam.branch(!(flags & 0x80))) {            // bridge: road colour
+				beam.op(crosses(0xB4E5, row) ? 5 : 4);
+				beam.op(4); beam.bankColour = rom_.at(uint16_t(0xB4E5 + row));
+			}
+			beam.op(crosses(colours, row) ? 6 : 5);
+			beam.op(4); beam.colourP3 = rom_.at(uint16_t(colours + row));
+			beam.op(2);
+			X = (X + 1) & 0xFF;
+			if (beam.branch(X == 0)) { wrapped = true; break; }
+			beam.op(2);
+			if (!beam.branch(--row >= 0)) break;
 		}
-		if (wrapped) break;
+		if (wrapped) { exitViaB5E3(); break; }
 		// B5E8: collisions of this object
-		if (beam.mpl[2] & 0x08) g.hit.m2p3 = uint8_t(current);
-		beam.wsync(record);                                 // B5F3
-		if (flags & 0x80) {
-			beam.bankColour = s.bridgeFlags;                // bank colour back after the bridge
-		} else if (beam.ppl[3] & 0x01) {
-			g.hit.p3p0 = uint8_t(current);
+		beam.op(3); beam.op(4);
+		const bool m2p3 = beam.mpl[2] & 0x08;
+		beam.op(2);
+		if (!beam.branch(!m2p3)) { beam.op(3); g.hit.m2p3 = uint8_t(current); }
+		beam.op(4); beam.wsync();                           // B5F3
+		beam.op(3);
+		if (!beam.branch(!(flags & 0x80), true)) {          // bridge: bank colour back
+			beam.op(3); beam.op(4); beam.bankColour = s.bridgeFlags;
+			beam.op(3);
+		} else {
+			beam.op(4);
+			const bool p3p0 = beam.ppl[3] & 0x01;
+			beam.op(2);
+			if (!beam.branch(!p3p0)) { beam.op(3); g.hit.p3p0 = uint8_t(current); }
 		}
-		if (++X == 0x100) break;                            // B60A
-		if (beam.ppl[2] & 0x01) g.hit.p2p0 = uint8_t(current);
-		if (beam.ppl[2] & 0x08) g.hit.p2p3 = uint8_t(current);
+		beam.op(2);                                         // B60A INX
+		X = (X + 1) & 0xFF;
+		if (beam.branch(X == 0)) break;
+		beam.op(4);
+		const uint8_t p2pl = beam.ppl[2];
+		beam.op(2);
+		if (!beam.branch(!(p2pl & 0x01))) { beam.op(3); g.hit.p2p0 = uint8_t(current); }
+		beam.op(2);
+		if (!beam.branch(!(p2pl & 0x08))) { beam.op(3); g.hit.p2p3 = uint8_t(current); }
+		beam.op(4);
 		const bool bank = beam.ppf[3] & 0x02;               // P3PF bit 1: the bank edge colour
-		beam.wsync(record);                                 // B61F
+		beam.op(2);
+		beam.op(4); beam.wsync();                           // B61F
+		beam.op(4 + 2 + 4); beam.op(5);
 		if (current < kSlots) s.slot[current].flags = uint8_t((s.slot[current].flags & 0xFE) | (bank ? 1 : 0));
-		if (++X == 0x100) break;
-		if (beam.mpl[0] & 0x04) g.hit.m0p2 = uint8_t(current);
-		if (beam.mpf[0] & 0x03) g.hit.m0pf = uint8_t(current);
+		beam.op(2);
+		X = (X + 1) & 0xFF;
+		if (beam.branch(X == 0)) break;
+		beam.op(4);
+		const bool m0p2 = beam.mpl[0] & 0x04;
+		beam.op(2);
+		if (!beam.branch(!m0p2)) { beam.op(3); g.hit.m0p2 = uint8_t(current); }
+		beam.op(4);
+		const bool m0pf = beam.mpf[0] & 0x03;
+		beam.op(2);
+		if (!beam.branch(!m0pf)) { beam.op(3); g.hit.m0pf = uint8_t(current); }
+		beam.op(4);
 		const bool tankEdge = beam.ppf[1] & 0x02;
-		beam.wsync(record);                                 // B645
-		if (tankEdge) g.hit.p1pf = uint8_t(current);
-		if (beam.ppf[2] & 0x01) g.hit.p2pf = uint8_t(current);
-		if (beam.mpf[2] & 0x03) g.hit.m2pf = uint8_t(current);
-		beam.hitclr();                                      // B65F
+		beam.op(4); beam.wsync();                           // B645
+		beam.op(2);
+		if (!beam.branch(!tankEdge)) { beam.op(3); g.hit.p1pf = uint8_t(current); }
+		beam.op(4);
+		const bool p2pf = beam.ppf[2] & 0x01;
+		beam.op(2);
+		if (!beam.branch(!p2pf)) { beam.op(3); g.hit.p2pf = uint8_t(current); }
+		beam.op(4);
+		const bool m2pf = beam.mpf[2] & 0x03;
+		beam.op(2);
+		if (!beam.branch(!m2pf)) { beam.op(3); g.hit.m2pf = uint8_t(current); }
+		beam.op(4); beam.hitclr();                          // B65F
+		beam.op(2 + 2);
 		Y = current + 1;
-		if (++X == 0x100) { endedAtB664 = true; break; }
+		X = (X + 1) & 0xFF;
+		if (beam.branch(X == 0)) { beam.op(3); endedAtB664 = true; break; }
+		beam.op(3);                                         // JMP B565
 	}
 	// B66B: end of the river; the panel DLI part (B6BF-B725) reads the collisions of the
 	// object still in progress, unless the loop ended right after a HITCLR.
-	beam.wsync(record);
-	beam.hposP[1] = 0;
-	beam.hposM[0] = 0;
-	beam.wsync(record);                                     // B6B4
-	if (current < kSlots && !endedAtB664) {
-		Slot &sl = s.slot[current];
-		sl.flags = uint8_t((sl.flags & 0xFE) | ((beam.ppf[3] >> 1) & 0x01));
-		if (beam.mpl[0] & 0x04) g.hit.m0p2 = uint8_t(current);
-		if (beam.mpf[0] & 0x03) g.hit.m0pf = uint8_t(current);
-		if (beam.mpf[2] & 0x03) g.hit.m2pf = uint8_t(current);
-		if (beam.ppf[2] & 0x01) g.hit.p2pf = uint8_t(current);
-		if (beam.ppl[2] & 0x01) g.hit.p2p0 = uint8_t(current);
-		if (beam.ppl[2] & 0x08) g.hit.p2p3 = uint8_t(current);
-		if (beam.ppl[3] & 0x01) g.hit.p3p0 = uint8_t(current);
-		if (beam.ppf[1] & 0x02) g.hit.p1pf = uint8_t(current);
-		if (beam.mpl[2] & 0x08) g.hit.m2p3 = uint8_t(current);
+	beam.op(4); beam.wsync();
+	beam.op(4); beam.hposP[1] = 0;
+	beam.op(4); beam.hposP[0] = 0;
+	beam.op(4); beam.hposM[0] = 0;
+	beam.op(4 + 2 + 4 + 2 + 4 + 2 + 4 + 2 + 4 + 3);
+	if (!beam.branch(g.respawned == 0)) {
+		beam.op(3);
+		if (!beam.branch(g.player == 0)) beam.op(2);
 	}
+	beam.op(4 + 3);
+	if (!beam.branch(g.deathTimer == 0)) {
+		beam.op(3);
+		if (!beam.branch(((g.deathTimer | g.flags29) & 0x80) != 0)) {
+			beam.op(3 + 2);
+			if (!beam.branch((g.frameCount & 0x30) != 0)) beam.op(2 + 5);
+		}
+	}
+	beam.op(2 + 4 + 2);
+	beam.op(4); beam.wsync();                               // B6B4
+	beam.op(4 + 2 + 4 + 3 + 2);
+	if (beam.branch(current >= kSlots)) return;
+	beam.op(2 + 3 + 3);
+	if (beam.branch(endedAtB664)) return;
+	Slot &sl = s.slot[current];
+	beam.op(4);
+	sl.flags = uint8_t((sl.flags & 0xFE) | ((beam.ppf[3] >> 1) & 0x01));
+	beam.op(2 + 4 + 2 + 4 + 5);
+	beam.op(4); if (beam.mpl[0] & 0x04) g.hit.m0p2 = uint8_t(current);
+	beam.op(2 + 2 + 3);
+	beam.op(4); if (beam.mpf[0] & 0x03) g.hit.m0pf = uint8_t(current);
+	beam.op(2 + 2 + 3);
+	beam.op(4); if (beam.mpf[2] & 0x03) g.hit.m2pf = uint8_t(current);
+	beam.op(2 + 2 + 3);
+	beam.op(4); if (beam.ppf[2] & 0x01) g.hit.p2pf = uint8_t(current);
+	beam.op(2 + 2 + 3);
+	beam.op(4);
+	if (beam.ppl[2] & 0x01) g.hit.p2p0 = uint8_t(current);
+	if (beam.ppl[2] & 0x08) g.hit.p2p3 = uint8_t(current);
+	beam.op(2 + 2 + 3 + 2 + 2 + 3);
+	beam.op(4); if (beam.ppl[3] & 0x01) g.hit.p3p0 = uint8_t(current);
+	beam.op(2 + 2 + 3);
+	beam.op(4); if (beam.ppf[1] & 0x02) g.hit.p1pf = uint8_t(current);
+	beam.op(2 + 2 + 3);
+	beam.op(4); if (beam.mpl[2] & 0x08) g.hit.m2p3 = uint8_t(current);
+	beam.finish();
 }
 
 void Game::drawRiver(uint8_t out[240][kRowWidth]) const {

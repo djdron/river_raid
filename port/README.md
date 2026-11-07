@@ -120,14 +120,14 @@ port/build/game_check rom/River_Raid.rom out/ram.bin out/random.log 38 19900 -at
 ```
 
 The game with a player (`game_check` on runs with input). From the attract mode's state the port is given the original's input and RANDOM values and runs on its own, never reloaded; every frame its RAM is compared with the original's (generator, slots, plane, fuel, bullet, collisions, score, lives, both players, high scores and their check bytes, panel, scrolling line, player-missile memory, screen lines):
-- one-player bot game (`start_only.txt -bot -seed 3`, 8 950 frames: attract mode, START, 4 planes, bridges, deaths and restarts, game over, attract mode again): identical except 2 frames;
-- two-player game with SELECT and the pause key (`two_players.txt`, up to the game over at frame 3 007): identical except 1 frame;
+- one-player bot game (`start_only.txt -bot -seed 3`, 8 950 frames: attract mode, START, 4 planes, bridges, deaths and restarts, game over, attract mode again): identical in every compared frame;
+- two-player game with SELECT and the pause key (`two_players.txt`, up to the game over at frame 3 007): identical up to the game over (one frame, see below);
 - the river area drawn by the port (plane, bullet, enemies, explosions, tank, shells) equals the original's screens in all 1 565 compared frames of a bot game.
 
-The remaining differences are moments where the original's result depends on how many CPU cycles a frame takes, which the port does not count:
-- the frame after the start of a game, when the river is refilled at 2 lines per frame: the original finishes the second line after the end of the frame (the RAM snapshot sees it a frame later; nothing visible);
-- a bullet touching an object only on the scanline where the DLI reads the collision register: in the original it counts if the beam has passed that point (1 frame in 8 950);
-- the game over: the high-score check ends near the vertical blank, so the original sets the frame counter to $FF just before, just after or one frame after the VBI, depending on the objects on screen. The port does it before; afterwards the frame counter can differ by one, which shifts the attract mode by a frame.
+Where the original's result depends on CPU cycles:
+- The DLI (`display.cpp`) runs with cycle counts, as the reference emulator times a scanline: player/missile and display list fetches at the start, the CPU up to cycle 28, then the whole line is drawn (collisions included), then screen data fetches, WSYNC at cycle 106. So it is known whether a collision register read already sees the current scanline: a bullet touching an object only on the scanline of the read counts on a bridge (that path reads after cycle 28) and not elsewhere, as in the original.
+- The RAM snapshot is taken at the end of the frame; normally the original's main loop is then waiting for the next frame (AE99–AE9E). Right after the start of a game, while the river is refilled at 2 lines per frame, it is sometimes still drawing the second line (1 frame per refill). `game_check` reports such frames separately and does not compare them; the next frame is identical again.
+- Not modelled: the game over. The main loop's game logic starts at scanline 160 and shares the CPU with the DLI and the VBI (scanline 248). In the game-over frame the high-score check and its check bytes (sub $B261, $B298) take thousands of cycles, so `sub_B21A` sets the frame counter to $FF before the VBI, after it, or (two-player game) only in the next frame, depending on the cycles of everything before it in that frame. The port does it before the VBI; then the frame counter can differ by one, which shifts the following attract mode by a frame. Reproducing it would need the cycle count of the whole main loop for that frame (including the OS interrupt handler).
 
 ```
 oracle/rr_oracle rom/River_Raid.rom oracle/scripts/start_only.txt 9000 out -bot -seed 3
