@@ -8,11 +8,11 @@ Headless-прогон оригинального картриджа на libatar
 ```
 ./build.sh
 ```
-Скрипт клонирует atari800 (проверенный коммит 98cc2dc), собирает `libatari800.a` и линкует `rr_oracle`. Нужны git, gcc, make, autoconf и automake (Linux, WSL или MSYS2).
+Скрипт клонирует atari800 (проверенный коммит 98cc2dc), собирает `libatari800.a` и линкует `rr_oracle`. Нужны git, gcc, make, autoconf и automake (Linux, WSL или MSYS2; линкер Apple не поддерживает `-Wl,--wrap`).
 
 ## Запуск
 ```
-./rr_oracle <rom> <script> <frames> <outdir> [-pal] [-seed N] [-bot|-bot-nofire] [-shot N,N,...]
+./rr_oracle <rom> <script> <frames> <outdir> [-pal] [-seed N] [-bot|-bot-nofire] [-ghost] [-noram] [-ram A:B] [-strip Y] [-screens A:B] [-shot N,N,...]
 ./rr_oracle ../rom/River_Raid.rom scripts/start_and_fly.txt 1000 out -shot 240,500
 ./rr_oracle ../rom/River_Raid.rom scripts/start_only.txt 8000 out -bot      # бот
 ./rr_oracle ../rom/River_Raid.rom scripts/bot_run_8000.txt 8000 out         # повтор прогона бота

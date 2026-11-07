@@ -10,4 +10,5 @@ aiming for 1:1 game logic and 1:1 sound on modern Windows, Linux and macOS.
 - `disasm/` — annotated disassembly
 - `tools/` — disassembler, verification scripts
 - `oracle/` — reference runner on libatari800 (frame-by-frame RAM / POKEY traces)
+- `port/` — C++ port (the river generator so far)
 - `rom/` — put your own ROM dump here (not included)

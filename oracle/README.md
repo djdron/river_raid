@@ -8,11 +8,11 @@ Runs the original cartridge headless on libatari800 (Atari 800, NTSC by default,
 ```
 ./build.sh
 ```
-The script clones atari800 (tested commit 98cc2dc), builds `libatari800.a` and links `rr_oracle`. Needs git, gcc, make, autoconf and automake (Linux, WSL or MSYS2).
+The script clones atari800 (tested commit 98cc2dc), builds `libatari800.a` and links `rr_oracle`. Needs git, gcc, make, autoconf and automake (Linux, WSL or MSYS2; Apple's linker does not support `-Wl,--wrap`).
 
 ## Run
 ```
-./rr_oracle <rom> <script> <frames> <outdir> [-pal] [-seed N] [-bot|-bot-nofire] [-shot N,N,...]
+./rr_oracle <rom> <script> <frames> <outdir> [-pal] [-seed N] [-bot|-bot-nofire] [-ghost] [-noram] [-ram A:B] [-strip Y] [-screens A:B] [-shot N,N,...]
 ./rr_oracle ../rom/River_Raid.rom scripts/start_and_fly.txt 1000 out -shot 240,500
 ./rr_oracle ../rom/River_Raid.rom scripts/start_only.txt 8000 out -bot      # bot
 ./rr_oracle ../rom/River_Raid.rom scripts/bot_run_8000.txt 8000 out         # replay of a bot run

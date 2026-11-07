@@ -34,13 +34,15 @@ A C++ port of River Raid (Activision, Atari 800, 1983, by Carol Shaw) for Window
 3. **RANDOM ($D20A).** Read by game logic only at A205: every 16 frames a random enemy slot (0–10) gets bit $40 in `$42,X`. B362 and B3D0 use it for sound noise. With different seeds over 1000 frames only $42–$4C, $07 and the stack differ.
 4. **Modes.** PAL/NTSC is detected from $D014 and kept in $BF. The font is copied from the OS ROM ($E000/$E100/$E300); the reference runner uses the built-in AltirraOS.
 5. **Variables.** Table with status in `docs/NOTES.md`, section "Variables". Checked by script: plane X $57, fuel $5B:$5C (burn $20 per frame regardless of speed, +2 to $5B per frame over a depot, capped at $FFFF, reset on respawn), score $63–$65 (BCD ÷10) from the points table $BB0B[type], object types $050B+X, lives $6A, bridge number $61/$62.
-6. **Terrain.** The bank is a random walk of `$52` (direction `$C3`) driven by the LFSR nibble `$AC & 15`, with limits `$C4/$C5` and avoidance of objects; the island `$54` and water width `$53` move smoothly toward the target `$34`. Both models are checked on every line of the traces (`verify_trace.py`). The bridge approach, the corridor `$052D` and line drawing were read from code but not verified. Details: `docs/NOTES.md`, "Terrain generation".
+6. **Terrain.** The bank is a random walk of `$52` (direction `$C3`) driven by the LFSR nibble `$AC & 15`, with limits `$C4/$C5` and avoidance of objects; the island `$54` and water width `$53` move smoothly toward the target `$34`. Both models are checked on every line of the traces (`verify_trace.py`); the rest of the generator (bridge approach, corridor `$052D`, line drawing, objects) is verified through C++, see item 7. Details: `docs/NOTES.md`, "Terrain generation".
 7. **C++ generator.** `port/src/river_gen.cpp` reproduces the river generation byte for byte: 119 758 lines with no differences; a start from scratch matches too. Generation depends neither on the player nor on `RANDOM`. The game number selects a starting point on the same river (bridges 1/5/20/50). The river differs slightly between PAL and NTSC (`$CB`).
 8. **Reference runner.** atari800 seeds POKEY from the clock; `rr_oracle -seed` (default 0) makes runs byte-identical. The game starts with the START key. The atari800 build fails with `-Werror` on a ULONG redefinition; `build.sh` builds with `CFLAGS="-g -O2 -DNETSIO"`. Tested atari800 commit: 98cc2dc.
 
 ## Environment limits
 - `oracle/build.sh` uses `-Wl,--wrap` (GNU ld): builds on Linux/WSL/MSYS2, not with Apple's linker on macOS. The reference runner currently runs in Claude's cloud session.
 - The ROM is not in the repository (`.gitignore`); put your dump at `rom/River_Raid.rom`.
+- On Windows the reference runner builds only under WSL or MSYS2; the C++ part (`port/`) builds with plain CMake + MSVC.
+- Code is indented with tabs (`.editorconfig`). Documentation is bilingual: `X.md` in English, `X.ru.md` in Russian.
 
 ## Method
 A rule is read from the listing, then checked against a reference trace with `tools/verify_trace.py`. Traces alone are only used to find where to look.

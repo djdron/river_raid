@@ -113,8 +113,8 @@ The bank is not stored as a picture but as a few numbers per line. Each new scre
 | $34, $35 | target for `$54` and the step toward it (±1 if the difference is < 32, else ±2) | verified |
 | $2D | bit 7 — island mode (changes drawing), bit 6 | from code |
 | $C4, $C5 | limits of `$52`: $1C…$24 when `$60 < 3`, otherwise wider (1…$40 with variants by `$60`, `$052D`, `$36`) | from code, 28…36 seen in traces |
-| $23 bit 7 | near the bridge the bank follows the table `$BA8F[$2F] + $52`, no randomness | from code, not part of the check |
-| $052D | ≠ 0: the bank is pulled into the corridor $18…$28 | from code, not part of the check |
+| $23 bit 7 | near the bridge the bank follows the table `$BA8F[$2F] + $52`, no randomness | verified through C++ (`terrain_check`) |
+| $052D | ≠ 0: the bank is pulled into the corridor $18…$28 | verified through C++ (`terrain_check`) |
 
 **Bank random walk (A84F–A96A), verified.** Each line takes the low nibble `n = $AC & 15` (the LFSR byte after this line's step):
 - if `$C3 = 0`, movement starts: +1 when `n ≥ 8`, otherwise −1;
@@ -125,9 +125,11 @@ Timing subtlety: the slots and `$4E` are taken as at the start of the frame, whi
 
 **Island smoothing (A7FB–A824), verified.** While `$35 ≠ 0`, each line does `$54 += $35` and `$53 −= 2·$35`. When `$54` reaches `$34`, the step `$35` is cleared. Checked on 4825 lines, 1195 of which actually changed.
 
-**Objects (from code).** Placed at the start of a block (`$2F = 0`) when bit 5 of `$AC` is set. Type and parameters come from the tables `$BBCC`, `$BBD4`, `$BBB2`, `$BBEB` by `$AA` and `$5F`.
+**Decorations (houses, mountains).** Start at the beginning of a block (`$2F = 0`) when bit 5 of `$AC` is set. Offset, width and row count come from the tables `$BBCC`, `$BBD4`, `$BBB2`, `$BBEB` by `$AA` and `$5F`, the bitmap pointer from `$BBF0`. Verified through C++.
 
-**Drawing (from code, not verified).** A line is built from runs of characters (subroutines `AFEC`–`B03B`): bank, water, island (with bit 7 of `$2D`), water, bank. The position divided by 4 gives the character column, the low 2 bits select the bank edge character. Whether the right bank mirrors the left one is not verified yet: it looks like it, but bank decorations spoil measurements from screenshots.
+**Objects.** Every 16 lines a new object is placed in the top free slot (`$4D`−1); the type is chosen by `$AB` through the table `$BB1C`, height and line count from `$BBA2` and `$BB60`. While the object is still being drawn in (`$32` lines), the bank avoids that object (`$4E`). Verified through C++.
+
+**Drawing (verified through C++).** A line is 48 bytes of bitmap (ANTIC mode E, 4 pixels per byte), built from fill runs (subroutines `AFEC`/`AFF0`/`AFF4`: `$AA`, `$FF`, `$55`) and 2-byte edge pieces from the table at `$B800` (`B034`/`B03B`): bank, water, island (with bit 7 of `$2D`), water, bank. The pixel position divided by 4 is the byte number, the low 2 bits select the edge piece. A decoration row is copied by `B01A`. The banks are not mirrored: the right edge is computed from the left one through the water and island widths, so the river meanders. On 2200 lines from C++: when both edges move, they move the same way in 810 cases out of 944; the river centre wanders between 71 and 122 pixels.
 
 ## C++ generator (`port/`)
 - All per-line processing (A711–AE96 and subroutines) is ported to `port/src/river_gen.cpp`. The check `port/tools/terrain_check` compares every generator field and the 48 bytes of each new screen line with the original.
@@ -150,7 +152,7 @@ Timing subtlety: the slots and `$4E` are taken as at the start of the frame, whi
 A rule is first read from the listing, then checked against a reference trace (`tools/verify_trace.py`). If the trace does not match, look for the misreading. Example: refuelling was derived from code A3E9–A453 (including the non-obvious +2 instead of +1 because of the carry flag) and confirmed on the trace; the only mismatch showed that the collision check happens before objects move between slots.
 
 ## Next steps
-1. Finish the terrain: bridge approach (`$BA8F`), corridor `$052D`, choice of `$5F`, `$C4/$C5`, object placement, line drawing and the mirroring question.
-2. Finish $42+X: enemy movement, when it switches on, the role of bit $40 and $60.
-3. Analyse the collision checks $1B/$1E/$21/$50 at A424–A434 (banks, bridge, tank).
-3. C++ skeleton (CMake): `GameState`, level generator, score, fuel; frame-by-frame comparison with `ram.bin`.
+1. Make the C++ generator code more readable while keeping it byte-exact (`terrain_check`).
+2. Restart after a death (`sub_B1C0`).
+3. Finish $42+X: enemy movement, when it switches on, the role of bit $40 and $60.
+4. Collision checks $1B/$1E/$21/$50 at A424–A434 (banks, bridge, tank).

@@ -9,7 +9,7 @@ So far this is only the river generator. It is the first part of the game ported
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
-No dependencies, only a C++17 compiler. Builds on Linux, macOS and Windows.
+No dependencies, only a C++17 compiler. On Windows with Visual Studio: `cmake --build build --config Release`, the programs end up in `build\Release\`. Tested on Linux (gcc); macOS and Windows not tested yet.
 
 ## Contents
 | File | What |
@@ -36,7 +36,7 @@ Generation depends neither on the player nor on `RANDOM`. This was checked on th
 - Starting from the reference state: 119 758 lines of the whole river (120 000 frames), 0 differences in state and in bitmap lines.
 - From scratch (`startGame(1)`, no emulator): after the 165 lines that fill the screen the state matches the original, then 29 757 lines without differences.
 - Bot game with bridges destroyed and the flash effect: differences only in respawn frames. Those come from the restart code, not ported yet.
-- The check catches injected bugs: replacing one condition of the walk gives 998 frames with differences.
+- The check catches injected bugs: each of four deliberate breakages (walk condition, water width, drawing, fill colour) produced differences.
 
 ```
 oracle/rr_oracle rom/River_Raid.rom oracle/scripts/ghost_film.txt 30001 out -ghost -ram 0:30000
