@@ -40,6 +40,9 @@ constexpr int kDrawCycle = 28;
 constexpr int kWsyncCycle = 106;
 constexpr int kRefreshCycles = 9;
 
+// Player 3 memory ($0F00) less $44: indexed by the DLI's scanline counter.
+constexpr uint16_t kPlayer3Rows = 0x0EBC;
+
 class Beam {
 public:
 	using Record = std::function<void(int line)>;
@@ -57,7 +60,9 @@ public:
 	uint8_t sizeM = 0x01;      // SIZEM: missile 0 double width (A116)
 	uint8_t colourP3 = 0, bankColour = 0;
 
-	// Collision registers, accumulated over the scanlines drawn since the last HITCLR.
+	// Collision registers, accumulated over the scanlines drawn since the last HITCLR, as GTIA's
+	// M0PF-M3PF (missile with playfield), P0PF-P3PF, M0PL-M3PL (missile with player), P0PL-P3PL.
+	// Playfield bits: 1 bank, 2 edge, 4 water; player bits: 1 << player.
 	uint8_t mpf[4] = {}, ppf[4] = {}, mpl[4] = {}, ppl[4] = {};
 	void hitclr() {
 		std::fill(std::begin(mpf), std::end(mpf), 0);
@@ -248,29 +253,31 @@ void Game::display() {
 	beam.op(2); beam.op(4);                                                                   // COLPM1
 	beam.op(2 + 3); beam.branch(g.player != 0); if (!g.player) beam.op(2); beam.op(4);        // COLPM2
 	beam.op(3); beam.op(4); beam.hposP[1] = s.tankX;                                          // B54D
-	beam.op(3); beam.op(4); beam.hposM[0] = s.missileX;                                            // B552
+	beam.op(3); beam.op(4); beam.hposM[0] = s.missileX;                                       // B552
 	beam.op(3); beam.op(4); beam.hposP[0] = g.shellX;                                         // B557
 	beam.op(3 + 2); beam.branch(true);                                                        // B55C-B560
 
-	auto slotY = [&](int y) -> uint8_t { return y < kSlots ? s.slot[y].y : 0xFF; };   // $0C,Y ($17 = $FF)
-	int X = 0x5D;
-	int Y = s.firstSlot;
-	int current = Y;            // $06
+	// The 6502's X register counts scanlines ($5D on the first river line); the river ends when
+	// it wraps to 0. Y walks the slots; the slot after the last one has y = $FF.
+	auto slotY = [&](int n) -> uint8_t { return n < kSlots ? s.slot[n].y : 0xFF; };   // $0C,Y ($17 = $FF)
+	int counter = 0x5D;
+	int slot = s.firstSlot;
+	int current = slot;         // $06
 	bool endedAtB664 = false;
 	// leaving the loop through B5E3 (BEQ to another page) and B60B
 	auto exitViaB5E3 = [&]() { beam.branch(true, true); beam.branch(true); };
 	for (;;) {
 		beam.op(3);                                         // B565 STY $06
-		current = Y;
+		current = slot;
 		// B567: wait for the scanline where the slot's object starts
 		bool end = false;
 		for (;;) {
 			beam.op(4); beam.wsync();
 			beam.op(2 + 4);                                 // TXA, CMP $0C,Y
-			if (beam.branch(X >= slotY(Y))) break;
+			if (beam.branch(counter >= slotY(slot))) break;
 			beam.op(2);                                     // INX
-			X = (X + 1) & 0xFF;
-			if (!beam.branch(X != 0)) {                     // BNE B567 / BEQ B5E3
+			counter = (counter + 1) & 0xFF;
+			if (!beam.branch(counter != 0)) {                     // BNE B567 / BEQ B5E3
 				beam.branch(true);
 				exitViaB5E3();
 				end = true;
@@ -278,118 +285,121 @@ void Game::display() {
 			}
 		}
 		if (end) break;
-		const int start = X;                                // B575 STX $04
+		const int start = counter;                          // B575 STX $04
 		beam.op(3 + 2);
-		X = (X + 1) & 0xFF;
-		if (beam.branch(X == 0)) { exitViaB5E3(); break; }
-		const Slot sl = Y < kSlots ? s.slot[Y] : Slot{};
+		counter = (counter + 1) & 0xFF;
+		if (beam.branch(counter == 0)) { exitViaB5E3(); break; }
+		const Slot sl = slot < kSlots ? s.slot[slot] : Slot{};
 		beam.op(4); beam.op(4); beam.hposP[3] = sl.x;       // B57A-B57D
-		beam.op(2); beam.op(5); g.pm.at(uint16_t(0x0EBC + X)) = 0;
-		beam.op(5); g.pm.at(uint16_t(0x0EBD + X)) = 0;
+		beam.op(2); beam.op(5); g.pm.at(uint16_t(kPlayer3Rows + counter)) = 0;   // blank rows above the object
+		beam.op(5); g.pm.at(uint16_t(kPlayer3Rows + counter + 1)) = 0;
 		const uint8_t flags = sl.flags;
 		beam.op(4 + 3);                                     // $07
 		beam.op(4); beam.wsync();                           // B58D
 		beam.op(2);
-		if (!beam.branch(!(flags & 0x08))) beam.op(2);
-		const int kind = sl.kind + ((flags & 0x08) ? 0x10 : 0);
-		const uint16_t shapes = uint16_t(0xB900 + rom_.at(uint16_t(0xBB40 + kind)));
+		const bool facingLeft = flags & slotflag::kFacingLeft;
+		if (!beam.branch(!facingLeft)) beam.op(2);
+		const uint16_t shapes = rom_.shapeAddress(sl.kind + (facingLeft ? 0x10 : 0));   // mirrored frames
 		beam.op(2 + 4 + 2 + 4 + 3 + 2);                     // CLC ... INX
-		X = (X + 1) & 0xFF;
-		if (beam.branch(X == 0)) { exitViaB5E3(); break; }
+		counter = (counter + 1) & 0xFF;
+		if (beam.branch(counter == 0)) { exitViaB5E3(); break; }
 		beam.op(3 + 4); beam.op(4); beam.sizeP[3] = sl.size;   // B5A3-B5A8
 		beam.op(4 + 3);
 		beam.op(4); beam.wsync();                           // B5B0
-		const uint16_t colours = uint16_t(0xB700 + rom_.at(uint16_t(0xBB30 + sl.type)));
-		int row = uint8_t(sl.y + rom_.at(uint16_t(0xBB60 + sl.type)) - start);
+		const uint16_t colours = rom_.coloursAddress(sl.type);
+		int row = uint8_t(sl.y + rom_.objectHeight(sl.type) - start);   // the shape row on this scanline
 		beam.op(4 + 2 + 4 + 3 + 3 + 2 + 4 + 2 + 3 + 2);     // B5B3-B5C5
-		X = (X + 1) & 0xFF;
-		if (beam.branch(X == 0)) { exitViaB5E3(); break; }
+		counter = (counter + 1) & 0xFF;
+		if (beam.branch(counter == 0)) { exitViaB5E3(); break; }
 		beam.op(2);                                         // TAY
 		if (beam.branch(row >= 0x80)) {                     // B5C9: object already gone: next slot
 			beam.op(3 + 2);
-			Y = current + 1;
+			slot = current + 1;
 			continue;
 		}
 		// B5CB: one shape row per scanline, bottom row first
 		bool wrapped = false;
 		for (;;) {
 			beam.op(crosses(shapes, row) ? 6 : 5);
-			beam.op(5); g.pm.at(uint16_t(0x0EBC + X)) = rom_.at(uint16_t(shapes + row));
+			beam.op(5); g.pm.at(uint16_t(kPlayer3Rows + counter)) = rom_.at(uint16_t(shapes + row));
 			beam.op(4); beam.wsync();
 			beam.op(3);                                     // BIT $07
-			if (!beam.branch(!(flags & 0x80))) {            // bridge: road colour
-				beam.op(crosses(0xB4E5, row) ? 5 : 4);
-				beam.op(4); beam.bankColour = rom_.at(uint16_t(0xB4E5 + row));
+			if (!beam.branch(!(flags & slotflag::kBridge))) {   // bridge: the road across the bank
+				beam.op(crosses(Rom::kRoadColours, row) ? 5 : 4);
+				beam.op(4); beam.bankColour = rom_.roadColour(row);
 			}
 			beam.op(crosses(colours, row) ? 6 : 5);
 			beam.op(4); beam.colourP3 = rom_.at(uint16_t(colours + row));
 			beam.op(2);
-			X = (X + 1) & 0xFF;
-			if (beam.branch(X == 0)) { wrapped = true; break; }
+			counter = (counter + 1) & 0xFF;
+			if (beam.branch(counter == 0)) { wrapped = true; break; }
 			beam.op(2);
 			if (!beam.branch(--row >= 0)) break;
 		}
 		if (wrapped) { exitViaB5E3(); break; }
 		// B5E8: collisions of this object
 		beam.op(3); beam.op(4);
-		const bool m2p3 = beam.mpl[2] & 0x08;
+		const bool bulletHit = beam.mpl[2] & 0x08;         // M2PL: the bullet touched player 3
 		beam.op(2);
-		if (!beam.branch(!m2p3)) { beam.op(3); g.hit.bulletHitObject = uint8_t(current); }
+		if (!beam.branch(!bulletHit)) { beam.op(3); g.hit.bulletHitObject = uint8_t(current); }
 		beam.op(4); beam.wsync();                           // B5F3
 		beam.op(3);
-		if (!beam.branch(!(flags & 0x80), true)) {          // bridge: bank colour back
+		if (!beam.branch(!(flags & slotflag::kBridge), true)) {   // bridge: the bank colour back
 			beam.op(3); beam.op(4); beam.bankColour = s.sectionBankColour;
 			beam.op(3);
 		} else {
 			beam.op(4);
-			const bool p3p0 = beam.ppl[3] & 0x01;
+			const bool shellHit = beam.ppl[3] & 0x01;      // P3PL: player 3 touched the shell
 			beam.op(2);
-			if (!beam.branch(!p3p0)) { beam.op(3); g.hit.shellHitObject = uint8_t(current); }
+			if (!beam.branch(!shellHit)) { beam.op(3); g.hit.shellHitObject = uint8_t(current); }
 		}
 		beam.op(2);                                         // B60A INX
-		X = (X + 1) & 0xFF;
-		if (beam.branch(X == 0)) break;
+		counter = (counter + 1) & 0xFF;
+		if (beam.branch(counter == 0)) break;
 		beam.op(4);
-		const uint8_t p2pl = beam.ppl[2];
+		const uint8_t planeTouched = beam.ppl[2];           // P2PL: the plane touched players
 		beam.op(2);
-		if (!beam.branch(!(p2pl & 0x01))) { beam.op(3); g.hit.planeHitShell = uint8_t(current); }
+		if (!beam.branch(!(planeTouched & 0x01))) { beam.op(3); g.hit.planeHitShell = uint8_t(current); }
 		beam.op(2);
-		if (!beam.branch(!(p2pl & 0x08))) { beam.op(3); g.hit.planeHitObject = uint8_t(current); }
+		if (!beam.branch(!(planeTouched & 0x08))) { beam.op(3); g.hit.planeHitObject = uint8_t(current); }
 		beam.op(4);
-		const bool bank = beam.ppf[3] & 0x02;               // P3PF bit 1: the bank edge colour
+		const bool touchingEdge = beam.ppf[3] & 0x02;       // P3PF: the object touched the bank edge
 		beam.op(2);
 		beam.op(4); beam.wsync();                           // B61F
 		beam.op(4 + 2 + 4); beam.op(5);
-		if (current < kSlots) s.slot[current].flags = uint8_t((s.slot[current].flags & 0xFE) | (bank ? 1 : 0));
+		if (current < kSlots) {
+			Slot &obj = s.slot[current];
+			obj.flags = uint8_t((obj.flags & ~slotflag::kTouchingEdge) | (touchingEdge ? slotflag::kTouchingEdge : 0));
+		}
 		beam.op(2);
-		X = (X + 1) & 0xFF;
-		if (beam.branch(X == 0)) break;
+		counter = (counter + 1) & 0xFF;
+		if (beam.branch(counter == 0)) break;
 		beam.op(4);
-		const bool m0p2 = beam.mpl[0] & 0x04;
+		const bool missileHit = beam.mpl[0] & 0x04;        // M0PL: the missile touched the plane
 		beam.op(2);
-		if (!beam.branch(!m0p2)) { beam.op(3); g.hit.missileHitPlane = uint8_t(current); }
+		if (!beam.branch(!missileHit)) { beam.op(3); g.hit.missileHitPlane = uint8_t(current); }
 		beam.op(4);
-		const bool m0pf = beam.mpf[0] & 0x03;
+		const bool missileAtBank = beam.mpf[0] & 0x03;     // M0PF: bank or edge
 		beam.op(2);
-		if (!beam.branch(!m0pf)) { beam.op(3); g.hit.missileHitBank = uint8_t(current); }
+		if (!beam.branch(!missileAtBank)) { beam.op(3); g.hit.missileHitBank = uint8_t(current); }
 		beam.op(4);
-		const bool tankEdge = beam.ppf[1] & 0x02;
+		const bool tankEdge = beam.ppf[1] & 0x02;           // P1PF: the tank reached the edge
 		beam.op(4); beam.wsync();                           // B645
 		beam.op(2);
 		if (!beam.branch(!tankEdge)) { beam.op(3); g.hit.tankAtEdge = uint8_t(current); }
 		beam.op(4);
-		const bool p2pf = beam.ppf[2] & 0x01;
+		const bool planeAtBank = beam.ppf[2] & 0x01;       // P2PF: the plane touched the bank
 		beam.op(2);
-		if (!beam.branch(!p2pf)) { beam.op(3); g.hit.planeHitBank = uint8_t(current); }
+		if (!beam.branch(!planeAtBank)) { beam.op(3); g.hit.planeHitBank = uint8_t(current); }
 		beam.op(4);
-		const bool m2pf = beam.mpf[2] & 0x03;
+		const bool bulletAtBank = beam.mpf[2] & 0x03;      // M2PF: bank or edge
 		beam.op(2);
-		if (!beam.branch(!m2pf)) { beam.op(3); g.hit.bulletHitBank = uint8_t(current); }
+		if (!beam.branch(!bulletAtBank)) { beam.op(3); g.hit.bulletHitBank = uint8_t(current); }
 		beam.op(4); beam.hitclr();                          // B65F
 		beam.op(2 + 2);
-		Y = current + 1;
-		X = (X + 1) & 0xFF;
-		if (beam.branch(X == 0)) { beam.op(3); endedAtB664 = true; break; }
+		slot = current + 1;
+		counter = (counter + 1) & 0xFF;
+		if (beam.branch(counter == 0)) { beam.op(3); endedAtB664 = true; break; }
 		beam.op(3);                                         // JMP B565
 	}
 	// B66B: end of the river; the panel DLI part (B6BF-B725) reads the collisions of the
@@ -417,9 +427,9 @@ void Game::display() {
 	if (beam.branch(current >= kSlots)) return;
 	beam.op(2 + 3 + 3);
 	if (beam.branch(endedAtB664)) return;
-	Slot &sl = s.slot[current];
+	Slot &obj = s.slot[current];
 	beam.op(4);
-	sl.flags = uint8_t((sl.flags & 0xFE) | ((beam.ppf[3] >> 1) & 0x01));
+	obj.flags = uint8_t((obj.flags & ~slotflag::kTouchingEdge) | ((beam.ppf[3] >> 1) & slotflag::kTouchingEdge));
 	beam.op(2 + 4 + 2 + 4 + 5);
 	beam.op(4); if (beam.mpl[0] & 0x04) g.hit.missileHitPlane = uint8_t(current);
 	beam.op(2 + 2 + 3);

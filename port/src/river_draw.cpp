@@ -15,22 +15,14 @@ constexpr uint8_t kEntryScanline = 0x5D;
 // Sprite horizontal position of the left edge of the screen buffer (HPOSP3 = 32).
 constexpr int kSpriteLeft = 32;
 
-// Tables in the cartridge:
-constexpr uint16_t kObjectHeight = 0xBB60;   // [type] last row of the object's sprite
-constexpr uint16_t kShapeIndex = 0xBB40;     // [kind (+16 when flags bit 3)] offset into $B900
-constexpr uint16_t kShapes = 0xB900;         // sprite rows, one byte each
-constexpr uint16_t kColourIndex = 0xBB30;    // [type] offset into $B700
-constexpr uint16_t kColours = 0xB700;        // sprite colour per row
-constexpr uint16_t kRoadColours = 0xB4E5;    // bank colour per row next to a bridge
-
 }  // namespace
 
 uint8_t bankColour(const RiverState &s) {
-	uint8_t c = uint8_t((s.blockFlags & 4) ^ 0xD6);
+	uint8_t c = uint8_t((s.blockFlags & kBankShade) ^ 0xD6);
 	// While a bridge object is still being drawn in near the top, the shade is switched.
 	if (s.enteringSlot < kSlots) {
 		const Slot &sl = s.slot[s.enteringSlot];
-		if ((sl.flags & 0x80) && sl.y < 0x5C) c ^= 4;
+		if ((sl.flags & slotflag::kBridge) && sl.y < 0x5C) c ^= kBankShade;
 	}
 	return c;
 }
@@ -44,13 +36,13 @@ void drawScreenLine(const Rom &rom, const RiverState &s, const uint8_t line[kLin
 	uint8_t shape = 0, spriteColour = 0, spriteX = 0, spriteSize = 0;
 	for (int k = s.firstSlot; k < kSlots; k++) {
 		const Slot &sl = s.slot[k];
-		const uint8_t height = rom.at(uint16_t(kObjectHeight + sl.type));
+		const uint8_t height = rom.objectHeight(sl.type);
 		const uint8_t row = uint8_t(sl.y + height - kEntryScanline);
 		if (row > height || row >= 0x80) continue;
-		if (sl.flags & 0x80) bank = rom.at(uint16_t(kRoadColours + row));   // bridge: road
-		const int kind = sl.kind + ((sl.flags & 8) ? 16 : 0);
-		shape = rom.at(uint16_t(kShapes + rom.at(uint16_t(kShapeIndex + kind)) + row));
-		spriteColour = rom.at(uint16_t(kColours + rom.at(uint16_t(kColourIndex + sl.type)) + row));
+		if (sl.flags & slotflag::kBridge) bank = rom.roadColour(row);   // bridge: road
+		const int frame = sl.kind + ((sl.flags & slotflag::kFacingLeft) ? 0x10 : 0);
+		shape = rom.at(uint16_t(rom.shapeAddress(frame) + row));
+		spriteColour = rom.at(uint16_t(rom.coloursAddress(sl.type) + row));
 		spriteX = sl.x;
 		spriteSize = sl.size;
 		haveSprite = true;

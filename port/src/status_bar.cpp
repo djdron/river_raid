@@ -50,10 +50,10 @@ Charsets buildCharsets(const Rom &rom, const uint8_t osFont[kOsFontBytes]) {
 		ram[x] = osFont[0x100 + x];            // $0600 <- $E100
 		ram[0x100 + x] = osFont[0x300 + x];    // $0700 <- $E300: lower case
 	}
-	for (int x = 0; x < 0x40; x++) ram[0x0C0 + x] = rom.at(uint16_t(0xBEEE + x));   // Activision lettering
-	for (int x = 0; x < 0x70; x++) ram[0x218 + x] = rom.at(uint16_t(0xBF2E + x));   // panel symbols, "0"
-	for (int x = 0; x < 0x18; x++) ram[0x2D0 + x] = rom.at(uint16_t(0xBF9E + x));   // "P1", "P2"
-	for (int x = 0; x < 0x30; x++) ram[0x1D0 + x] = rom.at(uint16_t(0xBFB6 + x));   // digits of "1982, 1983"
+	for (int x = 0; x < 0x40; x++) ram[0x0C0 + x] = rom.logoLettering(x);
+	for (int x = 0; x < 0x70; x++) ram[0x218 + x] = rom.panelSymbols(x);   // and "0"
+	for (int x = 0; x < 0x18; x++) ram[0x2D0 + x] = rom.playerLabels(x);   // "P1", "P2"
+	for (int x = 0; x < 0x30; x++) ram[0x1D0 + x] = rom.yearDigits(x);     // "1982, 1983"
 	Charsets cs;
 	std::memcpy(cs.scroller, ram, 512);
 	std::memcpy(cs.panel, ram + 0x200, 512);
@@ -61,7 +61,7 @@ Charsets buildCharsets(const Rom &rom, const uint8_t osFont[kOsFontBytes]) {
 }
 
 void initialPanel(const Rom &rom, uint8_t panel[kPanelBytes]) {
-	for (int i = 0; i < kPanelBytes; i++) panel[i] = rom.at(uint16_t(0xBB70 + i));
+	for (int i = 0; i < kPanelBytes; i++) panel[i] = rom.panelText(i);
 	panel[0x0B] = 0xDB;   // one player: second player's markers in colour 3 (black)
 	panel[0x12] = 0xD0;
 }
@@ -107,7 +107,7 @@ void drawStatusBar(const Rom &rom, const Charsets &cs, const uint8_t panel[kPane
 	// (data $FF) starting $15 colour clocks right of it, one clock further left on each row,
 	// both in the row colours from $B48D. PM data from sub $B0F1 (rows $DB-$E1).
 	for (int k = 0; k < 7; k++) {
-		const uint8_t colour = rom.at(uint16_t(0xB48D + 6 - k));
+		const uint8_t colour = rom.logoColour(6 - k);
 		const int y = kScrollerTop + k;
 		for (int bit = 0; bit < 6; bit++) plot(screen, y, columnOf(logoX) + bit * 8, 8, colour);
 		const int p2 = uint8_t(logoX + 0x15 - k);
@@ -117,10 +117,7 @@ void drawStatusBar(const Rom &rom, const Charsets &cs, const uint8_t panel[kPane
 	// Scrolling line: wide playfield, characters from $B800 + textLo in colour $0C, shifted
 	// right by the fine scroll (1 colour clock per step); playfield is drawn over the logo.
 	uint8_t text[25];
-	for (int i = 0; i < 25; i++) {
-		const unsigned addr = 0xB800u + scroller.textLo + unsigned(i);
-		text[i] = addr < 0xC000 ? rom.at(uint16_t(addr)) : 0;
-	}
+	for (int i = 0; i < 25; i++) text[i] = rom.scrollerText(scroller.textLo + unsigned(i));
 	static const uint8_t kScrollerColours[4] = {0x0C, 0x0C, 0x0C, 0x0C};
 	drawMode6(screen, kScrollerTop, text, 25, cs.scroller, kScrollerColours, 2 + 2 * scroller.fineScroll);
 }
