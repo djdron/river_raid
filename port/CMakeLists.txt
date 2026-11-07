@@ -15,6 +15,7 @@ add_library(rrcore
 	src/game.cpp
 	src/os_font.cpp
 	src/pokey_sound.cpp
+	src/palette.cpp
 	src/river_draw.cpp
 	src/river_gen.cpp
 	src/river_state_io.cpp

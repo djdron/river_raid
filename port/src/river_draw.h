@@ -16,6 +16,7 @@
 #pragma once
 #include <cstdint>
 
+#include "palette.h"
 #include "river_gen.h"
 
 namespace rr {
@@ -33,9 +34,5 @@ uint8_t bankColour(const RiverState &s);
 // as Atari colour codes (hue << 4 | luminance).
 void drawScreenLine(const Rom &rom, const RiverState &s, const uint8_t line[kLineBytes], uint8_t out[kRowWidth]);
 
-// sRGB colour of an Atari colour code (hue << 4 | luminance) on an NTSC or a PAL machine.
-// The model is the one of the reference emulator atari800 (luminance levels of the GTIA, hue
-// from the colour delay line, CRT gamma 2.35), with the full 0-255 range for black to white.
-void atariRgb(uint8_t colour, uint8_t rgb[3], bool pal = false);
 
 }  // namespace rr
