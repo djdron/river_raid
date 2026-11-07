@@ -42,6 +42,7 @@ The input actually applied in any run is written to `inputs.txt` in script forma
 | `probe_lr.txt`, `probe_hold.txt` | short taps / holds for finding variables |
 | `bot_run_8000.txt` | recorded bot run: 2 bridges, 5 deaths, game over, new start |
 | `refuel_first_depot.txt` | flying over the first depot without firing (refuelling) |
+| `attract_idle.txt` | power-on and no input: the attract mode (river of game 1, scrolling credits) |
 | `ghost_film.txt` | start and fly without input; with `-ghost -noram -strip 20` films the level map |
 
 ## Input script

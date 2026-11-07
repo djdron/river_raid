@@ -14,29 +14,33 @@ The core and the tools need only a C++17 compiler. The viewer `river_view` needs
 On Windows with Visual Studio: `cmake --build build --config Release`, the programs end up in `build\Release\`. Tested on Linux (gcc); macOS and Windows not tested yet.
 
 ## River viewer
-`river_view [rom] [-game N] [-pal]` shows the generated river scrolling in a window at the game's speed (1 line per frame). The ROM is looked for in `rom/River_Raid.rom` of the current folder and up to three folders above, so running it from the repository or from `port/build/Release` works without arguments.
+`river_view [rom] [-os file] [-pal]` shows the original's attract mode, the flight over the river it plays when nobody presses START: after power-on the screen fills with the river of game 1, which then scrolls 1 line per frame, with the status panel below and the scrolling line with the credits, "Press START key" and the rainbow Activision logo. The ROM is looked for in `rom/River_Raid.rom` of the current folder and up to three folders above, so running it from the repository or from `port/build/Release` works without arguments.
+
+Letters and digits 1–9 come from the Atari OS font, which is not in the cartridge. By default the viewer uses a font drawn for the port; `-os file` takes the original from an OS ROM image (10 KB or 16 KB, e.g. the one used with an emulator) or a 1 KB font file.
 
 | Key | Action |
 |---|---|
 | Space | pause |
-| Up / Down | faster / slower, down to backwards |
-| mouse wheel, PgUp / PgDn | scroll by hand, by a screen |
-| B / Shift+B | next / previous bridge |
-| Home | back to the start |
-| 1..8 | start game 1..8 |
+| Up / Down | faster / slower (1/4x to 16x) |
+| mouse wheel, PgUp / PgDn | look back along the river; Backspace returns |
+| B | fly fast to the next bridge |
+| Home | start again |
 | F | full screen |
 | Esc | quit |
 
-The title shows the game, the bridge number and the line. Objects stand where the generator placed them: there is no game logic yet.
+Compared with the original's screens (attract mode, frames 1000–2300, OS font taken from the emulator): the status panel and the scrolling line match pixel for pixel, apart from the outer columns of the scrolling line (left of 24, right of 359), where the emulator handles fine scrolling at the edge differently; the river differs only where the game has moved an object or shows the tank on a bridge (no game logic yet).
 
 ## Contents
 | File | What |
 |---|---|
 | `src/river_gen.h/.cpp` | the generator: `RiverGen::startGame(n)`, then `nextLine(line)` — one screen line per call |
 | `src/river_draw.h/.cpp` | drawing a line as on screen: bank shades, roads at bridges, object sprites (`drawScreenLine`), Atari colours (`atariRgb`) |
+| `src/status_bar.h/.cpp` | status panel and scrolling line: character sets, panel, scroller step, drawing |
+| `src/os_font.h/.cpp` | Atari OS font: loading from an OS ROM, built-in replacement |
 | `src/river_state_io.cpp` | mapping of fields to the original's RAM addresses, loading and comparison (for verification) |
 | `viewer/river_view.cpp` | the river viewer (SDL3), see below |
 | `tools/river_map.cpp` | generates the river and saves a PNG as the game shows it: `river_map <rom> <game 1..8> <lines> out.png [-pal] [-flat]` (`-flat`: bitmap only, fixed colours) |
+| `tools/status_check.cpp` | compares the panel and scrolling line with full screens of the original (`rr_oracle -screens A:B -ram A:B`) |
 | `tools/render_check.cpp` | compares the drawing with the original screen (`oracle/rr_oracle -ghost -strip 20`) |
 | `tools/terrain_check.cpp` | comparison with a reference trace (`oracle/rr_oracle -ram A:B`) |
 
@@ -71,6 +75,12 @@ Drawing: every frame where a new line enters screen row 20, the row of the origi
 ```
 oracle/rr_oracle rom/River_Raid.rom oracle/scripts/ghost_film.txt 30001 out -ghost -strip 20 -ram 0:30000
 port/build/render_check rom/River_Raid.rom out/strip.bin out/frames.csv -ram out/ram.bin
+```
+Status panel and scrolling line: the character sets built from the OS font and the cartridge equal the original's RAM, the scroller state ($3FB3/$26/$27) matches every frame, and the drawn rows 180–239 are identical in all 1299 frames, except the outer columns of the scrolling line (see River viewer).
+
+```
+oracle/rr_oracle rom/River_Raid.rom oracle/scripts/attract_idle.txt 2300 out -screens 1000:2299 -ram 1000:2299
+port/build/status_check rom/River_Raid.rom out/screens.bin out/ram.bin
 ```
 
 ## Not done yet

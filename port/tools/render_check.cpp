@@ -1,11 +1,13 @@
 // Compare drawScreenLine() with the screen of the original, row by row.
 //
-// usage: render_check <rom> <strip.bin> <frames.csv> [-game N] [-pal] [-ram ram.bin] [-from F] [-to F]
+// usage: render_check <rom> <strip.bin> <frames.csv> [-game N] [-pal] [-ram ram.bin] [-from F] [-to F] [-first F]
 //   strip.bin and frames.csv come from `rr_oracle <rom> oracle/scripts/ghost_film.txt N out -ghost
 //   -strip 20` (screen row 20, where new lines appear: 384 colour codes per frame); the C++
 //   generator runs alone from the game start.
 //   Every frame where a new line has entered, that row must equal the line generated two
 //   lines earlier (the screen shows the bitmap one frame later, the generator runs ahead).
+//   -first F: last frame before the river scrolls (145 for the ghost film, 37 for
+//   oracle/scripts/attract_idle.txt).
 //   -ram ram.bin (`rr_oracle -ram 0:N`, same run): take the positions the running game gives
 //   the objects (slot x, flags, kind) from RAM instead of the generator's. Rows that still
 //   differ are counted separately when the tank on the road ($38) is active, since the game
@@ -23,12 +25,13 @@
 
 int main(int argc, char **argv) {
 	if (argc < 4) {
-		std::fprintf(stderr, "usage: %s <rom> <strip.bin> <frames.csv> [-game N] [-pal] [-ram ram.bin] [-from F] [-to F]\n", argv[0]);
+		std::fprintf(stderr, "usage: %s <rom> <strip.bin> <frames.csv> [-game N] [-pal] [-ram ram.bin] [-from F] [-to F] [-first F]\n", argv[0]);
 		return 2;
 	}
 	rr::Rom rom;
 	if (!rom.load(argv[1])) { std::fprintf(stderr, "cannot read ROM %s\n", argv[1]); return 2; }
 	int game = 1, from = 400, to = -1;
+	int first = 145;   // frame before the river starts scrolling: 145 after START at 120 (ghost film), 37 in the attract mode
 	bool pal = false;
 	const char *ramPath = nullptr;
 	for (int i = 4; i < argc; i++) {
@@ -37,6 +40,7 @@ int main(int argc, char **argv) {
 		else if (!std::strcmp(argv[i], "-ram") && i + 1 < argc) ramPath = argv[++i];
 		else if (!std::strcmp(argv[i], "-from") && i + 1 < argc) from = std::atoi(argv[++i]);
 		else if (!std::strcmp(argv[i], "-to") && i + 1 < argc) to = std::atoi(argv[++i]);
+		else if (!std::strcmp(argv[i], "-first") && i + 1 < argc) first = std::atoi(argv[++i]);
 	}
 
 	// $2F (line within the block, 0..31) per frame
@@ -71,8 +75,7 @@ int main(int argc, char **argv) {
 	if (ram) last = std::min(last, ramFrames - 1);
 	if (to >= 0) last = std::min<long>(last, to);
 
-	// The game starts scrolling at frame 145 (after START at frame 120 and the 165-line fill).
-	const int kFirstFrame = 145;
+	const int kFirstFrame = first;
 	rr::RiverGen gen(rom);
 	gen.startGame(game, pal);
 	std::vector<std::vector<uint8_t>> lines;

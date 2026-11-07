@@ -11,9 +11,11 @@ endif()
 
 # Game logic library: no platform code, reads the user's ROM for tables and graphics.
 add_library(rrcore
+	src/os_font.cpp
 	src/river_draw.cpp
 	src/river_gen.cpp
 	src/river_state_io.cpp
+	src/status_bar.cpp
 )
 target_include_directories(rrcore PUBLIC src)
 target_compile_options(rrcore PRIVATE ${RR_WARNINGS})
@@ -32,6 +34,11 @@ target_compile_options(river_map PRIVATE ${RR_WARNINGS})
 add_executable(render_check tools/render_check.cpp)
 target_link_libraries(render_check rrcore)
 target_compile_options(render_check PRIVATE ${RR_WARNINGS})
+
+# Compare the status panel and scrolling line with screens of the original (rr_oracle -screens).
+add_executable(status_check tools/status_check.cpp)
+target_link_libraries(status_check rrcore)
+target_compile_options(status_check PRIVATE ${RR_WARNINGS})
 
 # River viewer (SDL3): the generated river scrolling in a window.
 # Uses an installed SDL3 if CMake finds one, otherwise downloads and builds SDL3 (static).

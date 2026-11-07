@@ -1,0 +1,2 @@
+# idle from power-on: attract mode
+20000 0 0 0
