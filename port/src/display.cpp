@@ -46,9 +46,9 @@ public:
 
 	// lmsLines: river rows whose display list instruction carries a screen address
 	Beam(const Game &game, const std::vector<std::array<uint8_t, kLineBytes>> &screen, int line, int xpos,
-	     const bool lmsLines[kRiverLines], Record record)
-	    : game_(game), screen_(screen), line_(line), xpos_(xpos), drawn_(xpos >= kDrawCycle), lms_(lmsLines),
-	      record_(std::move(record)) {
+		const bool lmsLines[kRiverLines], Record record)
+		: game_(game), screen_(screen), line_(line), xpos_(xpos), drawn_(xpos >= kDrawCycle), lms_(lmsLines),
+			record_(std::move(record)) {
 		latch();
 	}
 

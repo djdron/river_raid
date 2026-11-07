@@ -280,7 +280,7 @@ int main(int argc, char **argv) {
 		if (resync) load(game, mem.data());
 	}
 	std::printf("%ld frames (%ld of them during resets and %ld snapshots of a half-done frame, not compared), %ld with differences%s, %ld with a different number of RANDOM reads\n",
-	            count, busyFrames, midFrames, framesBad, fromStart ? "" : " (state reloaded from RAM after each)", randomBad);
+		count, busyFrames, midFrames, framesBad, fromStart ? "" : " (state reloaded from RAM after each)", randomBad);
 	if (scr) std::printf("screens: %ld frames compared, %ld with differences (%ld rows of the river area)\n", scrFrames, scrBadFrames, scrBadRows);
 	for (auto &d : diffCount) std::printf("  %-40s %ld\n", d.first.c_str(), d.second);
 	return framesBad ? 1 : 0;
