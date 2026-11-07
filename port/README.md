@@ -16,7 +16,7 @@ On Windows with Visual Studio: `cmake --build build --config Release`, the progr
 ## River viewer
 `river_view [rom] [-os file] [-pal]` shows the original's attract mode, the flight over the river it plays when nobody presses START: after power-on the screen fills with the river of game 1, which then scrolls 1 line per frame, with the status panel below and the scrolling line with the credits, "Press START key" and the rainbow Activision logo. The ROM is looked for in `rom/River_Raid.rom` of the current folder and up to three folders above, so running it from the repository or from `port/build/Release` works without arguments.
 
-Letters and digits 1–9 come from the Atari OS font, which is not in the cartridge. By default the viewer uses a font drawn for the port; `-os file` takes the original from an OS ROM image (10 KB or 16 KB, e.g. the one used with an emulator) or a 1 KB font file.
+Letters and digits 1–9 come from the OS font, which is not in the cartridge. The port has the font of AltirraOS built in: the free replacement OS that ships with atari800 (licence: copying and modification permitted with the copyright notice kept, see `src/os_font.cpp`); the reference traces were made with it too. `-os file` takes the font of Atari's own OS from an OS ROM image (10 KB or 16 KB) or a 1 KB font file.
 
 | Key | Action |
 |---|---|
@@ -28,7 +28,7 @@ Letters and digits 1–9 come from the Atari OS font, which is not in the cartri
 | F | full screen |
 | Esc | quit |
 
-Compared with the original's screens (attract mode, frames 1000–2300, OS font taken from the emulator): the status panel and the scrolling line match pixel for pixel, apart from the outer columns of the scrolling line (left of 24, right of 359), where the emulator handles fine scrolling at the edge differently; the river differs only where the game has moved an object or shows the tank on a bridge (no game logic yet).
+Compared with the original's screens (attract mode, frames 1000–2300): the status panel and the scrolling line match pixel for pixel, apart from the outer columns of the scrolling line (left of 24, right of 359), where the emulator handles fine scrolling at the edge differently; the river differs only where the game has moved an object or shows the tank on a bridge (no game logic yet).
 
 ## Contents
 | File | What |
@@ -36,7 +36,7 @@ Compared with the original's screens (attract mode, frames 1000–2300, OS font 
 | `src/river_gen.h/.cpp` | the generator: `RiverGen::startGame(n)`, then `nextLine(line)` — one screen line per call |
 | `src/river_draw.h/.cpp` | drawing a line as on screen: bank shades, roads at bridges, object sprites (`drawScreenLine`), Atari colours (`atariRgb`) |
 | `src/status_bar.h/.cpp` | status panel and scrolling line: character sets, panel, scroller step, drawing |
-| `src/os_font.h/.cpp` | Atari OS font: loading from an OS ROM, built-in replacement |
+| `src/os_font.h/.cpp` | OS font: AltirraOS built in, or loaded from an OS ROM |
 | `src/river_state_io.cpp` | mapping of fields to the original's RAM addresses, loading and comparison (for verification) |
 | `viewer/river_view.cpp` | the river viewer (SDL3), see below |
 | `tools/river_map.cpp` | generates the river and saves a PNG as the game shows it: `river_map <rom> <game 1..8> <lines> out.png [-pal] [-flat]` (`-flat`: bitmap only, fixed colours) |
