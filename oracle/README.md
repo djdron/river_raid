@@ -8,7 +8,7 @@ Runs the original cartridge headless on libatari800 (Atari 800, NTSC by default,
 ```
 ./build.sh
 ```
-The script clones atari800 (tested commit 98cc2dc), builds `libatari800.a` and links `rr_oracle`. Needs git, gcc, make, autoconf and automake (Linux, WSL or MSYS2; Apple's linker does not support `-Wl,--wrap`).
+The script clones atari800 (tested commit 98cc2dc), builds `libatari800.a` and links `rr_oracle`. Needs git, a C compiler (gcc or clang), make, autoconf and automake; works on Linux, macOS (Xcode command line tools, `brew install autoconf automake`), WSL and MSYS2. The runner intercepts three emulator functions (POKEY writes, RANDOM reads, the vertical blank NMI): the script compiles `pokey.c` and `cpu.c` once more with those functions renamed, so no linker tricks are needed.
 
 ## Run
 ```

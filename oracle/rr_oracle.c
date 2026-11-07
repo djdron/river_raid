@@ -53,9 +53,10 @@ static FILE *pokey_log, *random_log, *vbi_log;
 
 static int cur_frame;
 
-/* Linked with -Wl,--wrap=CPU_NMI: snapshot RAM when the vertical blank NMI starts. */
+/* CPU_NMI (the emulator's own is renamed __real_CPU_NMI by build.sh): snapshot RAM when the
+ * vertical blank NMI starts. */
 void __real_CPU_NMI(void);
-void __wrap_CPU_NMI(void)
+void CPU_NMI(void)
 {
 	if (vbi_log && ANTIC_NMIST == 0x5f) {
 		int f = cur_frame;
@@ -65,16 +66,17 @@ void __wrap_CPU_NMI(void)
 	__real_CPU_NMI();
 }
 
-/* Linked with -Wl,--wrap=POKEY_PutByte: every POKEY write goes through here. */
-void __wrap_POKEY_PutByte(UWORD addr, UBYTE byte)
+/* POKEY_PutByte (the emulator's own is renamed __real_POKEY_PutByte by build.sh): every POKEY
+ * write goes through here. */
+void POKEY_PutByte(UWORD addr, UBYTE byte)
 {
 	if (pokey_log)
 		fprintf(pokey_log, "%d %d %d %X %02X\n", cur_frame, ANTIC_ypos, ANTIC_xpos, addr & 0x0f, byte);
 	__real_POKEY_PutByte(addr, byte);
 }
 
-/* Linked with -Wl,--wrap=POKEY_GetByte: log every read of RANDOM ($D20A). */
-UBYTE __wrap_POKEY_GetByte(UWORD addr, int no_side_effects)
+/* POKEY_GetByte (renamed likewise): log every read of RANDOM ($D20A). */
+UBYTE POKEY_GetByte(UWORD addr, int no_side_effects)
 {
 	UBYTE v = __real_POKEY_GetByte(addr, no_side_effects);
 	if (random_log && !no_side_effects && (addr & 0x0f) == 0x0a)

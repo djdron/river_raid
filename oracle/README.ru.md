@@ -8,7 +8,7 @@ Headless-прогон оригинального картриджа на libatar
 ```
 ./build.sh
 ```
-Скрипт клонирует atari800 (проверенный коммит 98cc2dc), собирает `libatari800.a` и линкует `rr_oracle`. Нужны git, gcc, make, autoconf и automake (Linux, WSL или MSYS2; линкер Apple не поддерживает `-Wl,--wrap`).
+Скрипт клонирует atari800 (проверенный коммит 98cc2dc), собирает `libatari800.a` и линкует `rr_oracle`. Нужны git, компилятор C (gcc или clang), make, autoconf и automake; работает под Linux, macOS (Xcode command line tools, `brew install autoconf automake`), WSL и MSYS2. Эталон перехватывает три функции эмулятора (запись в POKEY, чтение RANDOM, NMI обратного хода): скрипт ещё раз компилирует `pokey.c` и `cpu.c` с переименованными функциями, так что никаких трюков линкера не нужно.
 
 ## Запуск
 ```
