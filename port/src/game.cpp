@@ -27,6 +27,7 @@ void Game::startAttract(bool pal) {
 	g.deathTimer = 0xFF;
 	g.speed = 0x80;
 	g.fuel = 0xFF;
+	g.fuelLo = 0xFF;
 	g.planeX = 0x7C;
 	std::array<uint8_t, kLineBytes> line;
 	gen.nextLine(line.data());
@@ -268,18 +269,9 @@ void Game::scrollRiver() {
 	}
 }
 
-// B2A5-B3F0: vertical blank: sound timers and the frame counter.
+// B2A5-B3F0: vertical blank: the sound driver, then the frame counter.
 void Game::vbi(const std::function<uint8_t()> &random) {
-	if (g.c6) {
-		g.c6--;
-	} else if (g.state24 < 2) {
-		// (B2CE-B34F: engine and fuel sounds)
-		if (g.soundExplosion) {                       // B352: explosion noise
-			g.soundExplosion--;
-			random();
-		}
-		if (g.soundMissile) g.soundMissile--;
-	}
+	soundDriver(random);
 	// B41C: bridge flash
 	if (g.state24 < 2 && g.bridgeFlash) g.bridgeFlash--;
 	g.frameCount++;
@@ -290,6 +282,138 @@ void Game::vbi(const std::function<uint8_t()> &random) {
 			if (g.idle == 0) g.idle = 0x80;
 		}
 	}
+}
+
+// B2A5-B3D8: the sound driver. Once per frame it sets the four POKEY channels from the
+// game state (AUDCTL stays 0: 64 kHz clock, 17-bit noise):
+//   channel 1: the engine (pitch from the speed $59, tone from the stick), or the low-fuel
+//              warning, or the sound of $7A/$7B (refuel, bonus life...), or the start beep $C6;
+//   channel 2: explosion noise ($7C) or the helicopter missile ($7F);
+//   channel 3: firing ($7D) or the score sound ($7E);
+//   channel 4: the tank shell in flight ($50).
+void Game::soundDriver(const std::function<uint8_t()> &random) {
+	RiverState &s = gen.s;
+	PokeyRegs &p = g.pokey;
+	uint8_t a = 0, x = 0, y = 0;
+	auto audc234 = [&](uint8_t v) { p.audc[1] = v; p.audc[2] = v; p.audc[3] = v; };
+	if (g.c6) {                                   // B2A6: start beep
+		g.c6--;
+		p.audf[0] = 0x40;
+		p.audc[0] = 0xAF;
+		audc234(0);
+		return;
+	}
+	if (g.state24 >= 2) {                         // B2BA: paused
+		p.audc[0] = 0;
+		audc234(0);
+		return;
+	}
+	// channel 1 (a, x, y follow the original's registers: A is left over for AUDF2)
+	bool writeF1 = true;                          // B34C writes AUDF1 and AUDC1, B34F only AUDC1
+	y = 0x39;
+	if (g.sound7A) {                              // B2D2: event sound, $7B frames long
+		a = g.sound7B;
+		if (g.sound7A <= 2) {
+			if (g.sound7A == 2) y = 0x11;
+			a = uint8_t((a >> 1) | 0x80);
+		} else {
+			y = g.sound7A == 3 ? 0x1F : 0x3F;
+			a = lo(a + 0xA0);
+		}
+		x = a;
+		if (--g.sound7B == 0) {
+			g.sound7A = 0;
+			a = 0;
+		}
+	} else if (g.deathTimer != 0) {               // B2F9: no plane: channel 1 off
+		a = g.deathTimer;
+		x = 0;
+		writeF1 = false;
+	} else {
+		bool engine = true;
+		if (g.fuel < 0x40) {                      // B2FD: low fuel: beeps every 63 frames
+			y = g.sound7B ? g.sound7B : 0x3F;
+			g.sound7B = --y;
+			bool beep = false;
+			if (g.fuel < 0x04) {                  // almost empty: a tone falling with the fuel
+				a = uint8_t((g.fuel << 2) | (g.fuelLo >> 6));
+				a = lo((a ^ 0xFF) + 0x20);
+				a = uint8_t(a << 1);
+				beep = a != 0;
+			}
+			if (!beep && y >= 0x1C) {             // first frames of each 63: the beep
+				a = y;
+				beep = true;
+			}
+			if (beep) {                           // B326
+				a = uint8_t(a << 1);
+				y = a;
+				x = 0xAF;
+				engine = false;
+			}
+		}
+		if (engine) {                             // B32C: engine, pitch from the speed
+			y = lo(0x1F - (g.speed >> 4));
+			a = g.deathPitch;
+			if (a >= 0x1B) {                      // $052C: falling pitch after a crash
+				g.deathPitch--;
+				y = a;
+			}
+			x = rom_.at(uint16_t(0xB4AC + (g.joystick & 3)));   // tone from up/down
+			a = x;
+		}
+	}
+	if (writeF1) p.audf[0] = y;
+	p.audc[0] = x;
+	// channel 2
+	x = g.soundExplosion;
+	if (x) {                                      // B352: explosion noise
+		g.soundExplosion--;
+		x = uint8_t((((x >> 1) + 4) & 0x0F) + 0x80);
+		a = uint8_t(random() | 0x18);
+	}
+	y = g.soundMissile;
+	if (y) {                                      // B367: helicopter missile
+		g.soundMissile--;
+		if (!attract(g)) {
+			a = lo(y + 0x46);
+			x = a;
+			a = uint8_t(((lo((a ^ 0x0E) + 4)) & 0x0F) << 2);
+		}
+	}
+	p.audf[1] = a;
+	p.audc[1] = x;
+	// channel 3
+	x = 0;
+	a = g.soundFire;
+	if (a) {                                      // B386: firing
+		g.soundFire--;
+		a = lo(0x1C - a);
+		const uint8_t t = uint8_t(a << 1);
+		a = lo(uint8_t(t << 1) + t + (t >> 7));   // ASL, STA $04, ASL, ADC $04 (with the carry)
+		x = 0xA8;
+	}
+	y = g.soundScore;
+	if (y) {                                      // B399: score
+		y--;
+		g.soundScore = y;
+		x = uint8_t((y & 0x0F) + 0xA0);
+		a = rom_.at(uint16_t(0xB4E1 + (y >> 4)));
+	}
+	p.audf[2] = a;
+	p.audc[2] = x;
+	// channel 4
+	x = 0;
+	if (!attract(g) && !(s.v50 & 0x80) && s.v50 != 0) {   // B3B6: tank shell
+		if (s.v50 < 0x11) {
+			p.audf[3] = rom_.at(uint16_t(0xB4C0 + s.v50));
+			x = 0xAC;
+		} else {
+			x = 0x8C;
+			p.audf[3] = uint8_t(random() | 0x20);
+		}
+	}
+	p.audc[3] = x;
 }
 
 }  // namespace rr

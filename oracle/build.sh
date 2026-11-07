@@ -18,5 +18,5 @@ if [ ! -f "$A800/src/libatari800.a" ]; then
 fi
 
 gcc -O2 -Wall -I"$A800/src/libatari800" "$HERE/rr_oracle.c" "$A800/src/libatari800.a" \
-	-Wl,--wrap=POKEY_PutByte -Wl,--wrap=POKEY_GetByte -lm -lpthread -o "$HERE/rr_oracle"
+	-Wl,--wrap=POKEY_PutByte -Wl,--wrap=POKEY_GetByte -Wl,--wrap=CPU_NMI -lm -lpthread -o "$HERE/rr_oracle"
 echo "built $HERE/rr_oracle"

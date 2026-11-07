@@ -10,7 +10,7 @@
 //   3. logic(): from scanline 160 (A197): object activation and movement, the tank on the
 //      road and its shell, the helicopter missile, then 1 river line per frame (A6FD-A711 and
 //      the generator);
-//   4. vbi(): the vertical blank interrupt (B2A5): frame counter and timers.
+//   4. vbi(): the vertical blank interrupt (B2A5): sound driver, frame counter, timers.
 //
 // So far the attract mode is ported (the game running without a player, $76 = $FF, $29 bit 7):
 // the plane, firing, fuel and scoring paths are not.
@@ -37,6 +37,12 @@ struct PmMemory {
 	uint8_t &at(uint16_t addr) { return bytes[size_t(addr - kBase) % bytes.size()]; }
 	uint8_t missiles(int line) const { return bytes[size_t(line & 0xFF)]; }
 	uint8_t player(int n, int line) const { return bytes[size_t(0x100 * (n + 1) + (line & 0xFF))]; }
+};
+
+// POKEY sound registers ($D200-$D207): frequency divider and control (distortion, volume)
+// of the four channels. AUDCTL ($D208) stays 0 in River Raid.
+struct PokeyRegs {
+	uint8_t audf[4] = {}, audc[4] = {};
 };
 
 // Collision results of one frame, set by the DLI to the slot whose band saw the collision
@@ -82,7 +88,14 @@ struct GameState {
 	uint8_t fuel = 0;           // $5B
 	uint8_t joystick = 0x0F;    // $19 last stick bits (1 = not pressed)
 	uint8_t joystickPrev = 0;   // $B9 previous stick bits << 4
-	uint8_t c6 = 0;             // $C6
+	uint8_t c6 = 0;             // $C6 start beep (frames)
+	uint8_t fuelLo = 0;         // $5C
+	uint8_t sound7A = 0;        // $7A event sound on channel 1 (1-4: refuel, full tank...)
+	uint8_t sound7B = 0;        // $7B its length / the low-fuel beep counter
+	uint8_t soundFire = 0;      // $7D
+	uint8_t soundScore = 0;     // $7E
+	uint8_t deathPitch = 0;     // $052C
+	PokeyRegs pokey;            // what the sound driver last wrote
 	Collisions hit;
 	PmMemory pm;
 };
@@ -112,6 +125,8 @@ public:
 	void display();
 	void logic(const std::function<uint8_t()> &random);
 	void vbi(const std::function<uint8_t()> &random);
+	// The sound part of the VBI (B2A5-B3D8): sets g.pokey from the game state.
+	void soundDriver(const std::function<uint8_t()> &random);
 
 	// What display() leaves for drawing: per scanline, the state of player 3 and of the bank
 	// colour as the DLI set them (index = scanline, 0..261).

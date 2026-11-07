@@ -61,4 +61,4 @@ A rule is read from the listing, then checked against a reference trace with `to
 ## Next steps
 1. Make the generator code more readable while keeping it byte-exact (`terrain_check`).
 2. The game with a player on top of `src/game.cpp` (attract mode done: movement, tank, missiles, DLI collisions): plane and firing (A3E9–A5B4), collisions A424–A434, restart after a death (`sub_B1C0`).
-3. Remaining subsystems: objects and collisions → fuel and score → sound (VBI driver + POKEY core) → rendering and platform (SDL3).
+3. Remaining subsystems: plane, fuel and score; sound is done (driver + POKEY model, `src/pokey_sound.cpp`) and plays as soon as the game sets its triggers.

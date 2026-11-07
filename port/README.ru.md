@@ -26,6 +26,7 @@ cmake --build build
 | Backspace | вернуться к самой новой строке, обычная скорость |
 | B / Shift+B | следующий / предыдущий мост |
 | Home | начать заново |
+| F1 / F2 / F3 | проверка звука: взрыв / выстрел / звук очков через звуковой драйвер игры (сам демо-режим беззвучен, как в оригинале) |
 | F | полный экран |
 | Esc | выход |
 
@@ -41,11 +42,14 @@ cmake --build build
 | `src/game.h/.cpp` | кадр игры: пробуждение и движение объектов, танк и его снаряд, ракета вертолёта, прокрутка (пока демо-режим) |
 | `src/display.cpp` | показ реки так, как его ведёт DLI: один спрайт на все объекты, столкновения по объектам, отрисовка области реки |
 | `src/pokey_random.h` | счётчик RANDOM микросхемы POKEY |
+| `src/pokey_sound.h/.cpp` | звук POKEY: четыре канала, делители и шумовые счётчики, потактово |
 | `src/status_bar.h/.cpp` | панель состояния и бегущая строка: наборы символов, панель, шаг прокрутки, отрисовка |
 | `src/os_font.h/.cpp` | шрифт ОС: встроенный AltirraOS или загрузка из ROM ОС |
 | `src/river_state_io.cpp` | соответствие полей адресам RAM оригинала, загрузка и сравнение (для проверки) |
 | `viewer/river_view.cpp` | просмотрщик реки (SDL3), см. ниже |
 | `tools/river_map.cpp` | генерирует реку и сохраняет PNG так, как её показывает игра: `river_map <rom> <игра 1..8> <строк> out.png [-pal] [-flat]` (`-flat`: только растр, фиксированные цвета) |
+| `tools/sound_check.cpp` | сверка звукового драйвера с записями оригинала в POKEY (`rr_oracle -vbi`) |
+| `tools/sound_render.cpp` | рендер журнала записей POKEY в WAV звуком порта, для сравнения со звуком эмулятора (`rr_oracle -wav`) |
 | `tools/game_check.cpp` | покадровая сверка кадра игры с трассой RAM оригинала (и области реки с его экранами) |
 | `tools/status_check.cpp` | сверка панели и бегущей строки с полными экранами оригинала (`rr_oracle -screens A:B -ram A:B`) |
 | `tools/render_check.cpp` | сверка отрисовки с экраном оригинала (`oracle/rr_oracle -ghost -strip 20`) |
@@ -94,6 +98,14 @@ port/build/status_check rom/River_Raid.rom out/screens.bin out/ram.bin
 ```
 oracle/rr_oracle rom/River_Raid.rom oracle/scripts/attract_idle.txt 20000 out -strip 20
 port/build/game_check rom/River_Raid.rom out/ram.bin out/random.log 38 19900 -attract
+```
+
+Звук. Звуковой драйвер (VBI B2A5–B3D8, `Game::soundDriver`) прогнан на RAM, которая была у оригинала в начале каждого VBI в игре бота (2989 кадров, из них 2199 со звуком: мотор, предупреждение о топливе, взрывы, выстрелы, очки, снаряд танка): все значения AUDF/AUDC совпали с тем, что записал оригинал. Модель POKEY (`src/pokey_sound.cpp`) сравнена со звуком atari800 на тех же записях в регистры: та же громкость во времени (корреляция огибающих 0,95), те же чистые тоны на той же высоте, шум с той же формой спектра (косинус сглаженных спектров 0,94); посэмпловый рисунок шума отличается — он зависит от того, где окажутся шумовые счётчики.
+
+```
+oracle/rr_oracle rom/River_Raid.rom oracle/scripts/start_only.txt 3000 out -bot -wav -vbi
+port/build/sound_check rom/River_Raid.rom out/vbi.bin out/pokey.log out/random.log
+port/build/sound_render out/pokey.log port.wav
 ```
 
 ## Ещё не сделано

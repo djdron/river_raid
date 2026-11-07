@@ -26,6 +26,7 @@ Letters and digits 1–9 come from the OS font, which is not in the cartridge. T
 | Backspace | back to the newest line at normal speed |
 | B / Shift+B | next / previous bridge |
 | Home | start again |
+| F1 / F2 / F3 | sound test: explosion / firing / score sound through the game's sound driver (the attract mode itself is silent, as in the original) |
 | F | full screen |
 | Esc | quit |
 
@@ -41,11 +42,14 @@ Which object wakes up when is decided by POKEY's RANDOM register, a hardware cou
 | `src/game.h/.cpp` | the game frame: object activation and movement, tank and its shell, helicopter missile, scrolling (attract mode so far) |
 | `src/display.cpp` | the river display as the DLI drives it: one sprite re-used for every object, collisions per object, drawing of the river area |
 | `src/pokey_random.h` | POKEY's RANDOM counter |
+| `src/pokey_sound.h/.cpp` | POKEY sound: four channels, dividers and noise counters, generated cycle by cycle |
 | `src/status_bar.h/.cpp` | status panel and scrolling line: character sets, panel, scroller step, drawing |
 | `src/os_font.h/.cpp` | OS font: AltirraOS built in, or loaded from an OS ROM |
 | `src/river_state_io.cpp` | mapping of fields to the original's RAM addresses, loading and comparison (for verification) |
 | `viewer/river_view.cpp` | the river viewer (SDL3), see below |
 | `tools/river_map.cpp` | generates the river and saves a PNG as the game shows it: `river_map <rom> <game 1..8> <lines> out.png [-pal] [-flat]` (`-flat`: bitmap only, fixed colours) |
+| `tools/sound_check.cpp` | compares the sound driver with the original's POKEY writes (`rr_oracle -vbi`) |
+| `tools/sound_render.cpp` | renders a POKEY write log to WAV with the port's POKEY, to compare with the emulator's sound (`rr_oracle -wav`) |
 | `tools/game_check.cpp` | compares the game frame with a RAM trace of the original, frame by frame (and the river area with its screens) |
 | `tools/status_check.cpp` | compares the panel and scrolling line with full screens of the original (`rr_oracle -screens A:B -ram A:B`) |
 | `tools/render_check.cpp` | compares the drawing with the original screen (`oracle/rr_oracle -ghost -strip 20`) |
@@ -94,6 +98,14 @@ Game frame in the attract mode (`game_check`): started from the power-on state (
 ```
 oracle/rr_oracle rom/River_Raid.rom oracle/scripts/attract_idle.txt 20000 out -strip 20
 port/build/game_check rom/River_Raid.rom out/ram.bin out/random.log 38 19900 -attract
+```
+
+Sound. The sound driver (VBI B2A5–B3D8, `Game::soundDriver`) was run on the RAM the original had at the start of each VBI of a bot game (2989 frames, 2199 with sound: engine, low-fuel warning, explosions, firing, score, tank shell): every AUDF/AUDC value equals what the original wrote. The POKEY model (`src/pokey_sound.cpp`) was compared with atari800's sound for the same register writes: the same loudness over time (envelope correlation 0.95), the same pure tones at the same pitch, noise with the same spectrum shape (smoothed spectra cosine 0.94); the noise's sample-by-sample pattern differs, as it depends on where the noise counters happen to be.
+
+```
+oracle/rr_oracle rom/River_Raid.rom oracle/scripts/start_only.txt 3000 out -bot -wav -vbi
+port/build/sound_check rom/River_Raid.rom out/vbi.bin out/pokey.log out/random.log
+port/build/sound_render out/pokey.log port.wav
 ```
 
 ## Not done yet

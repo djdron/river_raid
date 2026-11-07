@@ -22,6 +22,8 @@
 //   Backspace      back to the newest line, normal speed
 //   B / Shift+B    next / previous bridge
 //   Home           start again
+//   F1 / F2 / F3   sound test: explosion / firing / score sound, through the game's own sound
+//                  driver (the attract mode itself is silent, as in the original)
 //   F              full screen
 //   Esc            quit
 //
@@ -42,6 +44,7 @@
 #include "game.h"
 #include "os_font.h"
 #include "pokey_random.h"
+#include "pokey_sound.h"
 #include "river_draw.h"
 #include "river_gen.h"
 #include "status_bar.h"
@@ -56,6 +59,7 @@ constexpr int kScale = 3;   // initial window scale
 // colour clock, which is a little narrower than a scanline is high.
 constexpr double kPixelAspect = 0.86;
 constexpr double kFrameRate = 59.92;   // NTSC Atari
+constexpr int kSampleRate = 48000;
 
 // The attract mode: the game running without a player, from power-on, plus the status bar.
 class Attract {
@@ -80,6 +84,8 @@ public:
 		logoShown_ = 0;
 		frame_ = 0;
 		random_ = rr::PokeyRandom(seed_);
+		pokey_ = rr::PokeySound(kSampleRate);
+		audio_.clear();
 		std::memset(live_, 0, sizeof live_);
 		running_ = false;
 	}
@@ -98,10 +104,30 @@ public:
 			game_.logic([this] { return random_.read(192, 13); });   // A205, after scanline 160
 			game_.vbi([this] { return random_.read(248, 30); });
 		}
+		// sound: the registers the VBI set at the end of the previous frame play for one frame
+		pokey_.run(rr::PokeyRandom::kCyclesPerLine * rr::PokeyRandom::kLinesPerFrame, audio_);
+		for (int c = 0; c < 4; c++) {
+			pokey_.write(2 * c, game_.g.pokey.audf[c]);
+			pokey_.write(2 * c + 1, game_.g.pokey.audc[c]);
+		}
 		random_.nextFrame();
 		logoShown_ = scroller_.logoX;   // the display uses the position from before the step
 		if (frame_ >= kFirstScrollerFrame) scroller_.step(true);
 	}
+
+	// Sound test: start one of the game's sound effects through its own sound driver.
+	// (The attract mode itself is silent, as in the original.)
+	void soundTest(int which) {
+		if (!running_) return;
+		switch (which) {
+		case 0: game_.g.soundExplosion = 0x17; break;   // explosion, as A4E6 sets it
+		case 1: game_.g.soundFire = 0x0F; break;        // firing (A5A6)
+		case 2: game_.g.soundScore = 0x40; break;       // score (A587)
+		default: break;
+		}
+	}
+	// Samples generated so far (taken by the caller).
+	std::vector<int16_t> &audio() { return audio_; }
 
 	long lines() const { return long(level_.size()); }
 	// First line of the bridge section before / after `line` (-1 if none generated yet).
@@ -141,6 +167,8 @@ private:
 	bool pal_;
 	uint32_t seed_;
 	rr::PokeyRandom random_;
+	rr::PokeySound pokey_{kSampleRate};
+	std::vector<int16_t> audio_;
 	bool running_ = false;
 	rr::Charsets charsets_;
 	uint8_t panel_[rr::kPanelBytes];
@@ -213,7 +241,7 @@ int main(int argc, char **argv) {
 		rr::builtinOsFont(osFont);
 	}
 
-	if (!SDL_Init(SDL_INIT_VIDEO)) {
+	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) && !SDL_Init(SDL_INIT_VIDEO)) {
 		std::fprintf(stderr, "SDL_Init: %s\n", SDL_GetError());
 		return 1;
 	}
@@ -225,6 +253,9 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 	SDL_SetRenderVSync(renderer, 1);
+	SDL_AudioSpec spec{SDL_AUDIO_S16, 1, kSampleRate};
+	SDL_AudioStream *audio = shotPath ? nullptr : SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, nullptr, nullptr);
+	if (audio) SDL_ResumeAudioStreamDevice(audio);
 	SDL_Texture *texture =
 	    SDL_CreateTexture(renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, kViewWidth, kViewHeight);
 	SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
@@ -284,6 +315,9 @@ int main(int argc, char **argv) {
 					}
 					break;
 				}
+				case SDLK_F1: attract.soundTest(0); break;
+				case SDLK_F2: attract.soundTest(1); break;
+				case SDLK_F3: attract.soundTest(2); break;
 				case SDLK_F:
 					SDL_SetWindowFullscreen(window, !(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN));
 					break;
@@ -304,6 +338,15 @@ int main(int argc, char **argv) {
 			for (; pending <= -1; pending++) back++;
 		}
 		back = std::clamp(back, 0L, std::max(0L, attract.lines() - 1));
+		{
+			std::vector<int16_t> &samples = attract.audio();
+			if (audio && !samples.empty()) {
+				// keep the delay short: at higher speeds or after a stall, drop what is queued
+				if (SDL_GetAudioStreamQueued(audio) > int(sizeof(int16_t)) * kSampleRate / 5) SDL_ClearAudioStream(audio);
+				SDL_PutAudioStreamData(audio, samples.data(), int(samples.size() * sizeof(int16_t)));
+			}
+			samples.clear();
+		}
 		if (attract.lines() > 0 && back == attract.lines() - 1 && kSpeeds[speedIndex] < 0) pending = 0;
 
 		attract.draw(back, screen);
@@ -354,6 +397,7 @@ int main(int argc, char **argv) {
 		}
 	}
 
+	if (audio) SDL_DestroyAudioStream(audio);
 	SDL_DestroyTexture(texture);
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);

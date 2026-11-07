@@ -35,6 +35,8 @@ std::vector<std::pair<std::pair<const char *, uint16_t>, uint8_t *>> gameFields(
 	    {{"bridgeFlash", 0x31}, &g.bridgeFlash}, {{"fuel", 0x5B}, &g.fuel}, {{"joystick", 0x19}, &g.joystick},
 	    {{"joystickPrev", 0xB9}, &g.joystickPrev}, {{"c6", 0xC6}, &g.c6}, {{"state24", 0x24}, &g.state24},
 	    {{"optionDelay", 0x25}, &g.optionDelay}, {{"gameNumber", 0x09}, &g.gameNumber}, {{"player", 0x77}, &g.player},
+	    {{"fuelLo", 0x5C}, &g.fuelLo}, {{"sound7A", 0x7A}, &g.sound7A}, {{"sound7B", 0x7B}, &g.sound7B},
+	    {{"soundFire", 0x7D}, &g.soundFire}, {{"soundScore", 0x7E}, &g.soundScore}, {{"deathPitch", 0x052C}, &g.deathPitch},
 	    {{"hit.m2pf", 0x1A}, &g.hit.m2pf}, {{"hit.p2pf", 0x1B}, &g.hit.p2pf}, {{"hit.m2p3", 0x1C}, &g.hit.m2p3},
 	    {{"hit.p2p3", 0x1D}, &g.hit.p2p3}, {{"hit.p2p0", 0x1E}, &g.hit.p2p0}, {{"hit.p3p0", 0x1F}, &g.hit.p3p0},
 	    {{"hit.p1pf", 0x20}, &g.hit.p1pf}, {{"hit.m0p2", 0x21}, &g.hit.m0p2}, {{"hit.m0pf", 0x22}, &g.hit.m0pf},

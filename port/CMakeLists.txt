@@ -14,6 +14,7 @@ add_library(rrcore
 	src/display.cpp
 	src/game.cpp
 	src/os_font.cpp
+	src/pokey_sound.cpp
 	src/river_draw.cpp
 	src/river_gen.cpp
 	src/river_state_io.cpp
@@ -41,6 +42,16 @@ target_compile_options(render_check PRIVATE ${RR_WARNINGS})
 add_executable(game_check tools/game_check.cpp)
 target_link_libraries(game_check rrcore)
 target_compile_options(game_check PRIVATE ${RR_WARNINGS})
+
+# Compare the sound driver with the POKEY writes of the original (rr_oracle -vbi).
+add_executable(sound_check tools/sound_check.cpp)
+target_link_libraries(sound_check rrcore)
+target_compile_options(sound_check PRIVATE ${RR_WARNINGS})
+
+# Render a POKEY write log (rr_oracle pokey.log) to WAV, to compare with the emulator's sound.
+add_executable(sound_render tools/sound_render.cpp)
+target_link_libraries(sound_render rrcore)
+target_compile_options(sound_render PRIVATE ${RR_WARNINGS})
 
 # Compare the status panel and scrolling line with screens of the original (rr_oracle -screens).
 add_executable(status_check tools/status_check.cpp)

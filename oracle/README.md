@@ -31,6 +31,8 @@ The input actually applied in any run is written to `inputs.txt` in script forma
 - `-screens A:B` — full screens of frames A…B into `screens.bin`.
 - `-noram` — do not write `ram.bin` (for long runs).
 - `-ram A:B` — write `ram.bin` only for frames A…B (frame A at offset 0).
+- `-wav` — the emulator's sound output into `sound.wav`.
+- `-vbi` — `vbi.bin`: RAM at the start of every vertical blank interrupt (records of 4 bytes frame number + 16 384 bytes), the state the sound driver sees.
 - `frames.csv` has the columns `$60, $2F, $5D, $AA, $AB, $AC, $76, $52, $53, $54, $2D, $4E`.
 
 ## Scripts

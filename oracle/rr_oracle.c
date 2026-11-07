@@ -21,6 +21,9 @@
  *           so row 20 of consecutive frames stacks into a map of the level.
  * -noram: do not write ram.bin (long filming runs)
  * -ram A:B: write ram.bin only for frames A..B (frame A at offset 0)
+ * -wav: the emulator's sound output into <out>/sound.wav
+ * -vbi: also <out>/vbi.bin: RAM $0000-$3FFF at the start of each vertical blank interrupt,
+ *       i.e. the state the VBI (sound driver) sees; records of 4 bytes frame number + 16384
  *
  * -seed sets POKEY's random counter at power-on (atari800 otherwise seeds it from the
  * wall clock, which makes runs non-reproducible). Default 0.
@@ -39,13 +42,28 @@
 /* internal atari800 symbols (available because we link the static library) */
 extern int ANTIC_ypos;
 extern int ANTIC_xpos;
+extern unsigned char ANTIC_NMIST;
+extern unsigned char MEMORY_mem[];
 extern int Colours_table[256];
 void __real_POKEY_PutByte(UWORD addr, UBYTE byte);
 UBYTE __real_POKEY_GetByte(UWORD addr, int no_side_effects);
 void POKEY_SetRandomCounter(ULONG value);
 
-static FILE *pokey_log, *random_log;
+static FILE *pokey_log, *random_log, *vbi_log;
+
 static int cur_frame;
+
+/* Linked with -Wl,--wrap=CPU_NMI: snapshot RAM when the vertical blank NMI starts. */
+void __real_CPU_NMI(void);
+void __wrap_CPU_NMI(void)
+{
+	if (vbi_log && ANTIC_NMIST == 0x5f) {
+		int f = cur_frame;
+		fwrite(&f, 4, 1, vbi_log);
+		fwrite(MEMORY_mem, 1, 0x4000, vbi_log);
+	}
+	__real_CPU_NMI();
+}
 
 /* Linked with -Wl,--wrap=POKEY_PutByte: every POKEY write goes through here. */
 void __wrap_POKEY_PutByte(UWORD addr, UBYTE byte)
@@ -199,8 +217,24 @@ static void apply_ghost(void)
 	m[0xA443] = 0x00;
 }
 
+/* Minimal WAV writer: header with placeholder sizes, patched at the end. */
+static void wav_header(FILE *f, int rate, int channels, int bits, unsigned data_bytes)
+{
+	unsigned byte_rate = (unsigned)(rate * channels * bits / 8);
+	unsigned short align = (unsigned short)(channels * bits / 8), ch = (unsigned short)channels, b = (unsigned short)bits, pcm = 1;
+	unsigned riff = 36 + data_bytes, fmt = 16, r = (unsigned)rate;
+	fseek(f, 0, SEEK_SET);
+	fwrite("RIFF", 1, 4, f); fwrite(&riff, 4, 1, f); fwrite("WAVEfmt ", 1, 8, f);
+	fwrite(&fmt, 4, 1, f); fwrite(&pcm, 2, 1, f); fwrite(&ch, 2, 1, f); fwrite(&r, 4, 1, f);
+	fwrite(&byte_rate, 4, 1, f); fwrite(&align, 2, 1, f); fwrite(&b, 2, 1, f);
+	fwrite("data", 1, 4, f); fwrite(&data_bytes, 4, 1, f);
+}
+
 int main(int argc, char **argv)
 {
+	int want_wav = 0, want_vbi = 0;
+	FILE *wav = NULL;
+	unsigned wav_bytes = 0;
 	const char *rom, *script, *out;
 	int frames, nseg, seg = 0, left, i, pal = 0;
 	int shots[256], nshots = 0, bot = 0, script_frames = 0, ghost = 0, scr_from = -1, scr_to = -1, strip_y = -1, noram = 0, ram_from = 0, ram_to = 0x7fffffff;
@@ -229,6 +263,8 @@ int main(int argc, char **argv)
 		else if (!strcmp(argv[i], "-strip") && i + 1 < argc) strip_y = atoi(argv[++i]);
 		else if (!strcmp(argv[i], "-screens") && i + 1 < argc) sscanf(argv[++i], "%d:%d", &scr_from, &scr_to);
 		else if (!strcmp(argv[i], "-bot-nofire")) { bot = 1; bot_fire = 0; }
+		else if (!strcmp(argv[i], "-wav")) want_wav = 1;
+		else if (!strcmp(argv[i], "-vbi")) want_vbi = 1;
 		else if (!strcmp(argv[i], "-shot") && i + 1 < argc) {
 			char *p = argv[++i];
 			while (*p && nshots < 256) { shots[nshots++] = atoi(p); p = strchr(p, ','); if (!p) break; p++; }
@@ -252,6 +288,7 @@ int main(int argc, char **argv)
 	snprintf(path, sizeof path, "%s/pokey.log", out); pokey_log = fopen(path, "w");
 	snprintf(path, sizeof path, "%s/frames.csv", out); csv = fopen(path, "w");
 	snprintf(path, sizeof path, "%s/random.log", out); random_log = fopen(path, "w");
+	if (want_vbi) { snprintf(path, sizeof path, "%s/vbi.bin", out); vbi_log = fopen(path, "wb"); }
 	snprintf(path, sizeof path, "%s/inputs.txt", out); rec = fopen(path, "w");
 	if (!ram || !pokey_log || !csv || !random_log || !rec) { perror(out); return 1; }
 	fprintf(rec, "# input actually applied, replayable as a script: <count> <joy> <fire> <start>\n");
@@ -276,6 +313,19 @@ int main(int argc, char **argv)
 		}
 		if (ghost) apply_ghost();
 		libatari800_next_frame(&in);
+		if (want_wav) {
+			if (!wav) {
+				char wpath[1024];
+				snprintf(wpath, sizeof wpath, "%s/sound.wav", out);
+				wav = fopen(wpath, "wb");
+				if (wav) wav_header(wav, 0, 1, 8, 0);
+			}
+			if (wav) {
+				int n = libatari800_get_sound_buffer_len();
+				fwrite(libatari800_get_sound_buffer(), 1, (size_t)n, wav);
+				wav_bytes += (unsigned)n;
+			}
+		}
 		if (cur_frame >= scr_from && cur_frame <= scr_to) {
 			if (!scr) { snprintf(path, sizeof path, "%s/screens.bin", out); scr = fopen(path, "wb"); }
 			if (scr) fwrite(libatari800_get_screen_ptr(), 1, 384 * 240, scr);
@@ -312,6 +362,12 @@ int main(int argc, char **argv)
 	fclose(rec);
 	if (scr) fclose(scr);
 	if (strip) fclose(strip);
+	if (wav) {
+		wav_header(wav, libatari800_get_sound_frequency(), libatari800_get_num_sound_channels(),
+		           libatari800_get_sound_sample_size() * 8, wav_bytes);
+		fclose(wav);
+	}
+	if (vbi_log) { fclose(vbi_log); vbi_log = NULL; }
 	fclose(ram); fclose(pokey_log); fclose(csv); fclose(random_log);
 	pokey_log = random_log = NULL;
 	libatari800_exit();
