@@ -9,7 +9,25 @@ So far this is the river generator and the drawing of the river as the game show
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
-No dependencies, only a C++17 compiler. On Windows with Visual Studio: `cmake --build build --config Release`, the programs end up in `build\Release\`. Tested on Linux (gcc); macOS and Windows not tested yet.
+The core and the tools need only a C++17 compiler. The viewer `river_view` needs SDL3: CMake uses an installed SDL3 if it finds one, otherwise it downloads SDL 3.2.24 from GitHub during configuration (needs git and internet) and links it statically. On Linux, building SDL from source needs the X11/Wayland development packages (see SDL's `docs/README-linux.md`). Without the viewer: `cmake -S . -B build -DRR_VIEWER=OFF`.
+
+On Windows with Visual Studio: `cmake --build build --config Release`, the programs end up in `build\Release\`. Tested on Linux (gcc); macOS and Windows not tested yet.
+
+## River viewer
+`river_view [rom] [-game N] [-pal]` shows the generated river scrolling in a window at the game's speed (1 line per frame). The ROM is looked for in `rom/River_Raid.rom` of the current folder and up to three folders above, so running it from the repository or from `port/build/Release` works without arguments.
+
+| Key | Action |
+|---|---|
+| Space | pause |
+| Up / Down | faster / slower, down to backwards |
+| mouse wheel, PgUp / PgDn | scroll by hand, by a screen |
+| B / Shift+B | next / previous bridge |
+| Home | back to the start |
+| 1..8 | start game 1..8 |
+| F | full screen |
+| Esc | quit |
+
+The title shows the game, the bridge number and the line. Objects stand where the generator placed them: there is no game logic yet.
 
 ## Contents
 | File | What |
@@ -17,6 +35,7 @@ No dependencies, only a C++17 compiler. On Windows with Visual Studio: `cmake --
 | `src/river_gen.h/.cpp` | the generator: `RiverGen::startGame(n)`, then `nextLine(line)` — one screen line per call |
 | `src/river_draw.h/.cpp` | drawing a line as on screen: bank shades, roads at bridges, object sprites (`drawScreenLine`), Atari colours (`atariRgb`) |
 | `src/river_state_io.cpp` | mapping of fields to the original's RAM addresses, loading and comparison (for verification) |
+| `viewer/river_view.cpp` | the river viewer (SDL3), see below |
 | `tools/river_map.cpp` | generates the river and saves a PNG as the game shows it: `river_map <rom> <game 1..8> <lines> out.png [-pal] [-flat]` (`-flat`: bitmap only, fixed colours) |
 | `tools/render_check.cpp` | compares the drawing with the original screen (`oracle/rr_oracle -ghost -strip 20`) |
 | `tools/terrain_check.cpp` | comparison with a reference trace (`oracle/rr_oracle -ram A:B`) |

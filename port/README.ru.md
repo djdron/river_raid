@@ -9,7 +9,25 @@
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
-Зависимостей нет, нужен только компилятор C++17. Под Windows с Visual Studio: `cmake --build build --config Release`, программы появятся в `build\Release\`. Проверено под Linux (gcc); macOS и Windows ещё не проверялись.
+Ядру и утилитам нужен только компилятор C++17. Просмотрщику `river_view` нужен SDL3: если CMake находит установленный SDL3, он берёт его, иначе при конфигурации скачивает SDL 3.2.24 с GitHub (нужны git и интернет) и линкует статически. Под Linux для сборки SDL из исходников нужны dev-пакеты X11/Wayland (см. `docs/README-linux.md` в SDL). Без просмотрщика: `cmake -S . -B build -DRR_VIEWER=OFF`.
+
+Под Windows с Visual Studio: `cmake --build build --config Release`, программы появятся в `build\Release\`. Проверено под Linux (gcc); macOS и Windows ещё не проверялись.
+
+## Просмотрщик реки
+`river_view [rom] [-game N] [-pal]` показывает сгенерированную реку, которая прокручивается в окне со скоростью игры (1 строка за кадр). ROM ищется в `rom/River_Raid.rom` текущей папки и до трёх папок выше, так что из репозитория или из `port/build/Release` он запускается без аргументов.
+
+| Клавиша | Действие |
+|---|---|
+| Пробел | пауза |
+| Вверх / Вниз | быстрее / медленнее, вплоть до движения назад |
+| колесо мыши, PgUp / PgDn | прокрутка вручную, на экран |
+| B / Shift+B | следующий / предыдущий мост |
+| Home | к началу |
+| 1..8 | начать игру 1..8 |
+| F | полный экран |
+| Esc | выход |
+
+В заголовке окна — номер игры, номер моста и строка. Объекты стоят там, где их поставил генератор: логики игры ещё нет.
 
 ## Что есть
 | Файл | Что |
@@ -17,6 +35,7 @@ cmake --build build
 | `src/river_gen.h/.cpp` | генератор: `RiverGen::startGame(n)`, затем `nextLine(line)` — одна строка экрана за вызов |
 | `src/river_draw.h/.cpp` | отрисовка строки как на экране: оттенки берега, дороги у мостов, спрайты объектов (`drawScreenLine`), цвета Atari (`atariRgb`) |
 | `src/river_state_io.cpp` | соответствие полей адресам RAM оригинала, загрузка и сравнение (для проверки) |
+| `viewer/river_view.cpp` | просмотрщик реки (SDL3), см. ниже |
 | `tools/river_map.cpp` | генерирует реку и сохраняет PNG так, как её показывает игра: `river_map <rom> <игра 1..8> <строк> out.png [-pal] [-flat]` (`-flat`: только растр, фиксированные цвета) |
 | `tools/render_check.cpp` | сверка отрисовки с экраном оригинала (`oracle/rr_oracle -ghost -strip 20`) |
 | `tools/terrain_check.cpp` | сверка с трассой эталона (`oracle/rr_oracle -ram A:B`) |

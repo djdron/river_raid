@@ -24,7 +24,7 @@
 | `tools/verify_trace.py` | перепроверка всех задокументированных правил по трассе эталона |
 | `oracle/` | эталон на libatari800: `rr_oracle.c`, `build.sh`, `README.ru.md`, сценарии ввода, бот `-bot` |
 | `oracle/scripts/bot_run_8000.txt` | длинный записанный прогон (2 моста, 5 гибелей, конец игры) |
-| `port/` | C++ порт: пока генератор реки (`river_gen`) и отрисовка (`river_draw`), утилиты `river_map`, `terrain_check`, `render_check`, см. `port/README.ru.md` |
+| `port/` | C++ порт: пока генератор реки (`river_gen`) и отрисовка (`river_draw`), просмотрщик `river_view` (SDL3), утилиты `river_map`, `terrain_check`, `render_check`, см. `port/README.ru.md` |
 | `docs/NOTES.ru.md` | все находки с адресами |
 | `docs/oracle_demo.png` | кадры из эталонного прогона |
 
