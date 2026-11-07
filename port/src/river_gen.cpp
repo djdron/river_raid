@@ -192,7 +192,7 @@ void RiverGen::moveBank() {
 			}
 			s.vB7 = a;
 			uint8_t o = lo(s.slot[ns].x - 0x17 + s.margin);
-			if (s.slot[ns].height) o = lo(o + 8);
+			if (s.slot[ns].size) o = lo(o + 8);
 			if (o >= a) reverse = true;
 		}
 		if (!reverse) { s.bank--; return; }
@@ -492,7 +492,7 @@ position:
 		s.jetSlot = x;
 	}
 	s.objLines = lo(rom_.at(0xBB60 + y) + 4);
-	s.slot[x].height = rom_.at(0xBBA2 + y);
+	s.slot[x].size = rom_.at(0xBBA2 + y);
 	s.slot[x].y = lo(0x61 - s.objLines);
 	if ((s.lineInBlock | s.roadKind) == 0) {
 		if (s.mode & 0x80) {                          // $ADA6: tank on the bridge road
@@ -571,8 +571,8 @@ void RiverGen::restoreCheckpoint() {
 	s.widthCodePrev = s.shape = s.bridgeHit = s.lineInBlock = 0;
 	s.objLines = s.toggle33 = s.islandTarget = s.islandStep = s.deco = s.deco37 = 0;
 	s.roadKind = s.roadX = s.roadY = s.v3E = s.v3F = s.v40 = s.v41 = 0;
-	// $0500-$05FF cleared: object kinds, positions, types, heights, corridor flag
-	for (auto &sl : s.slot) { sl.kind = sl.x = sl.type = sl.height = sl.flags = 0; }
+	// $0500-$05FF cleared: object kinds, positions, types, sprite sizes, corridor flag
+	for (auto &sl : s.slot) { sl.kind = sl.x = sl.type = sl.size = sl.flags = 0; }
 	s.corridor = 0;
 	// $B15E: the bridge we restart from, in the lowest slot
 	s.objLines = 0x17;

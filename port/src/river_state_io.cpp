@@ -81,7 +81,7 @@ void forEachSlotField(Fn fn) {
 		fn("slot.flags", i, uint16_t(0x42 + i), true, &Slot::flags);
 		fn("slot.kind", i, uint16_t(0x0500 + i), true, &Slot::kind);
 		fn("slot.type", i, uint16_t(0x050B + i), false, &Slot::type);
-		fn("slot.height", i, uint16_t(0x0521 + i), false, &Slot::height);
+		fn("slot.size", i, uint16_t(0x0521 + i), false, &Slot::size);
 	}
 }
 

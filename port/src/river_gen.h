@@ -37,7 +37,7 @@ struct Slot {
 	uint8_t flags = 0;    // $42+i
 	uint8_t kind = 0;     // $0500+i current kind / animation (game logic changes it)
 	uint8_t type = 0;     // $050B+i type as placed (index into the points table)
-	uint8_t height = 0;   // $0521+i
+	uint8_t size = 0;     // $0521+i sprite width (SIZEP3): 0 normal, 1 double (ship), 3 quad (bridge)
 };
 
 struct RiverState {
