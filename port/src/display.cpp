@@ -334,7 +334,7 @@ void Game::display() {
 		beam.op(3); beam.op(4);
 		const bool m2p3 = beam.mpl[2] & 0x08;
 		beam.op(2);
-		if (!beam.branch(!m2p3)) { beam.op(3); g.hit.m2p3 = uint8_t(current); }
+		if (!beam.branch(!m2p3)) { beam.op(3); g.hit.bulletHitObject = uint8_t(current); }
 		beam.op(4); beam.wsync();                           // B5F3
 		beam.op(3);
 		if (!beam.branch(!(flags & 0x80), true)) {          // bridge: bank colour back
@@ -344,7 +344,7 @@ void Game::display() {
 			beam.op(4);
 			const bool p3p0 = beam.ppl[3] & 0x01;
 			beam.op(2);
-			if (!beam.branch(!p3p0)) { beam.op(3); g.hit.p3p0 = uint8_t(current); }
+			if (!beam.branch(!p3p0)) { beam.op(3); g.hit.shellHitObject = uint8_t(current); }
 		}
 		beam.op(2);                                         // B60A INX
 		X = (X + 1) & 0xFF;
@@ -352,9 +352,9 @@ void Game::display() {
 		beam.op(4);
 		const uint8_t p2pl = beam.ppl[2];
 		beam.op(2);
-		if (!beam.branch(!(p2pl & 0x01))) { beam.op(3); g.hit.p2p0 = uint8_t(current); }
+		if (!beam.branch(!(p2pl & 0x01))) { beam.op(3); g.hit.planeHitShell = uint8_t(current); }
 		beam.op(2);
-		if (!beam.branch(!(p2pl & 0x08))) { beam.op(3); g.hit.p2p3 = uint8_t(current); }
+		if (!beam.branch(!(p2pl & 0x08))) { beam.op(3); g.hit.planeHitObject = uint8_t(current); }
 		beam.op(4);
 		const bool bank = beam.ppf[3] & 0x02;               // P3PF bit 1: the bank edge colour
 		beam.op(2);
@@ -367,24 +367,24 @@ void Game::display() {
 		beam.op(4);
 		const bool m0p2 = beam.mpl[0] & 0x04;
 		beam.op(2);
-		if (!beam.branch(!m0p2)) { beam.op(3); g.hit.m0p2 = uint8_t(current); }
+		if (!beam.branch(!m0p2)) { beam.op(3); g.hit.missileHitPlane = uint8_t(current); }
 		beam.op(4);
 		const bool m0pf = beam.mpf[0] & 0x03;
 		beam.op(2);
-		if (!beam.branch(!m0pf)) { beam.op(3); g.hit.m0pf = uint8_t(current); }
+		if (!beam.branch(!m0pf)) { beam.op(3); g.hit.missileHitBank = uint8_t(current); }
 		beam.op(4);
 		const bool tankEdge = beam.ppf[1] & 0x02;
 		beam.op(4); beam.wsync();                           // B645
 		beam.op(2);
-		if (!beam.branch(!tankEdge)) { beam.op(3); g.hit.p1pf = uint8_t(current); }
+		if (!beam.branch(!tankEdge)) { beam.op(3); g.hit.tankAtEdge = uint8_t(current); }
 		beam.op(4);
 		const bool p2pf = beam.ppf[2] & 0x01;
 		beam.op(2);
-		if (!beam.branch(!p2pf)) { beam.op(3); g.hit.p2pf = uint8_t(current); }
+		if (!beam.branch(!p2pf)) { beam.op(3); g.hit.planeHitBank = uint8_t(current); }
 		beam.op(4);
 		const bool m2pf = beam.mpf[2] & 0x03;
 		beam.op(2);
-		if (!beam.branch(!m2pf)) { beam.op(3); g.hit.m2pf = uint8_t(current); }
+		if (!beam.branch(!m2pf)) { beam.op(3); g.hit.bulletHitBank = uint8_t(current); }
 		beam.op(4); beam.hitclr();                          // B65F
 		beam.op(2 + 2);
 		Y = current + 1;
@@ -421,23 +421,23 @@ void Game::display() {
 	beam.op(4);
 	sl.flags = uint8_t((sl.flags & 0xFE) | ((beam.ppf[3] >> 1) & 0x01));
 	beam.op(2 + 4 + 2 + 4 + 5);
-	beam.op(4); if (beam.mpl[0] & 0x04) g.hit.m0p2 = uint8_t(current);
+	beam.op(4); if (beam.mpl[0] & 0x04) g.hit.missileHitPlane = uint8_t(current);
 	beam.op(2 + 2 + 3);
-	beam.op(4); if (beam.mpf[0] & 0x03) g.hit.m0pf = uint8_t(current);
+	beam.op(4); if (beam.mpf[0] & 0x03) g.hit.missileHitBank = uint8_t(current);
 	beam.op(2 + 2 + 3);
-	beam.op(4); if (beam.mpf[2] & 0x03) g.hit.m2pf = uint8_t(current);
+	beam.op(4); if (beam.mpf[2] & 0x03) g.hit.bulletHitBank = uint8_t(current);
 	beam.op(2 + 2 + 3);
-	beam.op(4); if (beam.ppf[2] & 0x01) g.hit.p2pf = uint8_t(current);
+	beam.op(4); if (beam.ppf[2] & 0x01) g.hit.planeHitBank = uint8_t(current);
 	beam.op(2 + 2 + 3);
 	beam.op(4);
-	if (beam.ppl[2] & 0x01) g.hit.p2p0 = uint8_t(current);
-	if (beam.ppl[2] & 0x08) g.hit.p2p3 = uint8_t(current);
+	if (beam.ppl[2] & 0x01) g.hit.planeHitShell = uint8_t(current);
+	if (beam.ppl[2] & 0x08) g.hit.planeHitObject = uint8_t(current);
 	beam.op(2 + 2 + 3 + 2 + 2 + 3);
-	beam.op(4); if (beam.ppl[3] & 0x01) g.hit.p3p0 = uint8_t(current);
+	beam.op(4); if (beam.ppl[3] & 0x01) g.hit.shellHitObject = uint8_t(current);
 	beam.op(2 + 2 + 3);
-	beam.op(4); if (beam.ppf[1] & 0x02) g.hit.p1pf = uint8_t(current);
+	beam.op(4); if (beam.ppf[1] & 0x02) g.hit.tankAtEdge = uint8_t(current);
 	beam.op(2 + 2 + 3);
-	beam.op(4); if (beam.mpl[2] & 0x08) g.hit.m2p3 = uint8_t(current);
+	beam.op(4); if (beam.mpl[2] & 0x08) g.hit.bulletHitObject = uint8_t(current);
 	beam.finish();
 }
 

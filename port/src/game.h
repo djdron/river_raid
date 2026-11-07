@@ -51,15 +51,15 @@ struct PokeyRegs {
 // Collision results of one frame, set by the DLI to the slot whose band saw the collision
 // ($FF = none). Addresses $1A-$22.
 struct Collisions {
-	uint8_t m2pf = 0xFF;    // $1A missile 2 (plane's bullet) with bank or edge
-	uint8_t p2pf = 0xFF;    // $1B player 2 (plane) with bank
-	uint8_t m2p3 = 0xFF;    // $1C bullet with an object
-	uint8_t p2p3 = 0xFF;    // $1D plane with an object
-	uint8_t p2p0 = 0xFF;    // $1E plane with the tank shell
-	uint8_t p3p0 = 0xFF;    // $1F object with the tank shell
-	uint8_t p1pf = 0xFF;    // $20 tank with the river edge
-	uint8_t m0p2 = 0xFF;    // $21 helicopter missile with the plane
-	uint8_t m0pf = 0xFF;    // $22 helicopter missile with bank or edge
+	uint8_t bulletHitBank = 0xFF;    // $1A missile 2 (the plane's bullet) with bank or edge
+	uint8_t planeHitBank = 0xFF;     // $1B player 2 (the plane) with the bank
+	uint8_t bulletHitObject = 0xFF;  // $1C the bullet with an object (player 3)
+	uint8_t planeHitObject = 0xFF;   // $1D the plane with an object
+	uint8_t planeHitShell = 0xFF;    // $1E the plane with the tank shell (player 0)
+	uint8_t shellHitObject = 0xFF;   // $1F an object with the tank shell
+	uint8_t tankAtEdge = 0xFF;       // $20 the tank (player 1) with the river edge
+	uint8_t missileHitPlane = 0xFF;  // $21 the helicopter's missile (missile 0) with the plane
+	uint8_t missileHitBank = 0xFF;   // $22 the helicopter's missile with bank or edge
 };
 
 // Controls, as the original reads them every frame.
@@ -201,41 +201,45 @@ public:
 private:
 	const Rom &rom_;
 	bool pal_ = false;
-	void logicPass(const Input &input, const std::function<uint8_t()> &random);   // A197-A6EA
-	void logicTail(const Input &input, const std::function<uint8_t()> &random);   // A5B7-A6EA
+	void mainLoop(const Input &input, const std::function<uint8_t()> &random);   // A197-A6EA
+	void mainLoopEnd(const Input &input);         // A5B7-A6EA
 	void finishReset(const Input &input, const std::function<uint8_t()> &random);
-	void finishRespawn();        // A3C1-A3E3
+	void finishRespawn();                         // A3C1-A3E3
 	// sub $B0F1 clears memory for this many frames; the main loop continues in the last one
 	static constexpr int kResetFrames = 13;
 	enum class Resume { None, NewGame, Respawn };
 	Resume resume_ = Resume::None;
 	int busy_ = 0;
 	bool gameOverText_ = false;
-	void newGame();              // A688-A17E
-	void reset(bool full);       // sub $B0F1 ($4D-$5F, or $4D-$76 for a new game)
-	void selectGame();           // A699-A6DC
-	bool respawnOrGameOver();    // A36E-A3B6
-	void alive(const Input &input);   // A3E9-A5B4
-	void crash(uint8_t sound, uint8_t length);   // sub $B1C0
-	void explode(int slot, uint8_t kind);       // A4E0-A589
-	void moveBullet(const Input &input, int y); // A5AA-A5B4
-	void drawBullet(uint8_t bits);               // sub $B223
-	void clearBullet();                          // sub $B221
-	void swapPlayers();          // sub $B247
-	void updateHighScore(bool otherPlayer);     // sub $B261
-	void showLives();            // sub $AF5B
-	void setUpGame();            // sub $AF80
-	void printBcd(const uint8_t *digits, int bytes, int at, uint8_t base);   // B086-B0C6
-	void showBridges();          // sub $B05C
-	void showScore();            // sub $B07C
-	void showOtherScore();       // sub $B068
-	void showHighScore();        // sub $B06E
-	void gameOverScreen();       // sub $B21A
-	void moveObjects();          // A1F9-A2ED
-	void tankOnRoad();           // A21B-A26A
-	void helicopterMissile();    // A5B7-A605
-	void tankShell();            // A607-A671
-	void scrollRiver();          // A6FD-A70F and the generator
+	void newGame();                               // A688-A17E
+	void reset(bool full);                        // sub $B0F1 ($4D-$5F, or $4D-$76 for a new game)
+	void drawLogoAndNeedle();
+	void selectGame();                            // A699-A6DC
+	bool respawnOrGameOver();                     // A36E-A3B6
+	void flyPlane(const Input &input);            // A3E9-A5B4
+	void steer();                                 // A455-A496
+	void changeSpeed();                           // A497-A4B5
+	void crash(uint8_t sound, uint8_t length);    // sub $B1C0
+	void explode(int n, uint8_t kind);            // A4E0-A589
+	void removePlaneThings();                     // B204-B220
+	void moveBullet(int y);                       // A5AA-A5B4
+	void drawBullet(uint8_t bits);                // sub $B223
+	void clearBullet();                           // sub $B221
+	void swapPlayers();                           // sub $B247
+	void updateHighScore(bool otherPlayer);       // sub $B261
+	void showLives();                             // sub $AF5B
+	void setUpGame();                             // sub $AF80
+	void printBcd(const uint8_t *bcd, int bytes, int at, uint8_t digitZero);   // B086-B0C6
+	void showBridges();                           // sub $B05C
+	void showScore();                             // sub $B07C
+	void showOtherScore();                        // sub $B068
+	void showHighScore();                         // sub $B06E
+	void gameOverScreen();                        // sub $B21A
+	void moveObjects();                           // A26C-A2ED
+	void driveTank();                             // A21B-A26A
+	void moveMissile();                           // A5B7-A605
+	void moveShell();                             // A607-A671
+	void scrollRiver();                           // A6FD-A70F and the generator
 	void pushLine();             // the generator's next line goes to the top of the screen
 };
 
