@@ -13,14 +13,23 @@ endif()
 add_library(rrcore
 	src/display.cpp
 	src/game.cpp
+	src/game.h
 	src/game_ram.cpp
 	src/os_font.cpp
-	src/pokey_sound.cpp
+	src/os_font.h
 	src/palette.cpp
+	src/palette.h
+	src/pokey_random.h
+	src/pokey_sound.cpp
+	src/pokey_sound.h
 	src/river_draw.cpp
+	src/river_draw.h
 	src/river_gen.cpp
+	src/river_gen.h
 	src/river_state_io.cpp
+	src/rom.h
 	src/status_bar.cpp
+	src/status_bar.h
 )
 target_include_directories(rrcore PUBLIC src)
 target_compile_options(rrcore PRIVATE ${RR_WARNINGS})
