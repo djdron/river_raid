@@ -11,6 +11,8 @@ endif()
 
 # Game logic library: no platform code, reads the user's ROM for tables and graphics.
 add_library(rrcore
+	src/display.cpp
+	src/game.cpp
 	src/os_font.cpp
 	src/river_draw.cpp
 	src/river_gen.cpp
@@ -34,6 +36,11 @@ target_compile_options(river_map PRIVATE ${RR_WARNINGS})
 add_executable(render_check tools/render_check.cpp)
 target_link_libraries(render_check rrcore)
 target_compile_options(render_check PRIVATE ${RR_WARNINGS})
+
+# Compare the game frame (object movement, tank, collisions) with a RAM trace of the original.
+add_executable(game_check tools/game_check.cpp)
+target_link_libraries(game_check rrcore)
+target_compile_options(game_check PRIVATE ${RR_WARNINGS})
 
 # Compare the status panel and scrolling line with screens of the original (rr_oracle -screens).
 add_executable(status_check tools/status_check.cpp)

@@ -14,7 +14,7 @@ The core and the tools need only a C++17 compiler. The viewer `river_view` needs
 On Windows with Visual Studio: `cmake --build build --config Release`, the programs end up in `build\Release\`. Tested on Linux (gcc); macOS and Windows not tested yet.
 
 ## River viewer
-`river_view [rom] [-os file] [-pal]` shows the original's attract mode, the flight over the river it plays when nobody presses START: after power-on the screen fills with the river of game 1, which then scrolls 1 line per frame, with the status panel below and the scrolling line with the credits, "Press START key" and the rainbow Activision logo. The ROM is looked for in `rom/River_Raid.rom` of the current folder and up to three folders above, so running it from the repository or from `port/build/Release` works without arguments.
+`river_view [rom] [-os file] [-pal] [-seed N]` shows the original's attract mode, the flight over the river it plays when nobody presses START: after power-on the screen fills with the river of game 1, which then scrolls 1 line per frame; ships and helicopters wake up and move, tanks drive to the bridges and fire, helicopters fire missiles (the ported game logic, `src/game.cpp`); below are the status panel and the scrolling line with the credits, "Press START key" and the rainbow Activision logo. The ROM is looked for in `rom/River_Raid.rom` of the current folder and up to three folders above, so running it from the repository or from `port/build/Release` works without arguments.
 
 Letters and digits 1–9 come from the OS font, which is not in the cartridge. The port has the font of AltirraOS built in: the free replacement OS that ships with atari800 (licence: copying and modification permitted with the copyright notice kept, see `src/os_font.cpp`); the reference traces were made with it too. `-os file` takes the font of Atari's own OS from an OS ROM image (10 KB or 16 KB) or a 1 KB font file.
 
@@ -29,18 +29,24 @@ Letters and digits 1–9 come from the OS font, which is not in the cartridge. T
 | F | full screen |
 | Esc | quit |
 
-Compared with the original's screens (attract mode, frames 1000–2300): the status panel and the scrolling line match pixel for pixel, apart from the outer columns of the scrolling line (left of 24, right of 359), where the emulator handles fine scrolling at the edge differently; the river differs only where the game has moved an object or shows the tank on a bridge (no game logic yet).
+Compared with the original's screens (attract mode, frames 1000–2300, with the original's RANDOM values): the river area and the status panel match pixel for pixel, the scrolling line too apart from its outer columns (left of 24, right of 359), where the emulator handles fine scrolling at the edge differently.
+
+Which object wakes up when is decided by POKEY's RANDOM register, a hardware counter read at a moment that depends on the whole machine's timing. The port models the counter (`src/pokey_random.h`) and starts it from the clock, as the real machine starts it at power-on, so each run differs, like on the real machine; `-seed N` repeats a run.
 
 ## Contents
 | File | What |
 |---|---|
 | `src/river_gen.h/.cpp` | the generator: `RiverGen::startGame(n)`, then `nextLine(line)` — one screen line per call |
 | `src/river_draw.h/.cpp` | drawing a line as on screen: bank shades, roads at bridges, object sprites (`drawScreenLine`), Atari colours (`atariRgb`) |
+| `src/game.h/.cpp` | the game frame: object activation and movement, tank and its shell, helicopter missile, scrolling (attract mode so far) |
+| `src/display.cpp` | the river display as the DLI drives it: one sprite re-used for every object, collisions per object, drawing of the river area |
+| `src/pokey_random.h` | POKEY's RANDOM counter |
 | `src/status_bar.h/.cpp` | status panel and scrolling line: character sets, panel, scroller step, drawing |
 | `src/os_font.h/.cpp` | OS font: AltirraOS built in, or loaded from an OS ROM |
 | `src/river_state_io.cpp` | mapping of fields to the original's RAM addresses, loading and comparison (for verification) |
 | `viewer/river_view.cpp` | the river viewer (SDL3), see below |
 | `tools/river_map.cpp` | generates the river and saves a PNG as the game shows it: `river_map <rom> <game 1..8> <lines> out.png [-pal] [-flat]` (`-flat`: bitmap only, fixed colours) |
+| `tools/game_check.cpp` | compares the game frame with a RAM trace of the original, frame by frame (and the river area with its screens) |
 | `tools/status_check.cpp` | compares the panel and scrolling line with full screens of the original (`rr_oracle -screens A:B -ram A:B`) |
 | `tools/render_check.cpp` | compares the drawing with the original screen (`oracle/rr_oracle -ghost -strip 20`) |
 | `tools/terrain_check.cpp` | comparison with a reference trace (`oracle/rr_oracle -ram A:B`) |
@@ -83,9 +89,15 @@ Status panel and scrolling line: the character sets built from the OS font and t
 oracle/rr_oracle rom/River_Raid.rom oracle/scripts/attract_idle.txt 2300 out -screens 1000:2299 -ram 1000:2299
 port/build/status_check rom/River_Raid.rom out/screens.bin out/ram.bin
 ```
+Game frame in the attract mode (`game_check`): started from the power-on state (`Game::startAttract`) and given the original's RANDOM values, the port runs 19 900 frames (up to bridge 20) with no difference from the original's RAM in any compared byte: generator state, object slots (position, direction, kind, collision bit), tank, its shell, helicopter missile, collision results, player-missile memory, the river lines on screen. The river area drawn from it equals the original's screens in all 1299 compared frames.
+
+```
+oracle/rr_oracle rom/River_Raid.rom oracle/scripts/attract_idle.txt 20000 out -strip 20
+port/build/game_check rom/River_Raid.rom out/ram.bin out/random.log 38 19900 -attract
+```
 
 ## Not done yet
 - The code is readable but in places follows the original down to the carry flag. Next step: rewrite it more clearly while keeping the match (the check will confirm it).
 - Restart after a death in the middle of a section (`sub_B1C0`: going back to the previous checkpoint, decrementing `$60`).
-- The tank on the road (`$38`–`$3A`), enemy movement and explosions: game logic, not ported yet.
+- The game with a player: the plane, firing, fuel, collisions with the plane, explosions, score (`src/game.cpp` covers the attract mode so far).
 - `atariRgb` is an approximate NTSC palette (YIQ model), not a measured one.

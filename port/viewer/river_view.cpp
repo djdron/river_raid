@@ -1,18 +1,19 @@
 // River viewer (SDL3): the game's attract mode, the flight over the river that the original
 // shows when nobody presses START.
 //
-// usage: river_view [rom] [-os file] [-pal]
+// usage: river_view [rom] [-os file] [-pal] [-seed N]
 //   rom: path to the cartridge image; by default rom/River_Raid.rom is looked for in the
 //   current folder and up to three folders above it.
-//   -os file: an Atari OS ROM (10 KB or 16 KB) or its 1 KB font, for the original letters;
-//   without it a font drawn for the port is used (os_font.h).
+//   -os file: an Atari OS ROM (10 KB or 16 KB) or its 1 KB font, for Atari's own letters;
+//   without it the AltirraOS font is used (os_font.h).
+//   -seed N: start of POKEY's random counter (otherwise taken from the clock, as on the real
+//   machine, where it depends on the moment of power-on).
 //
-// What it shows, as the original's attract mode does (game 1):
-//   - the river scrolls down 1 line per frame (60 frames a second), the newest line at the top;
-//     it starts on an empty screen, like after power-on;
-//   - the status panel of a one-player game and the scrolling line below it with the credits,
-//     "Press START key" and the rainbow Activision logo.
-// Objects stay where the generator placed them: the enemy movement is game logic, not ported yet.
+// What it shows, as the original's attract mode does (game 1): the game running without a
+// plane (game.h): the river scrolls down 1 line per frame (60 frames a second), ships and
+// helicopters wake up and move, tanks drive to the bridges and fire, helicopters fire
+// missiles; below, the status panel and the scrolling line with the credits, "Press START key"
+// and the rainbow Activision logo. It starts on an empty screen, like after power-on.
 //
 // Keys:
 //   Space          pause / continue
@@ -20,12 +21,13 @@
 //   mouse wheel    scroll along the river by hand (PgUp / PgDn by a screen)
 //   Backspace      back to the newest line, normal speed
 //   B / Shift+B    next / previous bridge
-//
-// Going back shows lines already generated; flying forward again replays them before new ones
-// are generated. The scrolling line below the panel moves only when new lines are generated.
 //   Home           start again
 //   F              full screen
 //   Esc            quit
+//
+// Looking back shows the river from a map of the lines as they entered the screen, with the
+// objects where they were placed; flying forward again replays it up to the present, where the
+// game continues. The game, and the scrolling line, only run in the present.
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
@@ -33,10 +35,13 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <string>
 #include <vector>
 
+#include "game.h"
 #include "os_font.h"
+#include "pokey_random.h"
 #include "river_draw.h"
 #include "river_gen.h"
 #include "status_bar.h"
@@ -52,37 +57,48 @@ constexpr int kScale = 3;   // initial window scale
 constexpr double kPixelAspect = 0.86;
 constexpr double kFrameRate = 59.92;   // NTSC Atari
 
-// The attract mode: the river from the start of game 1 plus the status bar.
+// The attract mode: the game running without a player, from power-on, plus the status bar.
 class Attract {
 public:
-	Attract(const rr::Rom &rom, const uint8_t osFont[rr::kOsFontBytes], bool pal)
-	    : rom_(rom), gen_(rom), pal_(pal), charsets_(rr::buildCharsets(rom, osFont)) {
+	Attract(const rr::Rom &rom, const uint8_t osFont[rr::kOsFontBytes], bool pal, uint32_t seed)
+	    : rom_(rom), game_(rom), pal_(pal), seed_(seed), charsets_(rr::buildCharsets(rom, osFont)) {
 		rr::initialPanel(rom, panel_);
+		game_.afterLine = [this](const uint8_t *line) {
+			// look-back map: each line as it enters the screen, objects where they were placed
+			uint8_t row[rr::kRowWidth];
+			rr::drawScreenLine(rom_, game_.gen.s, line, row);
+			rows_.insert(rows_.end(), row, row + rr::kRowWidth);
+			level_.push_back(game_.gen.s.level);
+		};
 		restart();
 	}
 
 	void restart() {
-		gen_.s = rr::RiverState();
-		gen_.startGame(1, pal_);
 		rows_.clear();
 		level_.clear();
 		scroller_ = rr::Scroller();
 		logoShown_ = 0;
 		frame_ = 0;
+		random_ = rr::PokeyRandom(seed_);
+		std::memset(live_, 0, sizeof live_);
+		running_ = false;
 	}
 
-	// One frame of the original: a new river line and a step of the scrolling line.
-	// Timing after power-on as in the original: the scrolling line starts moving at frame 11,
-	// the river at frame 39.
+	// One frame of the original. Timing after power-on as in the original: the scrolling line
+	// starts moving at frame 11, the game (and its river) at frame 38.
 	void frame() {
 		frame_++;
-		if (frame_ >= kFirstRiverFrame) {
-			uint8_t line[rr::kLineBytes], row[rr::kRowWidth];
-			gen_.nextLine(line);
-			rr::drawScreenLine(rom_, gen_.s, line, row);
-			rows_.insert(rows_.end(), row, row + rr::kRowWidth);
-			level_.push_back(gen_.s.level);
+		if (frame_ == kFirstRiverFrame) {
+			game_.startAttract(pal_);
+			running_ = true;
+		} else if (running_) {
+			game_.prepare();
+			game_.display();
+			game_.drawRiver(live_);
+			game_.logic([this] { return random_.read(192, 13); });   // A205, after scanline 160
+			game_.vbi([this] { return random_.read(248, 30); });
 		}
+		random_.nextFrame();
 		logoShown_ = scroller_.logoX;   // the display uses the position from before the step
 		if (frame_ >= kFirstScrollerFrame) scroller_.step(true);
 	}
@@ -100,38 +116,47 @@ public:
 		return -1;
 	}
 	int level(long line) const { return line >= 0 && line < lines() ? level_[size_t(line)] : 0; }
-	int currentLevel() const { return gen_.s.level; }
+	int currentLevel() const { return game_.gen.s.level; }
 
-	// Draws the screen with `back` lines of look-back (0 = the current frame).
+	// Draws the screen. back = 0: the live frame, with the objects moving; back > 0: the river
+	// `back` lines earlier, from the map of lines as they entered the screen.
 	void draw(long back, uint8_t screen[rr::kScreenHeight][rr::kScreenWidth]) const {
 		std::memset(screen, 0, size_t(rr::kScreenHeight) * rr::kScreenWidth);
-		const long newest = lines() - 1 - back;
-		for (int k = 0; k < rr::kRiverRows; k++) {
-			const long i = newest - k;
-			if (i < 0) break;
-			std::memcpy(screen[rr::kRiverTop + k], &rows_[size_t(i) * rr::kRowWidth], rr::kRowWidth);
+		if (back == 0) {
+			std::memcpy(screen[rr::kRiverTop], live_[rr::kRiverTop], size_t(rr::kRiverRows) * rr::kRowWidth);
+		} else {
+			const long newest = lines() - 1 - back;
+			for (int k = 0; k < rr::kRiverRows; k++) {
+				const long i = newest - k;
+				if (i < 0) break;
+				std::memcpy(screen[rr::kRiverTop + k], &rows_[size_t(i) * rr::kRowWidth], rr::kRowWidth);
+			}
 		}
 		rr::drawStatusBar(rom_, charsets_, panel_, 0xFF, scroller_, logoShown_, screen);   // full tank
 	}
 
 private:
 	const rr::Rom &rom_;
-	rr::RiverGen gen_;
+	rr::Game game_;
 	bool pal_;
+	uint32_t seed_;
+	rr::PokeyRandom random_;
+	bool running_ = false;
 	rr::Charsets charsets_;
 	uint8_t panel_[rr::kPanelBytes];
 	rr::Scroller scroller_;
 	uint8_t logoShown_ = 0;
 	long frame_ = 0;
-	static constexpr long kFirstScrollerFrame = 11, kFirstRiverFrame = 39;
-	std::vector<uint8_t> rows_;    // every line drawn so far, kRowWidth colour codes each
+	static constexpr long kFirstScrollerFrame = 11, kFirstRiverFrame = 38;
+	uint8_t live_[rr::kScreenHeight][rr::kRowWidth];   // the river area of the current frame
+	std::vector<uint8_t> rows_;    // every line as it entered the screen, kRowWidth colour codes each
 	std::vector<uint8_t> level_;   // bridge number of each line
 };
 
 std::string findRom(int argc, char **argv) {
 	for (int i = 1; i < argc; i++) {
 		if (argv[i][0] == '-') {
-			if (!std::strcmp(argv[i], "-os") || !std::strcmp(argv[i], "-shot")) i++;
+			if (!std::strcmp(argv[i], "-os") || !std::strcmp(argv[i], "-shot") || !std::strcmp(argv[i], "-seed")) i++;
 			continue;
 		}
 		return argv[i];
@@ -156,9 +181,11 @@ int main(int argc, char **argv) {
 	const char *osPath = nullptr;
 	const char *shotPath = nullptr;   // testing: -shot file.bmp:N saves frame N as BMP (.raw: screen buffer) and quits
 	long shotFrame = 0;
+	uint32_t seed = uint32_t(SDL_GetTicks() ^ uint64_t(std::time(nullptr)));   // like POKEY at power-on
 	for (int i = 1; i < argc; i++) {
 		if (!std::strcmp(argv[i], "-pal")) pal = true;
 		else if (!std::strcmp(argv[i], "-os") && i + 1 < argc) osPath = argv[++i];
+		else if (!std::strcmp(argv[i], "-seed") && i + 1 < argc) seed = uint32_t(std::strtoul(argv[++i], nullptr, 0));
 		else if (!std::strcmp(argv[i], "-shot") && i + 1 < argc) {
 			shotPath = argv[++i];
 			if (const char *colon = std::strrchr(shotPath, ':')) {
@@ -209,7 +236,7 @@ int main(int argc, char **argv) {
 		palette[c] = (uint32_t(rgb[0]) << 16) | (uint32_t(rgb[1]) << 8) | rgb[2];
 	}
 
-	Attract attract(rom, osFont, pal);
+	Attract attract(rom, osFont, pal, seed);
 	static uint8_t screen[rr::kScreenHeight][rr::kScreenWidth];
 	// Speed in original frames per real frame; negative = backwards.
 	static const double kSpeeds[] = {-16, -8, -4, -2, -1, -0.5, -0.25, 0, 0.25, 0.5, 1, 2, 4, 8, 16};
