@@ -49,6 +49,6 @@ struct Scroller {
 // Draws rows 180..218. fuel is $5B (the gauge needle); logoX is the logo position the display
 // uses this frame (the value before the frame's step()).
 void drawStatusBar(const Rom &rom, const Charsets &cs, const uint8_t panel[kPanelBytes], uint8_t fuel,
-                   const Scroller &scroller, uint8_t logoX, uint8_t screen[kScreenHeight][kScreenWidth]);
+		const Scroller &scroller, uint8_t logoX, uint8_t screen[kScreenHeight][kScreenWidth]);
 
 }  // namespace rr

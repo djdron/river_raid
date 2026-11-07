@@ -21,7 +21,7 @@ void plot(uint8_t screen[kScreenHeight][kScreenWidth], int y, int x, int w, uint
 // One row of ANTIC mode 6 characters: 8 x 8 pixels, each pixel one colour clock (2 columns),
 // bits 7-6 of a character code select one of the four playfield colours.
 void drawMode6(uint8_t screen[kScreenHeight][kScreenWidth], int top, const uint8_t *text, int count,
-               const uint8_t *charset, const uint8_t colours[4], int left) {
+		const uint8_t *charset, const uint8_t colours[4], int left) {
 	for (int c = 0; c < count; c++) {
 		const uint8_t code = text[c];
 		const uint8_t *glyph = charset + (code & 0x3F) * 8;
@@ -89,7 +89,7 @@ void Scroller::step(bool attract) {
 }
 
 void drawStatusBar(const Rom &rom, const Charsets &cs, const uint8_t panel[kPanelBytes], uint8_t fuel,
-                   const Scroller &scroller, uint8_t logoX, uint8_t screen[kScreenHeight][kScreenWidth]) {
+		const Scroller &scroller, uint8_t logoX, uint8_t screen[kScreenHeight][kScreenWidth]) {
 	for (int y = kRiverTop + kRiverRows; y < kScreenHeight; y++) std::memset(screen[y], 0, kScreenWidth);
 
 	// Panel (DLI B66B-B6BC): background $06, colours PF0 $1E, PF1 $8E, PF2 $1E, PF3 $00.
