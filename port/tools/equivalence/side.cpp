@@ -1,6 +1,7 @@
 // One side of the refactoring equivalence check, compiled twice: once against the old sources
 // (namespace renamed to rr_old) and once against the new ones.
 #include <cstring>
+#include <memory>
 #include "game.h"
 #include "side.h"
 
@@ -9,16 +10,16 @@
 #define F(name) CAT(SIDE, name)
 
 namespace {
-rr::Rom *rom;
-rr::Game *game;
-rr::RiverGen *gen;
+std::unique_ptr<rr::Rom> rom;
+std::unique_ptr<rr::Game> game;
+std::unique_ptr<rr::RiverGen> gen;
 }
 
 void F(Init)(const char *romPath, int mode, const uint8_t *ram, int gameNumber, bool pal) {
-	rom = new rr::Rom;
+	rom = std::make_unique<rr::Rom>();
 	rom->load(romPath);
-	game = new rr::Game(*rom);
-	gen = new rr::RiverGen(*rom);
+	game = std::make_unique<rr::Game>(*rom);
+	gen = std::make_unique<rr::RiverGen>(*rom);
 	if (mode == 0) game->startAttract(pal);
 	else if (mode == 1) game->loadFromRam(ram);
 	else gen->startGame(gameNumber, pal);
