@@ -9,7 +9,7 @@ The whole game: `river_raid` plays River Raid as the original does — attract m
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
-The core and the tools need only a C++17 compiler. The game `river_raid` and the viewer `river_view` need SDL3: CMake uses an installed SDL3 if it finds one, otherwise it downloads SDL 3.2.24 from GitHub during configuration (needs git and internet) and links it statically. On Linux, building SDL from source needs the X11/Wayland development packages (see SDL's `docs/README-linux.md`). Without them: `cmake -S . -B build -DRR_VIEWER=OFF`.
+The core and the tools need only a C++17 compiler. The game `river_raid` and the viewer `river_view` need SDL3: CMake uses an installed SDL3 (3.4 or newer) if it finds one, otherwise it downloads SDL 3.4.20 from GitHub during configuration (needs git and internet) and links it statically. On Linux, building SDL from source needs the X11/Wayland development packages (see SDL's `docs/README-linux.md`). SDL 3.4 stops with an error when such a package is missing and names the option that builds without it (for example `-DSDL_X11_XCURSOR=OFF`). Without SDL at all: `cmake -S . -B build -DRR_VIEWER=OFF`.
 
 On Windows with Visual Studio: `cmake --build build --config Release`, the programs end up in `build\Release\`. Tested on Linux (gcc); macOS and Windows not tested yet.
 

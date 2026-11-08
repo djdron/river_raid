@@ -9,7 +9,7 @@
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
-Ядру и утилитам нужен только компилятор C++17. Игре `river_raid` и просмотрщику `river_view` нужен SDL3: если CMake находит установленный SDL3, он берёт его, иначе при конфигурации скачивает SDL 3.2.24 с GitHub (нужны git и интернет) и линкует статически. Под Linux для сборки SDL из исходников нужны dev-пакеты X11/Wayland (см. `docs/README-linux.md` в SDL). Без них: `cmake -S . -B build -DRR_VIEWER=OFF`.
+Ядру и утилитам нужен только компилятор C++17. Игре `river_raid` и просмотрщику `river_view` нужен SDL3: если CMake находит установленный SDL3 (3.4 или новее), он берёт его, иначе при конфигурации скачивает SDL 3.4.20 с GitHub (нужны git и интернет) и линкует статически. Под Linux для сборки SDL из исходников нужны dev-пакеты X11/Wayland (см. `docs/README-linux.md` в SDL). Если такого пакета нет, SDL 3.4 останавливается с ошибкой и называет опцию, чтобы собраться без него (например, `-DSDL_X11_XCURSOR=OFF`). Совсем без SDL: `cmake -S . -B build -DRR_VIEWER=OFF`.
 
 Под Windows с Visual Studio: `cmake --build build --config Release`, программы появятся в `build\Release\`. Проверено под Linux (gcc); macOS и Windows ещё не проверялись.
 

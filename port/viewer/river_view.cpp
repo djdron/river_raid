@@ -348,9 +348,9 @@ int main(int argc, char **argv) {
 				case SDLK_F2: attract.soundTest(1); break;
 				case SDLK_F3: attract.soundTest(2); break;
 				case SDLK_F:
-					MousePointer::toggleFullscreen(window);
+					SDL_SetWindowFullscreen(window, !(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN));
 					break;
-				case SDLK_ESCAPE: MousePointer::setFullscreen(window, false); break;
+				case SDLK_ESCAPE: SDL_SetWindowFullscreen(window, false); break;
 				default: break;
 				}
 			}
