@@ -9,7 +9,8 @@
 //   bit 4 = 1: volume only: the output is the volume, whatever the counter does
 //   bits 3-0: volume
 // The polynomial counters are shift registers advancing every machine cycle; they make the
-// noise. River Raid leaves AUDCTL at 0 (64 kHz clock, 17-bit noise, no joined channels or
+// noise. Only their state at the 64 kHz ticks matters, so the model keeps each counter as a
+// position in its (precomputed) sequence and moves it on by whole stretches of cycles. River Raid leaves AUDCTL at 0 (64 kHz clock, 17-bit noise, no joined channels or
 // filters), which is what this model covers.
 #pragma once
 #include <cstdint>
@@ -33,12 +34,15 @@ private:
 	int counter_[4] = {};
 	uint8_t output_[4] = {};
 	int tick_ = 0;                                // cycles to the next 64 kHz tick
-	uint32_t poly4_ = 0x0F, poly5_ = 0x1F, poly17_ = 0x1FFFF;
+	uint32_t poly4Pos_ = 0, poly5Pos_ = 0, poly17Pos_ = 0;   // steps since 0x0F, 0x1F, 0x1FFFF
+	int level_ = 0;                               // output level of the four channels, 0..60
 	double samplePos_ = 0;                        // in cycles, towards the next sample
 	long sum_ = 0, sumCycles_ = 0;
 	double dcLevel_ = 0;
 
 	int level() const;
+	void tick();                                  // the 64 kHz clock: the channels' counters
+	void count(long cycles, std::vector<int16_t> &out);   // cycles at a constant level
 };
 
 }  // namespace rr
