@@ -1,6 +1,6 @@
 // River Raid (Activision, 1982, Atari 8-bit), the game, C++ port with SDL3.
 //
-// usage: river_raid [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-seed N]
+// usage: river_raid [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-stats] [-seed N]
 //   rom: the cartridge image; by default rom/River_Raid.rom is looked for in the current
 //   folder and up to three folders above it.
 //   -os file: an Atari OS ROM (10 KB or 16 KB) or its 1 KB font, for Atari's own letters;
@@ -221,6 +221,7 @@ int main(int argc, char **argv) {
 	bool palColours = true;    // colours of a PAL machine (C switches to NTSC)
 	rr::PaletteModel paletteModel = rr::PaletteModel::Altirra;   // V switches
 	const char *osPath = nullptr;
+	bool showStats = false;            // -stats: renderer, frame rate and timings once a second
 	const char *shotPath = nullptr;   // testing: -shot file.bmp:N[:script] saves frame N and quits
 	long shotFrame = 0;
 	std::string shotScript;
@@ -232,6 +233,7 @@ int main(int argc, char **argv) {
 			paletteModel = !std::strcmp(argv[++i], "atari800") ? rr::PaletteModel::Atari800 : rr::PaletteModel::Altirra;
 		else if (!std::strcmp(argv[i], "-os") && i + 1 < argc) osPath = argv[++i];
 		else if (!std::strcmp(argv[i], "-seed") && i + 1 < argc) seed = uint32_t(std::strtoul(argv[++i], nullptr, 0));
+		else if (!std::strcmp(argv[i], "-stats")) showStats = true;
 		else if (!std::strcmp(argv[i], "-shot") && i + 1 < argc) {
 			static std::string path;
 			path = argv[++i];
@@ -273,7 +275,14 @@ int main(int argc, char **argv) {
 		std::fprintf(stderr, "SDL_CreateWindowAndRenderer: %s\n", SDL_GetError());
 		return 1;
 	}
-	SDL_SetRenderVSync(renderer, 1);
+	const bool vsync = SDL_SetRenderVSync(renderer, 1);
+	if (showStats) {
+		int w, h, pw, ph;
+		SDL_GetWindowSize(window, &w, &h);
+		SDL_GetWindowSizeInPixels(window, &pw, &ph);
+		std::fprintf(stderr, "renderer %s, vsync %s, window %dx%d (%dx%d pixels)\n", SDL_GetRendererName(renderer),
+			vsync ? "on" : "off", w, h, pw, ph);
+	}
 	SDL_Texture *texture =
 		SDL_CreateTexture(renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, kViewWidth, kViewHeight);
 	SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
@@ -302,6 +311,11 @@ int main(int argc, char **argv) {
 	Atari atari(rom, osFont, pal, seed);
 	Controls controls;
 	double pending = 0;   // original frames still to run
+	struct Stats {
+		uint64_t since = 0, emulation = 0, present = 0;
+		long frames = 0, pictures = 0;
+	} stats;
+	stats.since = SDL_GetTicksNS();
 	uint64_t last = SDL_GetTicksNS();
 
 	if (shotPath) {
@@ -350,8 +364,19 @@ int main(int argc, char **argv) {
 		last = now;
 		if (!shotPath) {
 			pending += dt * kFrameRate;
+			if (pending < 1) {
+				// No new frame yet (a display faster than 60 Hz, or no vsync): wait for it instead
+				// of drawing the same picture again.
+				SDL_DelayNS(uint64_t((1 - pending) / kFrameRate * 1e9));
+				continue;
+			}
+			const uint64_t t0 = SDL_GetTicksNS();
 			const rr::Input input = controls.read();
-			for (; pending >= 1; pending--) atari.frame(input);
+			for (; pending >= 1; pending--) {
+				atari.frame(input);
+				stats.frames++;
+			}
+			stats.emulation += SDL_GetTicksNS() - t0;
 		}
 		{
 			std::vector<int16_t> &samples = atari.audio();
@@ -393,7 +418,18 @@ int main(int argc, char **argv) {
 			}
 			running = false;
 		}
+		const uint64_t t1 = SDL_GetTicksNS();
 		SDL_RenderPresent(renderer);
+		stats.present += SDL_GetTicksNS() - t1;
+		stats.pictures++;
+		if (showStats && now - stats.since >= 1000000000) {
+			const double sec = double(now - stats.since) / 1e9;
+			std::fprintf(stderr, "%.1f frames/s, %.1f pictures/s; emulation %.2f ms, present (incl. vsync wait) %.2f ms per picture\n",
+				stats.frames / sec, stats.pictures / sec, stats.emulation / 1e6 / std::max(1L, stats.pictures),
+				stats.present / 1e6 / std::max(1L, stats.pictures));
+			stats = Stats();
+			stats.since = now;
+		}
 	}
 
 	if (audio) SDL_DestroyAudioStream(audio);
