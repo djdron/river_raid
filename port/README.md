@@ -13,10 +13,30 @@ The core and the tools need only a C++17 compiler. The game `river_raid` and the
 
 With SDL2 instead of SDL3 (for platforms SDL3 no longer supports, such as UWP on the Xbox): `cmake -S . -B build -DRR_SDL2=ON`. CMake then uses an installed SDL2 (2.0.18 or newer) or downloads SDL 2.32.10. The programs talk to SDL only through `sdl/host.h`, implemented once for each version; both give the same picture.
 
-On Windows with Visual Studio: `cmake --build build --config Release`, the programs end up in `build\Release\`. Tested on Linux (gcc); macOS and Windows not tested yet.
+On Windows with Visual Studio: `cmake --build build --config Release`, the programs end up in `build\Release\`. Built and played on Windows (MSVC), macOS (Xcode, Apple M2) and Linux (gcc).
 
 ## The game
-`river_raid [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-stats] [-nosound] [-seed N] [-bridge N] [-random N]`. `-seed N` (1 to 16777215) gives another river, with other enemies and depots: game 1's river starts from generator state N, and games 3-8 start at that river's bridges 5, 20 and 50 (the cartridge's own starting points are exactly where its river is at those bridges; its river is seed 16241891). Each game keeps its level, so the difficulty grows as usual (see `docs/HOW_IT_WORKS.md`). `-bridge N` (1 to 9999) starts every game at bridge N of the river (of the cartridge's river, or of the `-seed` one), at that bridge's level and with N on the bridge counter; the start is found by running the river generator up to it, which takes well under a second. `-stats` prints the renderer and, once a second, the frame rate and time per frame; `-nosound` plays no sound. On a display at 60 Hz (or 120 Hz...) the game runs at exactly the display's rate (60 instead of the Atari's 59.92 frames per second), so every frame stays on screen equally long; on other displays at the Atari's rate. The colours are those of a PAL machine by default (`-colours ntsc` for NTSC); C switches NTSC/PAL colours while running. `-palette` chooses the colour model: `altirra` (default) or `atari800` (darker middle tones); V switches it while running. The window title shows the colours in use. The ROM is looked for in `rom/River_Raid.rom` of the current folder and up to three folders above (from the repository or from `port/build/Release` it starts without arguments).
+```
+river_raid [rom] [options]
+```
+Without arguments it finds the ROM by itself (see `rom`) and starts like the cartridge: attract mode, then START.
+
+| Option | What it does |
+|---|---|
+| `rom` | the cartridge image (8192 bytes). By default `rom/River_Raid.rom` is looked for in the current folder and up to three folders above, so it starts without arguments from the repository or from `port/build/Release` |
+| `-os file` | letters and digits from Atari's own OS: an OS ROM image (10 KB or 16 KB) or a 1 KB font. Without it the built-in AltirraOS font is used |
+| `-seed N` | another river, with other enemies and depots. N is the state the river generator starts from, 1 to 16777215. Game 1 starts at the beginning of that river, games 3-8 at its bridges 5, 20 and 50; each game keeps its usual level, so the difficulty grows as usual. The cartridge's own river is `-seed 16241891` |
+| `-bridge N` | every game (1-8) starts at bridge N, 1 to 9999: with N on the bridge counter and that bridge's level (after 80 the level alternates 79/80, as in the original). Works with `-seed` too. The start is found by running the river generator up to it (under a second even for 9999) |
+| `-random N` | the starting value of POKEY's RANDOM counter, which decides which enemy wakes up when and the noise of explosions. By default it is taken from the clock, as the real machine's depends on the moment of power-on, so every run differs; with the same N and the same input a run repeats exactly |
+| `-pal` | play as a PAL machine: as on a real PAL Atari, fuel depots keep getting rarer up to level 47 instead of 46; PAL colours. The display timing stays NTSC (see Not done yet) |
+| `-colours ntsc\|pal` | the colours of an NTSC or a PAL machine; PAL by default. C switches while playing |
+| `-palette altirra\|atari800` | the colour model: `altirra` (default) or `atari800` (darker middle tones). V switches while playing |
+| `-stats` | prints the renderer and display rate, then once a second the frame rate, time per frame and the sound queue |
+| `-nosound` | no sound |
+
+The window title shows the colours in use. On a display at 60 Hz (or 120 Hz...) the game runs at exactly the display's rate (60 instead of the Atari's 59.92 frames per second), so every frame stays on screen equally long; on other displays at the Atari's rate.
+
+Examples: `river_raid -bridge 30` starts at bridge 30; `river_raid -seed 12345` is a different river; `river_raid -seed 12345 -bridge 80` is that river at its hardest.
 
 After power-on the attract mode flies over the river. START begins a game; SELECT (or OPTION) chooses games 1–8: even numbers are two-player games (the players take turns), games 3–4, 5–6 and 7–8 start at bridges 5, 20 and 50. Any key of the Atari keyboard pauses. After a game over the screen stays until the attract mode starts again (about 35 s). The game and the viewer quit the usual way: closing the window, Alt+F4, Cmd+Q.
 
@@ -37,7 +57,10 @@ After power-on the attract mode flies over the river. START begins a game; SELEC
 The keyboard drives both joysticks, so one person can play a two-player game too. Gamepads: the first is joystick 1 (and 2 while there is no second), the second is joystick 2; D-pad or left stick, A/B/X/Y or the right trigger to fire, Start = START, Back = SELECT.
 
 ## River viewer
-`river_view [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-seed N] [-bridge N] [-random N]` shows the original's attract mode, the flight over the river it plays when nobody presses START: after power-on the screen fills with the river of game 1, which then scrolls 1 line per frame; ships and helicopters wake up and move, tanks drive to the bridges and fire, helicopters fire missiles (the ported game logic, `src/game.cpp`); below are the status panel and the scrolling line with the credits, "Press START key" and the rainbow Activision logo. The ROM is looked for in `rom/River_Raid.rom` of the current folder and up to three folders above, so running it from the repository or from `port/build/Release` works without arguments.
+```
+river_view [rom] [options]
+```
+It shows the original's attract mode, the flight over the river it plays when nobody presses START: after power-on the screen fills with the river of game 1, which then scrolls 1 line per frame; ships and helicopters wake up and move, tanks drive to the bridges and fire, helicopters fire missiles (the ported game logic, `src/game.cpp`); below are the status panel and the scrolling line with the credits, "Press START key" and the rainbow Activision logo. The options are those of the game: `rom`, `-os`, `-seed`, `-bridge` (the attract mode flies from that bridge), `-random`, `-pal`, `-colours`, `-palette`.
 
 Letters and digits 1–9 come from the OS font, which is not in the cartridge. The port has the font of AltirraOS built in: the free replacement OS that ships with atari800 (licence: copying and modification permitted with the copyright notice kept, see `src/os_font.cpp`); the reference traces were made with it too. `-os file` takes the font of Atari's own OS from an OS ROM image (10 KB or 16 KB) or a 1 KB font file.
 

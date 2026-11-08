@@ -19,20 +19,20 @@ Image: 8192 bytes, no CART header, loads at $A000–$BFFF. Code ~5.9 KB (2941 in
 - One pass of the loop = one logic step, so an "update() once per frame" model is correct.
 
 ## What matters for the port
-1. **RNG.** `RANDOM` ($D20A, the POKEY polynomial) is read in 3 places. Game logic only at A205: every 16 frames an enemy slot (0–10) is chosen and bit $40 is set in its flags. The other two reads (B362, B3D0) only produce sound noise. Reproducing it exactly would require emulating POKEY's 17-bit polynomial tied to CPU cycles. The practical route: a deterministic RNG with the same distribution in the logic, and for bit-exact comparison feed the original's values from the reference trace.
-2. **PAL/NTSC.** The PAL bit is read from $D014 (A06A), kept in $BF and affects the colour table (B77A) and branches at B135/B14F/B741. Pick a target mode or support both.
+1. **RNG.** `RANDOM` ($D20A, the POKEY polynomial) is read in 3 places. Game logic only at A205: every 16 frames an enemy slot (0–10) is chosen and bit $40 is set in its flags. The other two reads (B362, B3D0) only produce sound noise. The value depends on the CPU cycle of the read (POKEY's 17-bit polynomial runs at the machine clock). The port models the counter (`port/src/pokey_random.h`) and starts it from the clock, like a real power-on; for frame-by-frame comparison the original's values come from the reference trace (`random.log`).
+2. **PAL/NTSC.** The PAL bit is read from $D014 (A06A), kept in $BF and chooses the display list variant ($B77A, copied into the display list at $3FA9), the depot limit `$CB` ($2E/$2F) and branches at B135/B14F/B741. Nothing compensates the frame rate: on PAL the game runs at 50 frames per second, about 17% slower. There was no separate PAL release: the UK cassette is the same code (see "UK cassette version"). The port's `-pal` sets the depot limit; the PAL display list and 50 Hz are not reproduced yet.
 3. **Font from the OS.** The code copies the character set from the OS ROM ($E000/$E100/$E300) to $0600–$09FF. That is an external dependency: use our own font or the user's ROM (Altirra OS is free).
 4. **Raster coupling.** Sprites are drawn by a DLI kernel with WSYNC on every line; in C++ this becomes a software renderer working from the frame state.
 5. **Sound.** The driver lives entirely in the VBI ($B2A5–$B484): 4 POKEY channels, AUDF/AUDC computed from $C6, $7A–$7F, $50, $24 and the tables $B4AC/$B4C0/$B4E1. Reproducing this driver plus a POKEY core is enough for an exact match.
 6. **Code style.** Monolithic, variables are reused by different subsystems, flags are packed into bits. Full mapping needs traces from an emulator.
 
 ## Data tables (from code references)
-Purposes are tentative unless stated otherwise; only the way they are accessed is confirmed.
-- $B4AC (4), $B4C0 (17), $B4E1: sound, read from the VBI.
-- $B4D1: pointer table (read in pairs through $A1/$A2 at AEB9).
-- $B776 (4 bytes) is copied to $3F00 (start of the display list); $B77A (15 or 30 bytes, depending on PAL) is copied to $3FA9.
-- $BB70 (60 bytes) is copied to $1000; $BEEE (64) to $06C0; $BF2E (112) to $0818; $BF9E (24) to $08D0; $BFB6 (48) to $07D0 (probably characters and graphics).
-- $BAAF, $BAC5, $BB24, $BB40: indexed from the logic and the DLI (probably object shapes and animation), not confirmed.
+All of them are read through named accessors in `port/src/rom.h`.
+- $B4AC (4): engine tone (AUDC) by stick up/down; $B4C0 (17): tank shell whistle pitch; $B4E1: extra-life sound.
+- $B4D1: tank shapes (pointer pairs, read through $A1/$A2 at AEB9).
+- $B776 (4 bytes) is copied to $3F00 (start of the display list); $B77A (15 bytes, the second 15 on PAL) to $3FA9, the rest of the display list.
+- $BB70 (60 bytes): panel text, copied to $1000; $BEEE (64): Activision lettering → $06C0; $BF2E (112): panel symbols → $0818; $BF9E (24): "P1"/"P2" → $08D0; $BFB6 (48): the digits of "1982, 1983" → $07D0.
+- $BAAF: next tank kind; $BAC5: shell colours; $BB24: next object kind (animation); $BB40: object shape offsets from $B900.
 
 ## Reference runner (done)
 `oracle/rr_oracle` runs the original on libatari800 and writes the RAM of every frame, every POKEY write and every RANDOM read (see `oracle/README.md`).
@@ -148,7 +148,7 @@ Timing subtlety: the slots and `$4E` are taken as at the start of the frame, whi
 - Result: 119 758 lines of the whole river without differences; a start from scratch (`startGame`) matches too.
 - The generator depends neither on the player (bot vs. flying without input) nor on `RANDOM` (3 seeds, 120 000 frames, byte-identical including the screen strip).
 - Screen: ANTIC mode E bitmap, 48 bytes per line (192 pixels, 4 per byte), ring buffer, address of the new line in `$3F04/$3F05`, −$30 per line. Pixel values: 1 bank, 3 water, 2 edge, 0 rarely (inside edge pieces).
-- Games 1–8: `$09` selects a row of the tables `$B494`–`$B4A8`: LFSR, bank and starting section. Games 1–2 start at bridge 1, 3–4 at 5, 5–6 at 20, 7–8 at 50. These are checkpoints of the same river: C++ reaches bridge 5/20/50 with exactly the table values.
+- Games 1–8: `$09` selects a row of the tables `$B494`–`$B4A8`: LFSR, bank and starting section. Games 1–2 start at bridge 1, 3–4 at 5, 5–6 at 20, 7–8 at 50. These are checkpoints of the same river: C++ reaches bridge 5/20/50 with exactly the table values (`$B4A4`: level, `$B4A8`: bridge counter in BCD). The port builds the same table by running the generator for `-seed N` (game 1's river from LFSR state N; the cartridge's river is $F7D4E3 = 16241891) and for `-bridge N` (every game from bridge N, 1–9999; after 80 the level goes 79, 80, 79...).
 - `$CB` = $2E on NTSC and $2F on PAL (A077, from the PAL register); it affects the depot odds at the start of a block (AC48). The river differs slightly between PAL and NTSC.
 - Start and respawn: `sub_B0F1` loads $4D–$5F from `$BAE1`, clears $2B–$4C and $0500–$05FF, puts the starting bridge into slot 10 (type $0E, y=$4A, height $17), mode $23 = $84/$80. Then A3C8 restores LFSR and bank from the checkpoint $66–$69. After that the game generates 160–165 lines at 2 per frame (speed $FE) to fill the screen.
 - A verification pitfall: while the screen is being filled at 2 lines per frame, the emulator's frame boundary can fall between lines, so frame-by-frame comparison is wrong in those frames. In normal play (one line per frame) the snapshot is always on a line boundary.
@@ -163,8 +163,13 @@ Timing subtlety: the slots and `$4E` are taken as at the start of the frame, whi
 ## Method
 A rule is first read from the listing, then checked against a reference trace (`tools/verify_trace.py`). If the trace does not match, look for the misreading. Example: refuelling was derived from code A3E9–A453 (including the non-obvious +2 instead of +1 because of the carry flag) and confirmed on the trace; the only mismatch showed that the collision check happens before objects move between slots.
 
+## UK cassette version
+`River Raid.cas` (UK, 600 baud): two files. The boot file (7 blocks at $0A00, start $0A06) checks for 24K of RAM ("NOT ENOUGH RAM MEMORY - NEED 24K"), shows a title screen and loads $2200 bytes to $1000, then jumps to $3000. That is the cartridge's code relocated, compared instruction by instruction: from A21B on all 2 900-odd instructions are the same operations; code and data moved $A000 → $1000, the game's RAM pages up by $2000 (display list $3F00 → $5F00, screen ring $2000–$3FFF → $4000–$5FFF, $1000 → $3F00), zero-page variables mostly +2 ($25 → $A1, $28 → $A2); pointers in the tables moved the same way. Real differences:
+- the init (A000–A0EE) moved to $3000, with a checksum of the loaded code into $E4/$E5;
+- copy protection: if the checksum is wrong or a `D:` handler is in HATABS (booted from DOS), the main loop hangs or jumps into the middle of an instruction. The cartridge's own protection (A151–A158) stores $FF into its own code at $A19B unless $6000 holds $47: harmless in ROM, fatal in a RAM copy;
+- the scrolling line says "1982, 1983, 1984": an extra character "4" (copied to $07C0), the text 5 characters longer, scroll start/wrap $20/$4B → $1B/$46.
+
+Generator, game logic, sound and tables are identical; so is the PAL check.
+
 ## Next steps
-1. Make the C++ generator code more readable while keeping it byte-exact (`terrain_check`).
-2. Restart after a death (`sub_B1C0`).
-3. Finish $42+X: enemy movement, when it switches on, the role of bit $40 and $60.
-4. Collision checks $1B/$1E/$21/$50 at A424–A434 (banks, bridge, tank).
+Nothing open in the analysis. For the port: the exact power-on sequence (A000–A17C) and PAL timing (50 Hz, the PAL display list).
