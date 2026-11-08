@@ -1,7 +1,7 @@
 // River Raid (Activision, 1982, Atari 8-bit), the game, C++ port (window, sound and input through
 // SDL: sdl/host.h).
 //
-// usage: river_raid [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-stats] [-seed N]
+// usage: river_raid [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-stats] [-nosound] [-seed N]
 //   rom: the cartridge image; by default rom/River_Raid.rom is looked for in the current
 //   folder and up to three folders above it.
 //   -os file: an Atari OS ROM (10 KB or 16 KB) or its 1 KB font, for Atari's own letters;
@@ -184,6 +184,7 @@ int main(int argc, char **argv) {
 	rr::PaletteModel paletteModel = rr::PaletteModel::Altirra;   // V switches
 	const char *osPath = nullptr;
 	bool showStats = false;            // -stats: renderer, frame rate and timings once a second
+	bool sound = true;                 // -nosound: no sound output (to measure its cost)
 	const char *shotPath = nullptr;   // testing: -shot file.bmp:N[:script] saves frame N and quits
 	long shotFrame = 0;
 	std::string shotScript;
@@ -196,6 +197,7 @@ int main(int argc, char **argv) {
 		else if (!std::strcmp(argv[i], "-os") && i + 1 < argc) osPath = argv[++i];
 		else if (!std::strcmp(argv[i], "-seed") && i + 1 < argc) seed = uint32_t(std::strtoul(argv[++i], nullptr, 0));
 		else if (!std::strcmp(argv[i], "-stats")) showStats = true;
+		else if (!std::strcmp(argv[i], "-nosound")) sound = false;
 		else if (!std::strcmp(argv[i], "-shot") && i + 1 < argc) {
 			static std::string path;
 			path = argv[++i];
@@ -227,7 +229,7 @@ int main(int argc, char **argv) {
 	}
 
 	host::Host window;
-	if (!window.open("River Raid", kViewWidth, kViewHeight, kPixelAspect, kScale, shotPath ? 0 : kSampleRate)) {
+	if (!window.open("River Raid", kViewWidth, kViewHeight, kPixelAspect, kScale, shotPath || !sound ? 0 : kSampleRate)) {
 		fail(window.error());
 		return 1;
 	}
