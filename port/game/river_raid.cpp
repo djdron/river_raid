@@ -1,4 +1,5 @@
-// River Raid (Activision, 1982, Atari 8-bit), the game, C++ port with SDL3.
+// River Raid (Activision, 1982, Atari 8-bit), the game, C++ port (window, sound and input through
+// SDL: sdl/host.h).
 //
 // usage: river_raid [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-stats] [-seed N]
 //   rom: the cartridge image; by default rom/River_Raid.rom is looked for in the current
@@ -28,11 +29,6 @@
 // Gamepads: the first one is joystick 1 (and 2 while there is no second), the second one
 // joystick 2. D-pad or left stick: joystick; A, B, X, Y or the right trigger: fire;
 // Start: START; Back: SELECT.
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_main.h>
-
-#include "mouse_pointer.h"
-
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -46,6 +42,9 @@
 #include "pokey_random.h"
 #include "pokey_sound.h"
 #include "status_bar.h"
+
+#include "host.h"
+#include "host_main.h"
 
 namespace {
 
@@ -126,70 +125,36 @@ private:
 };
 
 // Joystick and console keys from the keyboard and up to two gamepads.
-class Controls {
-public:
-	void addGamepad(SDL_JoystickID id) {
-		if (SDL_Gamepad *pad = SDL_OpenGamepad(id)) pads_.push_back(pad);
+rr::Input readControls(const host::Host &h) {
+	using host::Key;
+	rr::Input in;
+	uint8_t keys = 0x0F;   // PORTA bits: 0 up, 1 down, 2 left, 3 right; 0 = pressed
+	if (h.keyHeld(Key::Up) || h.keyHeld(Key::W)) keys &= ~1;
+	if (h.keyHeld(Key::Down) || h.keyHeld(Key::S)) keys &= ~2;
+	if (h.keyHeld(Key::Left) || h.keyHeld(Key::A)) keys &= ~4;
+	if (h.keyHeld(Key::Right) || h.keyHeld(Key::D)) keys &= ~8;
+	const bool keyFire = h.keyHeld(Key::LeftCtrl) || h.keyHeld(Key::RightCtrl) || h.keyHeld(Key::Z) || h.keyHeld(Key::X);
+	for (int j = 0; j < 2; j++) {
+		in.stick[j] = keys;
+		in.trigger[j] = keyFire;
 	}
-	void removeGamepad(SDL_JoystickID id) {
-		for (size_t i = 0; i < pads_.size(); i++)
-			if (SDL_GetGamepadID(pads_[i]) == id) {
-				SDL_CloseGamepad(pads_[i]);
-				pads_.erase(pads_.begin() + long(i));
-				return;
-			}
-	}
-	~Controls() {
-		for (SDL_Gamepad *p : pads_) SDL_CloseGamepad(p);
-	}
-
-	rr::Input read() const {
-		rr::Input in;
-		const bool *k = SDL_GetKeyboardState(nullptr);
-		uint8_t keys = 0x0F;   // PORTA bits: 0 up, 1 down, 2 left, 3 right; 0 = pressed
-		if (k[SDL_SCANCODE_UP] || k[SDL_SCANCODE_W]) keys &= ~1;
-		if (k[SDL_SCANCODE_DOWN] || k[SDL_SCANCODE_S]) keys &= ~2;
-		if (k[SDL_SCANCODE_LEFT] || k[SDL_SCANCODE_A]) keys &= ~4;
-		if (k[SDL_SCANCODE_RIGHT] || k[SDL_SCANCODE_D]) keys &= ~8;
-		const bool keyFire = k[SDL_SCANCODE_LCTRL] || k[SDL_SCANCODE_RCTRL] || k[SDL_SCANCODE_Z] || k[SDL_SCANCODE_X];
-		for (int j = 0; j < 2; j++) {
-			in.stick[j] = keys;
-			in.trigger[j] = keyFire;
+	in.start = h.keyHeld(Key::F4) || (h.keyHeld(Key::Return) && !h.keyHeld(Key::Alt));   // (Alt+Enter: full screen)
+	in.select = h.keyHeld(Key::F3);
+	in.option = h.keyHeld(Key::F2);
+	in.key = h.keyHeld(Key::Space);
+	const int pads = std::min(h.gamepadCount(), 2);
+	for (int i = 0; i < pads; i++) {
+		const host::Gamepad pad = h.gamepad(i);
+		const int last = pads == 1 ? 1 : i;   // one pad: both joysticks
+		for (int j = i; j <= last; j++) {
+			in.stick[j] &= pad.stick;
+			in.trigger[j] = in.trigger[j] || pad.fire;
 		}
-		in.start = k[SDL_SCANCODE_F4] || (k[SDL_SCANCODE_RETURN] && !(SDL_GetModState() & SDL_KMOD_ALT));
-		in.select = k[SDL_SCANCODE_F3];
-		in.option = k[SDL_SCANCODE_F2];
-		in.key = k[SDL_SCANCODE_SPACE];
-		for (size_t i = 0; i < pads_.size() && i < 2; i++) {
-			uint8_t stick = 0x0F;
-			bool fire = false;
-			padState(pads_[i], stick, fire, in);
-			const int first = int(i), last = pads_.size() == 1 ? 1 : int(i);   // one pad: both joysticks
-			for (int j = first; j <= last; j++) {
-				in.stick[j] &= stick;
-				in.trigger[j] = in.trigger[j] || fire;
-			}
-		}
-		return in;
+		in.start = in.start || pad.start;
+		in.select = in.select || pad.select;
 	}
-
-private:
-	std::vector<SDL_Gamepad *> pads_;
-
-	static void padState(SDL_Gamepad *p, uint8_t &stick, bool &fire, rr::Input &in) {
-		constexpr int kDead = 12000;
-		const int ax = SDL_GetGamepadAxis(p, SDL_GAMEPAD_AXIS_LEFTX), ay = SDL_GetGamepadAxis(p, SDL_GAMEPAD_AXIS_LEFTY);
-		if (SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_DPAD_UP) || ay < -kDead) stick &= ~1;
-		if (SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_DPAD_DOWN) || ay > kDead) stick &= ~2;
-		if (SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_DPAD_LEFT) || ax < -kDead) stick &= ~4;
-		if (SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_DPAD_RIGHT) || ax > kDead) stick &= ~8;
-		fire = SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_SOUTH) || SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_EAST) ||
-			SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_WEST) || SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_NORTH) ||
-			SDL_GetGamepadAxis(p, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) > 16000;
-		in.start = in.start || SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_START);
-		in.select = in.select || SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_BACK);
-	}
-};
+	return in;
+}
 
 std::string findRom(int argc, char **argv) {
 	for (int i = 1; i < argc; i++) {
@@ -209,10 +174,7 @@ std::string findRom(int argc, char **argv) {
 	return "rom/River_Raid.rom";
 }
 
-void fail(const std::string &msg) {
-	std::fprintf(stderr, "%s\n", msg.c_str());
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "River Raid", msg.c_str(), nullptr);
-}
+void fail(const std::string &msg) { host::Host::showError("River Raid", msg); }
 
 }  // namespace
 
@@ -225,7 +187,7 @@ int main(int argc, char **argv) {
 	const char *shotPath = nullptr;   // testing: -shot file.bmp:N[:script] saves frame N and quits
 	long shotFrame = 0;
 	std::string shotScript;
-	uint32_t seed = uint32_t(uint64_t(std::time(nullptr)) ^ uint64_t(SDL_GetPerformanceCounter()));
+	uint32_t seed = uint32_t(uint64_t(std::time(nullptr)) ^ host::Host::ticksNs());
 	for (int i = 1; i < argc; i++) {
 		if (!std::strcmp(argv[i], "-pal")) pal = palColours = true;
 		else if (!std::strcmp(argv[i], "-colours") && i + 1 < argc) palColours = !std::strcmp(argv[++i], "pal");
@@ -264,32 +226,12 @@ int main(int argc, char **argv) {
 		rr::builtinOsFont(osFont);
 	}
 
-	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD) && !SDL_Init(SDL_INIT_VIDEO)) {
-		std::fprintf(stderr, "SDL_Init: %s\n", SDL_GetError());
+	host::Host window;
+	if (!window.open("River Raid", kViewWidth, kViewHeight, kPixelAspect, kScale, shotPath ? 0 : kSampleRate)) {
+		fail(window.error());
 		return 1;
 	}
-	SDL_Window *window = nullptr;
-	SDL_Renderer *renderer = nullptr;
-	if (!SDL_CreateWindowAndRenderer("River Raid", int(kViewWidth * kScale * kPixelAspect), kViewHeight * kScale,
-		SDL_WINDOW_RESIZABLE, &window, &renderer)) {
-		std::fprintf(stderr, "SDL_CreateWindowAndRenderer: %s\n", SDL_GetError());
-		return 1;
-	}
-	const bool vsync = SDL_SetRenderVSync(renderer, 1);
-	if (showStats) {
-		int w, h, pw, ph;
-		SDL_GetWindowSize(window, &w, &h);
-		SDL_GetWindowSizeInPixels(window, &pw, &ph);
-		std::fprintf(stderr, "renderer %s, vsync %s, window %dx%d (%dx%d pixels)\n", SDL_GetRendererName(renderer),
-			vsync ? "on" : "off", w, h, pw, ph);
-	}
-	SDL_Texture *texture =
-		SDL_CreateTexture(renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, kViewWidth, kViewHeight);
-	SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
-	SDL_AudioSpec spec{SDL_AUDIO_S16, 1, kSampleRate};
-	SDL_AudioStream *audio =
-		shotPath ? nullptr : SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, nullptr, nullptr);
-	if (audio) SDL_ResumeAudioStreamDevice(audio);
+	if (showStats) std::fprintf(stderr, "%s\n", window.info().c_str());
 
 	uint32_t palette[256];
 	auto makePalette = [&]() {
@@ -304,19 +246,18 @@ int main(int argc, char **argv) {
 	auto showColours = [&]() {
 		const std::string title = std::string("River Raid - ") + (palColours ? "PAL" : "NTSC") + " colours, " +
 			rr::paletteName(paletteModel);
-		SDL_SetWindowTitle(window, title.c_str());
+		window.setTitle(title);
 	};
 	showColours();
 
 	Atari atari(rom, osFont, pal, seed);
-	Controls controls;
 	double pending = 0;   // original frames still to run
 	struct Stats {
 		uint64_t since = 0, emulation = 0, present = 0;
 		long frames = 0, pictures = 0;
 	} stats;
-	stats.since = SDL_GetTicksNS();
-	uint64_t last = SDL_GetTicksNS();
+	stats.since = host::Host::ticksNs();
+	uint64_t last = stats.since;
 
 	if (shotPath) {
 		// testing: run N frames with a fixed input ("start@F" presses START at frame F,
@@ -332,34 +273,28 @@ int main(int argc, char **argv) {
 		atari.audio().clear();
 	}
 
-	MousePointer pointer;
 	for (bool running = true; running;) {
-		SDL_Event e;
-		while (SDL_PollEvent(&e)) {
-			pointer.handle(e);
-			if (e.type == SDL_EVENT_QUIT) running = false;
-			else if (e.type == SDL_EVENT_GAMEPAD_ADDED) controls.addGamepad(e.gdevice.which);
-			else if (e.type == SDL_EVENT_GAMEPAD_REMOVED) controls.removeGamepad(e.gdevice.which);
-			else if (e.type == SDL_EVENT_KEY_DOWN && !e.key.repeat) {
-				const bool alt = (e.key.mod & SDL_KMOD_ALT) != 0;
-				const bool fullscreen = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0;
-				if (e.key.key == SDLK_F || e.key.key == SDLK_F11 || (alt && e.key.key == SDLK_RETURN))
-					SDL_SetWindowFullscreen(window, !fullscreen);
-				else if (e.key.key == SDLK_ESCAPE && fullscreen)
-					SDL_SetWindowFullscreen(window, false);
-				else if (e.key.key == SDLK_C) {
-					palColours = !palColours;
-					makePalette();
-					showColours();
-				} else if (e.key.key == SDLK_V) {
-					paletteModel = paletteModel == rr::PaletteModel::Altirra ? rr::PaletteModel::Atari800 : rr::PaletteModel::Altirra;
-					makePalette();
-					showColours();
-				}
+		host::Event e;
+		while (window.poll(e)) {
+			using host::Key;
+			if (e.type == host::Event::Type::Quit) running = false;
+			if (e.type != host::Event::Type::KeyDown || e.repeat) continue;
+			if (e.key == Key::F || e.key == Key::F11 || (e.alt && e.key == Key::Return)) {
+				window.setFullscreen(!window.fullscreen());
+			} else if (e.key == Key::Escape && window.fullscreen()) {
+				window.setFullscreen(false);
+			} else if (e.key == Key::C) {
+				palColours = !palColours;
+				makePalette();
+				showColours();
+			} else if (e.key == Key::V) {
+				paletteModel = paletteModel == rr::PaletteModel::Altirra ? rr::PaletteModel::Atari800 : rr::PaletteModel::Altirra;
+				makePalette();
+				showColours();
 			}
 		}
 
-		const uint64_t now = SDL_GetTicksNS();
+		const uint64_t now = host::Host::ticksNs();
 		const double dt = std::min(double(now - last) / 1e9, 0.1);
 		last = now;
 		if (!shotPath) {
@@ -367,60 +302,32 @@ int main(int argc, char **argv) {
 			if (pending < 1) {
 				// No new frame yet (a display faster than 60 Hz, or no vsync): wait for it instead
 				// of drawing the same picture again.
-				SDL_DelayNS(uint64_t((1 - pending) / kFrameRate * 1e9));
+				host::Host::delayNs(uint64_t((1 - pending) / kFrameRate * 1e9));
 				continue;
 			}
-			const uint64_t t0 = SDL_GetTicksNS();
-			const rr::Input input = controls.read();
+			const uint64_t t0 = host::Host::ticksNs();
+			const rr::Input input = readControls(window);
 			for (; pending >= 1; pending--) {
 				atari.frame(input);
 				stats.frames++;
 			}
-			stats.emulation += SDL_GetTicksNS() - t0;
+			stats.emulation += host::Host::ticksNs() - t0;
 		}
-		{
-			std::vector<int16_t> &samples = atari.audio();
-			if (audio && !samples.empty()) {
-				// keep the delay short: after a stall, drop what is queued
-				if (SDL_GetAudioStreamQueued(audio) > int(sizeof(int16_t)) * kSampleRate / 5) SDL_ClearAudioStream(audio);
-				SDL_PutAudioStreamData(audio, samples.data(), int(samples.size() * sizeof(int16_t)));
-			}
-			samples.clear();
-		}
+		std::vector<int16_t> &samples = atari.audio();
+		window.playSound(samples.data(), samples.size());
+		samples.clear();
 
-		void *pixels;
-		int pitch;
-		if (SDL_LockTexture(texture, nullptr, &pixels, &pitch)) {
-			const auto *scr = atari.screen();
-			for (int y = 0; y < kViewHeight; y++) {
-				const uint8_t *src = scr[y] + kViewLeft;
-				uint32_t *dst = reinterpret_cast<uint32_t *>(static_cast<uint8_t *>(pixels) + y * pitch);
-				for (int x = 0; x < kViewWidth; x++) dst[x] = palette[src[x]];
-			}
-			SDL_UnlockTexture(texture);
-		}
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-		SDL_RenderClear(renderer);
-		int outW = 0, outH = 0;
-		SDL_GetRenderOutputSize(renderer, &outW, &outH);
-		const double imageW = kViewWidth * kPixelAspect;   // keep the TV proportions, centred
-		const double scale = std::min(outW / imageW, double(outH) / kViewHeight);
-		SDL_FRect dst;
-		dst.w = float(imageW * scale);
-		dst.h = float(kViewHeight * scale);
-		dst.x = (float(outW) - dst.w) / 2;
-		dst.y = (float(outH) - dst.h) / 2;
-		SDL_RenderTexture(renderer, texture, nullptr, &dst);
+		uint32_t *pixels = window.pixels();
+		const auto *scr = atari.screen();
+		for (int y = 0; y < kViewHeight; y++)
+			for (int x = 0; x < kViewWidth; x++) pixels[y * kViewWidth + x] = palette[scr[y][kViewLeft + x]];
 		if (shotPath) {
-			if (SDL_Surface *shot = SDL_RenderReadPixels(renderer, nullptr)) {
-				SDL_SaveBMP(shot, shotPath);
-				SDL_DestroySurface(shot);
-			}
+			window.savePicture(shotPath);
 			running = false;
 		}
-		const uint64_t t1 = SDL_GetTicksNS();
-		SDL_RenderPresent(renderer);
-		stats.present += SDL_GetTicksNS() - t1;
+		const uint64_t t1 = host::Host::ticksNs();
+		window.present();
+		stats.present += host::Host::ticksNs() - t1;
 		stats.pictures++;
 		if (showStats && now - stats.since >= 1000000000) {
 			const double sec = double(now - stats.since) / 1e9;
@@ -432,10 +339,5 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	if (audio) SDL_DestroyAudioStream(audio);
-	SDL_DestroyTexture(texture);
-	SDL_DestroyRenderer(renderer);
-	SDL_DestroyWindow(window);
-	SDL_Quit();
 	return 0;
 }

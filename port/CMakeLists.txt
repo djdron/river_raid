@@ -69,30 +69,64 @@ add_executable(status_check tools/status_check.cpp)
 target_link_libraries(status_check rrcore)
 target_compile_options(status_check PRIVATE ${RR_WARNINGS})
 
-# The game (river_raid) and the river viewer (river_view), SDL3.
-# Uses an installed SDL3 if CMake finds one, otherwise downloads and builds SDL3 (static).
-option(RR_VIEWER "Build the SDL3 game and river viewer" ON)
+# The game (river_raid) and the river viewer (river_view): window, sound and input through
+# SDL (sdl/host.h). SDL3 by default; RR_SDL2=ON uses SDL2 instead (for platforms SDL3 has
+# dropped, such as UWP on the Xbox). Uses an installed SDL if CMake finds one, otherwise
+# downloads and builds it (static).
+option(RR_VIEWER "Build the SDL game and river viewer" ON)
+option(RR_SDL2 "Use SDL2 instead of SDL3" OFF)
 if(RR_VIEWER)
-	# 3.4 or newer: older versions move the mouse pointer when switching full screen
-	find_package(SDL3 3.4 CONFIG QUIET)
-	if(NOT SDL3_FOUND)
-		include(FetchContent)
-		set(SDL_SHARED OFF CACHE BOOL "" FORCE)
-		set(SDL_STATIC ON CACHE BOOL "" FORCE)
-		set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
-		FetchContent_Declare(SDL3
-			GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-			GIT_TAG release-3.4.20
-			GIT_SHALLOW TRUE
-		)
-		FetchContent_MakeAvailable(SDL3)
+	include(FetchContent)
+	if(RR_SDL2)
+		find_package(SDL2 2.0.18 CONFIG QUIET)
+		if(NOT SDL2_FOUND)
+			set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+			set(SDL_STATIC ON CACHE BOOL "" FORCE)
+			set(SDL_TEST OFF CACHE BOOL "" FORCE)
+			FetchContent_Declare(SDL2
+				GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+				GIT_TAG release-2.32.10
+				GIT_SHALLOW TRUE
+			)
+			FetchContent_MakeAvailable(SDL2)
+		endif()
+		if(TARGET SDL2::SDL2-static)
+			set(RR_SDL_LIBS SDL2::SDL2-static)
+		else()
+			set(RR_SDL_LIBS SDL2::SDL2)
+		endif()
+		if(TARGET SDL2::SDL2main)
+			list(PREPEND RR_SDL_LIBS SDL2::SDL2main)
+		endif()
+		set(RR_HOST sdl/host_sdl2.cpp)
+	else()
+		# 3.4 or newer: older versions move the mouse pointer when switching full screen
+		find_package(SDL3 3.4 CONFIG QUIET)
+		if(NOT SDL3_FOUND)
+			set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+			set(SDL_STATIC ON CACHE BOOL "" FORCE)
+			set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
+			FetchContent_Declare(SDL3
+				GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+				GIT_TAG release-3.4.20
+				GIT_SHALLOW TRUE
+			)
+			FetchContent_MakeAvailable(SDL3)
+		endif()
+		set(RR_SDL_LIBS SDL3::SDL3)
+		set(RR_HOST sdl/host_sdl3.cpp)
 	endif()
-	add_executable(river_raid WIN32 game/river_raid.cpp sdl/mouse_pointer.h)
-	target_include_directories(river_raid PRIVATE sdl)
-	target_link_libraries(river_raid rrcore SDL3::SDL3)
+	add_library(rrhost STATIC sdl/host.h sdl/host_main.h ${RR_HOST})
+	target_include_directories(rrhost PUBLIC sdl)
+	target_link_libraries(rrhost PUBLIC ${RR_SDL_LIBS})
+	target_compile_options(rrhost PRIVATE ${RR_WARNINGS})
+	if(RR_SDL2)
+		target_compile_definitions(rrhost PUBLIC RR_SDL2)
+	endif()
+	add_executable(river_raid WIN32 game/river_raid.cpp)
+	target_link_libraries(river_raid rrcore rrhost)
 	target_compile_options(river_raid PRIVATE ${RR_WARNINGS})
-	add_executable(river_view WIN32 viewer/river_view.cpp sdl/mouse_pointer.h)
-	target_include_directories(river_view PRIVATE sdl)
-	target_link_libraries(river_view rrcore SDL3::SDL3)
+	add_executable(river_view WIN32 viewer/river_view.cpp)
+	target_link_libraries(river_view rrcore rrhost)
 	target_compile_options(river_view PRIVATE ${RR_WARNINGS})
 endif()

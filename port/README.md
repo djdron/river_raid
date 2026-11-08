@@ -11,6 +11,8 @@ cmake --build build
 ```
 The core and the tools need only a C++17 compiler. The game `river_raid` and the viewer `river_view` need SDL3: CMake uses an installed SDL3 (3.4 or newer) if it finds one, otherwise it downloads SDL 3.4.20 from GitHub during configuration (needs git and internet) and links it statically. On Linux, building SDL from source needs the X11/Wayland development packages (see SDL's `docs/README-linux.md`). SDL 3.4 stops with an error when such a package is missing and names the option that builds without it (for example `-DSDL_X11_XCURSOR=OFF`). Without SDL at all: `cmake -S . -B build -DRR_VIEWER=OFF`.
 
+With SDL2 instead of SDL3 (for platforms SDL3 no longer supports, such as UWP on the Xbox): `cmake -S . -B build -DRR_SDL2=ON`. CMake then uses an installed SDL2 (2.0.18 or newer) or downloads SDL 2.32.10. The programs talk to SDL only through `sdl/host.h`, implemented once for each version; both give the same picture.
+
 On Windows with Visual Studio: `cmake --build build --config Release`, the programs end up in `build\Release\`. Tested on Linux (gcc); macOS and Windows not tested yet.
 
 ## The game
@@ -74,7 +76,7 @@ Which object wakes up when is decided by POKEY's RANDOM register, a hardware cou
 | `src/river_state_io.cpp`, `src/game_ram.cpp` | mapping of the generator's and the game's fields to the original's RAM addresses: loading, writing and comparison (for verification) |
 | `game/river_raid.cpp` | the game (SDL3): picture, sound, keyboard and gamepads |
 | `viewer/river_view.cpp` | the river viewer (SDL3), see below |
-| `sdl/mouse_pointer.h` | hiding the mouse pointer (game and viewer) |
+| `sdl/host.h`, `host_sdl3.cpp`, `host_sdl2.cpp` | window, picture, sound, keyboard and gamepads for the game and the viewer, over SDL3 or SDL2; hiding the mouse pointer |
 | `tools/river_map.cpp` | generates the river and saves a PNG as the game shows it: `river_map <rom> <game 1..8> <lines> out.png [-pal] [-flat]` (`-flat`: bitmap only, fixed colours) |
 | `tools/sound_check.cpp` | compares the sound driver with the original's POKEY writes (`rr_oracle -vbi`) |
 | `tools/sound_render.cpp` | renders a POKEY write log to WAV with the port's POKEY, to compare with the emulator's sound (`rr_oracle -wav`) |

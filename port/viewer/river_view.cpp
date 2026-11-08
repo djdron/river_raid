@@ -1,4 +1,4 @@
-// River viewer (SDL3): the game's attract mode, the flight over the river that the original
+// River viewer (window, sound and input through SDL: sdl/host.h): the game's attract mode, the flight over the river that the original
 // shows when nobody presses START.
 //
 // usage: river_view [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-seed N]
@@ -33,11 +33,6 @@
 // Looking back shows the river from a map of the lines as they entered the screen, with the
 // objects where they were placed; flying forward again replays it up to the present, where the
 // game continues. The game, and the scrolling line, only run in the present.
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_main.h>
-
-#include "mouse_pointer.h"
-
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -53,6 +48,9 @@
 #include "river_draw.h"
 #include "river_gen.h"
 #include "status_bar.h"
+
+#include "host.h"
+#include "host_main.h"
 
 namespace {
 
@@ -204,10 +202,7 @@ std::string findRom(int argc, char **argv) {
 	return "rom/River_Raid.rom";
 }
 
-void fail(const std::string &msg) {
-	std::fprintf(stderr, "%s\n", msg.c_str());
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "River Raid viewer", msg.c_str(), nullptr);
-}
+void fail(const std::string &msg) { host::Host::showError("River Raid viewer", msg); }
 
 }  // namespace
 
@@ -218,7 +213,7 @@ int main(int argc, char **argv) {
 	const char *osPath = nullptr;
 	const char *shotPath = nullptr;   // testing: -shot file.bmp:N saves frame N as BMP (.raw: screen buffer) and quits
 	long shotFrame = 0;
-	uint32_t seed = uint32_t(SDL_GetTicks() ^ uint64_t(std::time(nullptr)));   // like POKEY at power-on
+	uint32_t seed = uint32_t(host::Host::ticksNs() ^ uint64_t(std::time(nullptr)));   // like POKEY at power-on
 	for (int i = 1; i < argc; i++) {
 		if (!std::strcmp(argv[i], "-pal")) pal = palColours = true;
 		else if (!std::strcmp(argv[i], "-colours") && i + 1 < argc) palColours = !std::strcmp(argv[++i], "pal");
@@ -253,24 +248,11 @@ int main(int argc, char **argv) {
 		rr::builtinOsFont(osFont);
 	}
 
-	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) && !SDL_Init(SDL_INIT_VIDEO)) {
-		std::fprintf(stderr, "SDL_Init: %s\n", SDL_GetError());
+	host::Host window;
+	if (!window.open("River Raid", kViewWidth, kViewHeight, kPixelAspect, kScale, shotPath ? 0 : kSampleRate)) {
+		fail(window.error());
 		return 1;
 	}
-	SDL_Window *window = nullptr;
-	SDL_Renderer *renderer = nullptr;
-	if (!SDL_CreateWindowAndRenderer("River Raid", int(kViewWidth * kScale * kPixelAspect), kViewHeight * kScale,
-		SDL_WINDOW_RESIZABLE, &window, &renderer)) {
-		std::fprintf(stderr, "SDL_CreateWindowAndRenderer: %s\n", SDL_GetError());
-		return 1;
-	}
-	SDL_SetRenderVSync(renderer, 1);
-	SDL_AudioSpec spec{SDL_AUDIO_S16, 1, kSampleRate};
-	SDL_AudioStream *audio = shotPath ? nullptr : SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, nullptr, nullptr);
-	if (audio) SDL_ResumeAudioStreamDevice(audio);
-	SDL_Texture *texture =
-		SDL_CreateTexture(renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, kViewWidth, kViewHeight);
-	SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
 
 	uint32_t palette[256];
 	auto makePalette = [&]() {
@@ -285,7 +267,7 @@ int main(int argc, char **argv) {
 	auto showColours = [&]() {
 		const std::string title = std::string("River Raid - ") + (palColours ? "PAL" : "NTSC") + " colours, " +
 			rr::paletteName(paletteModel);
-		SDL_SetWindowTitle(window, title.c_str());
+		window.setTitle(title);
 	};
 	showColours();
 
@@ -298,40 +280,39 @@ int main(int argc, char **argv) {
 	double pending = 0;    // original frames still to run
 	bool paused = false;
 	long back = 0;         // look-back in lines
-	uint64_t last = SDL_GetTicksNS();
+	uint64_t last = host::Host::ticksNs();
 	std::string title;
 
 	if (shotPath)
 		for (long f = 0; f < shotFrame; f++) attract.frame();
 
-	MousePointer pointer;
 	for (bool running = true; running;) {
-		SDL_Event e;
-		while (SDL_PollEvent(&e)) {
-			pointer.handle(e);
-			if (e.type == SDL_EVENT_QUIT) running = false;
-			else if (e.type == SDL_EVENT_MOUSE_WHEEL) back += long(e.wheel.y * 16);
-			else if (e.type == SDL_EVENT_KEY_DOWN) {
-				switch (e.key.key) {
-				case SDLK_SPACE: paused = !paused; break;
-				case SDLK_C: palColours = !palColours; makePalette(); showColours(); break;
-				case SDLK_V:
+		host::Event e;
+		while (window.poll(e)) {
+			using host::Key;
+			if (e.type == host::Event::Type::Quit) running = false;
+			else if (e.type == host::Event::Type::MouseWheel) back += long(e.wheel * 16);
+			else if (e.type == host::Event::Type::KeyDown) {
+				switch (e.key) {
+				case Key::Space: paused = !paused; break;
+				case Key::C: palColours = !palColours; makePalette(); showColours(); break;
+				case Key::V:
 					paletteModel = paletteModel == rr::PaletteModel::Altirra ? rr::PaletteModel::Atari800 : rr::PaletteModel::Altirra;
 					makePalette();
 					showColours();
 					break;
-				case SDLK_UP: speedIndex = std::min(speedIndex + 1, kSpeedCount - 1); break;
-				case SDLK_DOWN: speedIndex = std::max(speedIndex - 1, 0); break;
-				case SDLK_PAGEUP: back += rr::kRiverRows; break;
-				case SDLK_PAGEDOWN: back -= rr::kRiverRows; break;
-				case SDLK_BACKSPACE: back = 0; speedIndex = 10; break;
-				case SDLK_HOME: attract.restart(); back = 0; break;
-				case SDLK_B: {
+				case Key::Up: speedIndex = std::min(speedIndex + 1, kSpeedCount - 1); break;
+				case Key::Down: speedIndex = std::max(speedIndex - 1, 0); break;
+				case Key::PageUp: back += rr::kRiverRows; break;
+				case Key::PageDown: back -= rr::kRiverRows; break;
+				case Key::Backspace: back = 0; speedIndex = 10; break;
+				case Key::Home: attract.restart(); back = 0; break;
+				case Key::B: {
 					// the bridge line is shown a little above the bottom of the river area; Shift+B just
 					// after a bridge goes to the one before it
 					constexpr long kMargin = 100;
 					const long shown = attract.lines() - 1 - back - kMargin;
-					if (e.key.mod & SDL_KMOD_SHIFT) {
+					if (e.shift) {
 						back = attract.lines() - 1 - (attract.bridgeBefore(shown - 64) + kMargin);
 					} else {
 						long next = attract.bridgeAfter(shown);
@@ -344,19 +325,17 @@ int main(int argc, char **argv) {
 					}
 					break;
 				}
-				case SDLK_F1: attract.soundTest(0); break;
-				case SDLK_F2: attract.soundTest(1); break;
-				case SDLK_F3: attract.soundTest(2); break;
-				case SDLK_F:
-					SDL_SetWindowFullscreen(window, !(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN));
-					break;
-				case SDLK_ESCAPE: SDL_SetWindowFullscreen(window, false); break;
+				case Key::F1: attract.soundTest(0); break;
+				case Key::F2: attract.soundTest(1); break;
+				case Key::F3: attract.soundTest(2); break;
+				case Key::F: window.setFullscreen(!window.fullscreen()); break;
+				case Key::Escape: if (window.fullscreen()) window.setFullscreen(false); break;
 				default: break;
 				}
 			}
 		}
 
-		const uint64_t now = SDL_GetTicksNS();
+		const uint64_t now = host::Host::ticksNs();
 		const double dt = std::min(double(now - last) / 1e9, 0.1);
 		last = now;
 		if (!paused && !shotPath) {
@@ -369,39 +348,17 @@ int main(int argc, char **argv) {
 		}
 		back = std::clamp(back, 0L, std::max(0L, attract.lines() - 1));
 		{
+			// at higher speeds or after a stall, playSound drops what is queued
 			std::vector<int16_t> &samples = attract.audio();
-			if (audio && !samples.empty()) {
-				// keep the delay short: at higher speeds or after a stall, drop what is queued
-				if (SDL_GetAudioStreamQueued(audio) > int(sizeof(int16_t)) * kSampleRate / 5) SDL_ClearAudioStream(audio);
-				SDL_PutAudioStreamData(audio, samples.data(), int(samples.size() * sizeof(int16_t)));
-			}
+			window.playSound(samples.data(), samples.size());
 			samples.clear();
 		}
 		if (attract.lines() > 0 && back == attract.lines() - 1 && kSpeeds[speedIndex] < 0) pending = 0;
 
 		attract.draw(back, screen);
-		void *pixels;
-		int pitch;
-		if (SDL_LockTexture(texture, nullptr, &pixels, &pitch)) {
-			for (int y = 0; y < kViewHeight; y++) {
-				const uint8_t *src = screen[kViewTop + y] + kViewLeft;
-				uint32_t *dst = reinterpret_cast<uint32_t *>(static_cast<uint8_t *>(pixels) + y * pitch);
-				for (int x = 0; x < kViewWidth; x++) dst[x] = palette[src[x]];
-			}
-			SDL_UnlockTexture(texture);
-		}
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-		SDL_RenderClear(renderer);
-		int outW = 0, outH = 0;
-		SDL_GetRenderOutputSize(renderer, &outW, &outH);
-		const double imageW = kViewWidth * kPixelAspect;   // keep the TV proportions, centred
-		const double scale = std::min(outW / imageW, double(outH) / kViewHeight);
-		SDL_FRect dst;
-		dst.w = float(imageW * scale);
-		dst.h = float(kViewHeight * scale);
-		dst.x = (float(outW) - dst.w) / 2;
-		dst.y = (float(outH) - dst.h) / 2;
-		SDL_RenderTexture(renderer, texture, nullptr, &dst);
+		uint32_t *pixels = window.pixels();
+		for (int y = 0; y < kViewHeight; y++)
+			for (int x = 0; x < kViewWidth; x++) pixels[y * kViewWidth + x] = palette[screen[kViewTop + y][kViewLeft + x]];
 
 		if (shotPath && std::strstr(shotPath, ".raw")) {   // screen buffer: 240 rows of 384 colour codes
 			if (FILE *f = std::fopen(shotPath, "wb")) {
@@ -409,13 +366,10 @@ int main(int argc, char **argv) {
 				std::fclose(f);
 			}
 		} else if (shotPath) {
-			if (SDL_Surface *shot = SDL_RenderReadPixels(renderer, nullptr)) {
-				SDL_SaveBMP(shot, shotPath);
-				SDL_DestroySurface(shot);
-			}
+			window.savePicture(shotPath);
 		}
 		if (shotPath) running = false;
-		SDL_RenderPresent(renderer);
+		window.present();
 
 		char buf[160];
 		const long shown = attract.lines() - 1 - back;
@@ -423,14 +377,9 @@ int main(int argc, char **argv) {
 			kSpeeds[speedIndex], back ? " - looking back" : "", paused ? " - paused" : "");
 		if (title != buf) {
 			title = buf;
-			SDL_SetWindowTitle(window, buf);
+			window.setTitle(buf);
 		}
 	}
 
-	if (audio) SDL_DestroyAudioStream(audio);
-	SDL_DestroyTexture(texture);
-	SDL_DestroyRenderer(renderer);
-	SDL_DestroyWindow(window);
-	SDL_Quit();
 	return 0;
 }
