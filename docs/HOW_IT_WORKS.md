@@ -26,8 +26,9 @@ River Raid's river looks random but is identical in every game, on every Atari, 
 comes from a *pseudo-random* number generator: a 24-bit "shift register" that is stirred once
 per line by a fixed rule (`stepLfsr`). Started from the same value it always produces the same
 sequence of numbers, so the same bends, islands and enemies appear in the same places. The
-four starting points of games 1-8 (bridge 1, 5, 20 or 50) are just four stored values of that
-register.
+starting points of games 1-8 (bridge 1, 5, 20 or 50) are the states of that register, and the
+bank position, at those bridges of the same river, stored so that the game does not have to
+run the river up to them.
 
 ## Blocks, sections and bridges
 

@@ -7,7 +7,7 @@
 //   -os file: an Atari OS ROM (10 KB or 16 KB) or its 1 KB font, for Atari's own letters;
 //   without it the AltirraOS font is used (os_font.h).
 //   -seed N: another river (and objects): the river generator starts every game from N
-//            (1..16777215) instead of the cartridge's starting points; difficulty grows as usual
+//            (1..16777215); games 3-8 start at its bridges 5, 20, 50; difficulty grows as usual
 //   -random N: start of POKEY's random counter (otherwise taken from the clock, as on the real
 //   machine, where it depends on the moment of power-on).
 //
@@ -166,7 +166,7 @@ public:
 		rr::drawStatusBar(rom_, charsets_, panel_, 0xFF, scroller_, logoShown_, screen);   // full tank
 	}
 
-	void setRiverSeed(uint32_t seed) { game_.gen.seed = seed; }   // see RiverGen::seed
+	void setRiverSeed(uint32_t seed) { game_.gen.setSeed(seed); }   // see RiverGen::seed
 
 private:
 	const rr::Rom &rom_;
