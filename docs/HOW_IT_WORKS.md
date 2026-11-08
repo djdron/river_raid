@@ -122,6 +122,51 @@ tank on a bank road drives towards the river, stops at the water's edge and fire
 it; the shell flies in an arc and explodes, destroying whatever it lands on, including your
 plane (`driveTank`, `moveShell`). From bridge 5 on, blowing up a bridge makes a nearby tank fire.
 
+## Why it gets harder
+
+The random numbers alone decide nothing: the sequence is the same all game long. What changes
+is how the game reads them. Almost every decision of the generator compares a random number
+(0 to 255) with a threshold computed from the level, and the thresholds move as the level
+grows. The same random numbers that gave an empty stretch at bridge 5 give an enemy at bridge
+25.
+
+**Enemies in the middle of a block.** Threshold: (level − 8) × 8.
+
+| level | chance of an enemy |
+|---|---|
+| up to 8 | none (enemies only at block starts) |
+| 10 | 16 in 256, about 6% |
+| 20 | 96 in 256, about 38% |
+| 30 | 176 in 256, about 69% |
+| 40 and up | every time |
+
+**Fuel depots.** At a block start the threshold is (63 − level) × 2. Above it comes an enemy;
+below it a fuel depot half the time, otherwise nothing. A depot comes at about 24% of block
+starts at level 1, 17% at level 20 and 6.6% at level 46 (no rarer after that), while enemies
+there go from about 51% to 87%.
+
+**New enemies by level.**
+
+| from level | what appears |
+|---|---|
+| 3 | hot-air balloons |
+| 5 | jets (before that, a ship instead); a blown-up bridge makes a nearby tank fire |
+| 7 | tanks on the bank roads |
+| 13 | helicopters that fire missiles |
+
+**How much the river winds.** The limits within which the bank wanders widen: at levels 1 and 2
+the river is almost straight (the bank moves within about 8 positions); later about 15; on odd
+levels from 10 on about 39, and from 20 on almost the whole screen.
+
+**Room at the banks.** Below level 9, objects keep a few dots further from the banks and
+sections are never very narrow; below level 20 the narrowest section width is not used.
+
+**Movement.** Before bridge 2 enemies do not move at all.
+
+This is also why games 3-8, which start at bridge 5, 20 or 50, store two things for their start:
+the generator's state at that bridge, which gives the shape of the river, and the level number,
+which gives its difficulty. Without the level the river would have the same shape but be easy.
+
 ## Your plane
 
 - **Speed:** forward is faster, back is slower; let go and it returns to normal (`changeSpeed`).
