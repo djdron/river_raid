@@ -2,8 +2,6 @@
 // again when the mouse moves.
 #pragma once
 
-#include <cmath>
-
 #include <SDL3/SDL.h>
 
 class MousePointer {
@@ -19,13 +17,16 @@ public:
 		} else if (e.type == SDL_EVENT_MOUSE_MOTION && !SDL_CursorVisible()) {
 			// When the window changes size or place (going full screen), the pointer stays where it
 			// is on the screen, but its position in the window changes and SDL reports that as
-			// motion. Only a change of the position on the screen is the user moving the mouse.
+			// motion. Only a change of the position on the screen is the user moving the mouse, and
+			// small shakes of the mouse don't count.
 			float x, y;
 			SDL_GetGlobalMouseState(&x, &y);
-			if (std::fabs(x - hiddenX_) >= 1.0f || std::fabs(y - hiddenY_) >= 1.0f) SDL_ShowCursor();
+			const float dx = x - hiddenX_, dy = y - hiddenY_;
+			if (dx * dx + dy * dy >= kMoveDistance * kMoveDistance) SDL_ShowCursor();
 		}
 	}
 
 private:
+	static constexpr float kMoveDistance = 10.0f;   // pixels on the screen
 	float hiddenX_ = 0, hiddenY_ = 0;
 };
