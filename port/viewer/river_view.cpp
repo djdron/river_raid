@@ -25,7 +25,9 @@
 //   F1 / F2 / F3   sound test: explosion / firing / score sound, through the game's own sound
 //                  driver (the attract mode itself is silent, as in the original)
 //   F              full screen
-//   Esc            quit
+//   C / V          NTSC / PAL colours; Altirra / atari800 colour model
+// A mouse click hides the mouse pointer until the mouse moves. Closing the window (or Alt+F4,
+// Cmd+Q) quits.
 //
 // Looking back shows the river from a map of the lines as they entered the screen, with the
 // objects where they were placed; flying forward again replays it up to the present, where the
@@ -304,9 +306,12 @@ int main(int argc, char **argv) {
 		while (SDL_PollEvent(&e)) {
 			if (e.type == SDL_EVENT_QUIT) running = false;
 			else if (e.type == SDL_EVENT_MOUSE_WHEEL) back += long(e.wheel.y * 16);
+			else if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN) SDL_HideCursor();   // until the mouse moves
+			else if (e.type == SDL_EVENT_MOUSE_MOTION) {
+				if (!SDL_CursorVisible()) SDL_ShowCursor();
+			}
 			else if (e.type == SDL_EVENT_KEY_DOWN) {
 				switch (e.key.key) {
-				case SDLK_ESCAPE: running = false; break;
 				case SDLK_SPACE: paused = !paused; break;
 				case SDLK_C: palColours = !palColours; makePalette(); showColours(); break;
 				case SDLK_V:

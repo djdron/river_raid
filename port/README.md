@@ -16,7 +16,7 @@ On Windows with Visual Studio: `cmake --build build --config Release`, the progr
 ## The game
 `river_raid [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-seed N]`. The colours are those of a PAL machine by default (`-colours ntsc` for NTSC); C switches NTSC/PAL colours while running. `-palette` chooses the colour model: `altirra` (default) or `atari800` (darker middle tones); V switches it while running. The window title shows the colours in use. The ROM is looked for in `rom/River_Raid.rom` of the current folder and up to three folders above (from the repository or from `port/build/Release` it starts without arguments).
 
-After power-on the attract mode flies over the river. START begins a game; SELECT (or OPTION) chooses games 1–8: even numbers are two-player games (the players take turns), games 3–4, 5–6 and 7–8 start at bridges 5, 20 and 50. Any key of the Atari keyboard pauses. After a game over the screen stays until the attract mode starts again (about 35 s).
+After power-on the attract mode flies over the river. START begins a game; SELECT (or OPTION) chooses games 1–8: even numbers are two-player games (the players take turns), games 3–4, 5–6 and 7–8 start at bridges 5, 20 and 50. Any key of the Atari keyboard pauses. After a game over the screen stays until the attract mode starts again (about 35 s). The game and the viewer quit the usual way: closing the window, Alt+F4, Cmd+Q.
 
 | Key | Atari |
 |---|---|
@@ -29,7 +29,7 @@ After power-on the attract mode flies over the river. START begins a game; SELEC
 | F, F11 or Alt+Enter | full screen |
 | C | NTSC / PAL colours |
 | V | Altirra / atari800 colour model |
-| Esc | quit |
+| mouse click | hides the mouse pointer until the mouse moves |
 
 The keyboard drives both joysticks, so one person can play a two-player game too. Gamepads: the first is joystick 1 (and 2 while there is no second), the second is joystick 2; D-pad or left stick, A/B/X/Y or the right trigger to fire, Start = START, Back = SELECT.
 
@@ -50,7 +50,7 @@ Letters and digits 1–9 come from the OS font, which is not in the cartridge. T
 | F | full screen |
 | C | NTSC / PAL colours |
 | V | Altirra / atari800 colour model |
-| Esc | quit |
+| mouse click | hides the mouse pointer until the mouse moves |
 
 Compared with the original's screens (attract mode, frames 1000–2300, with the original's RANDOM values): the river area and the status panel match pixel for pixel, the scrolling line too apart from its outer columns (left of 24, right of 359), where the emulator handles fine scrolling at the edge differently.
 

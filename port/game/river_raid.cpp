@@ -21,7 +21,9 @@
 //   F2                        OPTION
 //   Space                     a key of the Atari keyboard: pause
 //   F, F11 or Alt+Enter       full screen
-//   Esc                       quit
+//   C / V                     NTSC / PAL colours; Altirra / atari800 colour model
+// A mouse click hides the mouse pointer until the mouse moves. Closing the window (or Alt+F4,
+// Cmd+Q) quits.
 // Gamepads: the first one is joystick 1 (and 2 while there is no second), the second one
 // joystick 2. D-pad or left stick: joystick; A, B, X, Y or the right trigger: fire;
 // Start: START; Back: SELECT.
@@ -319,10 +321,12 @@ int main(int argc, char **argv) {
 			if (e.type == SDL_EVENT_QUIT) running = false;
 			else if (e.type == SDL_EVENT_GAMEPAD_ADDED) controls.addGamepad(e.gdevice.which);
 			else if (e.type == SDL_EVENT_GAMEPAD_REMOVED) controls.removeGamepad(e.gdevice.which);
-			else if (e.type == SDL_EVENT_KEY_DOWN && !e.key.repeat) {
+			else if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN) SDL_HideCursor();   // until the mouse moves
+			else if (e.type == SDL_EVENT_MOUSE_MOTION) {
+				if (!SDL_CursorVisible()) SDL_ShowCursor();
+			} else if (e.type == SDL_EVENT_KEY_DOWN && !e.key.repeat) {
 				const bool alt = (e.key.mod & SDL_KMOD_ALT) != 0;
-				if (e.key.key == SDLK_ESCAPE) running = false;
-				else if (e.key.key == SDLK_F || e.key.key == SDLK_F11 || (alt && e.key.key == SDLK_RETURN))
+				if (e.key.key == SDLK_F || e.key.key == SDLK_F11 || (alt && e.key.key == SDLK_RETURN))
 					SDL_SetWindowFullscreen(window, !(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN));
 				else if (e.key.key == SDLK_C) {
 					palColours = !palColours;
