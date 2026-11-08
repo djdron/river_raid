@@ -6,6 +6,7 @@ Reverse engineering and C++ port of Activision's River Raid for Atari 400/800 (1
 aiming for 1:1 game logic and 1:1 sound on modern Windows, Linux and macOS.
 
 - `HANDOFF.md` — project state, verified facts, decisions, next steps (start here)
+- `docs/HOW_IT_WORKS.md` — how the game works, for everyone: the river, enemies, bridges, collisions
 - `docs/NOTES.md` — findings with addresses
 - `disasm/` — annotated disassembly
 - `tools/` — disassembler, verification scripts
