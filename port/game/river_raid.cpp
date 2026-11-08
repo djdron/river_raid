@@ -330,9 +330,9 @@ int main(int argc, char **argv) {
 				const bool alt = (e.key.mod & SDL_KMOD_ALT) != 0;
 				const bool fullscreen = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0;
 				if (e.key.key == SDLK_F || e.key.key == SDLK_F11 || (alt && e.key.key == SDLK_RETURN))
-					SDL_SetWindowFullscreen(window, !fullscreen);
+					MousePointer::setFullscreen(window, !fullscreen);
 				else if (e.key.key == SDLK_ESCAPE && fullscreen)
-					SDL_SetWindowFullscreen(window, false);
+					MousePointer::setFullscreen(window, false);
 				else if (e.key.key == SDLK_C) {
 					palColours = !palColours;
 					makePalette();

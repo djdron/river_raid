@@ -1,5 +1,5 @@
 // The mouse pointer over the game window: hidden by a click or by going full screen, shown
-// again when the mouse moves.
+// again when the mouse moves; and switching full screen without moving it.
 #pragma once
 
 #include <cmath>
@@ -12,6 +12,20 @@ public:
 		SDL_HideCursor();
 		SDL_GetGlobalMouseState(&hiddenX_, &hiddenY_);
 	}
+	// Full screen on or off. SDL keeps the pointer at the same place in the window, which on
+	// Windows moves it on the screen (a centred window going full screen sends it towards the
+	// top left corner); put it back where it was on the screen.
+	static void setFullscreen(SDL_Window *window, bool on) {
+		float x, y;
+		SDL_GetGlobalMouseState(&x, &y);
+		SDL_SetWindowFullscreen(window, on);
+		SDL_SyncWindow(window);
+		SDL_WarpMouseGlobal(x, y);
+	}
+	static void toggleFullscreen(SDL_Window *window) {
+		setFullscreen(window, !(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN));
+	}
+
 	// Call for every event.
 	void handle(const SDL_Event &e) {
 		if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN || e.type == SDL_EVENT_WINDOW_ENTER_FULLSCREEN) {
