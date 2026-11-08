@@ -133,6 +133,14 @@ public:
 	void nextLine(uint8_t line[kLineBytes]);
 
 	// Load / compare with a 16 KB RAM image of the original ($0000-$3FFF).
+	// Another river: every game starts from this state of the LFSR (1..$FFFFFF: A low byte, B, C
+	// high byte) instead of the cartridge's; the level of each game is kept, so difficulty grows
+	// as usual. 0: the cartridge's river.
+	uint32_t seed = 0;
+	uint8_t startCheckpoint(int start, int i) const {
+		if (seed && i < 3) return uint8_t(seed >> (8 * i));
+		return rom_.startCheckpoint(start, i);
+	}
 	void loadFromRam(const uint8_t *ram);
 	void saveToRam(uint8_t *ram) const;
 	// Load only the fields the rest of the game also changes (enemy movement, animation).

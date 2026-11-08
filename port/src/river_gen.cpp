@@ -643,7 +643,7 @@ void RiverGen::startGame(int gameNumber, bool pal) {
 	s.depotLevelLimit = pal ? 0x2F : 0x2E;              // $A077
 	// $AF9B: the starting point of the selected game (2 games per starting bridge)
 	const int start = ((gameNumber - 1) & 7) >> 1;
-	for (int i = 0; i < 4; i++) s.checkpoint[i] = rom_.startCheckpoint(start, i);
+	for (int i = 0; i < 4; i++) s.checkpoint[i] = startCheckpoint(start, i);
 	s.level = rom_.startLevel(start);
 	restoreCheckpoint();
 }

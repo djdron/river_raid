@@ -376,7 +376,7 @@ void Game::setUpGame() {
 		g.panel[kPanelPlayer2Mark] = 0xD0;
 	}
 	const int start = g.gameNumber >> 1;
-	for (int i = 0; i < 4; i++) g.other.checkpoint[i] = gen.s.checkpoint[i] = rom_.startCheckpoint(start, i);
+	for (int i = 0; i < 4; i++) g.other.checkpoint[i] = gen.s.checkpoint[i] = gen.startCheckpoint(start, i);
 	gen.s.level = g.other.level = rom_.startLevel(start);
 	g.bridges[1] = g.other.bridges[1] = rom_.startBridges(start);
 	g.bridges[0] = g.other.bridges[0] = 0;
