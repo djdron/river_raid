@@ -119,7 +119,7 @@ struct Host::Impl {
 	}
 };
 
-Host::Host() : impl_(new Impl) {}
+Host::Host() : impl_(std::make_unique<Impl>()) {}
 
 Host::~Host() {
 	Impl &h = *impl_;
