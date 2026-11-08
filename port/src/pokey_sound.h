@@ -23,13 +23,16 @@ public:
 	static constexpr double kClock = 1789772.5;   // NTSC machine cycles per second
 
 	explicit PokeySound(int sampleRate = 48000);
+	// Samples per second of machine time; a little more or less than the output's rate makes
+	// the sound keep pace when the game runs a little faster or slower than the Atari.
+	void setSampleRate(double rate) { sampleRate_ = rate; }
 
 	void write(int reg, uint8_t value);           // $D200-$D207 (AUDF1, AUDC1, ... AUDC4)
 	// Runs `cycles` machine cycles and appends the resulting samples to `out`.
 	void run(long cycles, std::vector<int16_t> &out);
 
 private:
-	int sampleRate_;
+	double sampleRate_;
 	uint8_t audf_[4] = {}, audc_[4] = {};
 	int counter_[4] = {};
 	uint8_t output_[4] = {};

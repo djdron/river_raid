@@ -74,6 +74,7 @@ public:
 
 	// Sound to play after what is queued; more than 1/5 s queued (after a stall) is dropped.
 	void playSound(const int16_t *samples, size_t count);
+	size_t queuedSound() const;           // samples not played yet
 
 	static uint64_t ticksNs();
 	static void delayNs(uint64_t ns);

@@ -291,6 +291,10 @@ void Host::playSound(const int16_t *samples, size_t count) {
 	SDL_PutAudioStreamData(h.audio, samples, int(count * sizeof(int16_t)));
 }
 
+size_t Host::queuedSound() const {
+	return impl_->audio ? size_t(std::max(0, SDL_GetAudioStreamQueued(impl_->audio))) / sizeof(int16_t) : 0;
+}
+
 uint64_t Host::ticksNs() { return SDL_GetTicksNS(); }
 
 void Host::delayNs(uint64_t ns) { SDL_DelayNS(ns); }

@@ -312,6 +312,10 @@ void Host::playSound(const int16_t *samples, size_t count) {
 	SDL_QueueAudio(h.audio, samples, Uint32(count * sizeof(int16_t)));
 }
 
+size_t Host::queuedSound() const {
+	return impl_->audio ? SDL_GetQueuedAudioSize(impl_->audio) / sizeof(int16_t) : 0;
+}
+
 uint64_t Host::ticksNs() {
 	const uint64_t count = SDL_GetPerformanceCounter(), freq = SDL_GetPerformanceFrequency();
 	return count / freq * 1000000000ull + count % freq * 1000000000ull / freq;

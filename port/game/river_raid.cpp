@@ -54,7 +54,7 @@ constexpr int kViewLeft = 10, kViewWidth = 364;
 constexpr int kViewHeight = rr::kScreenHeight;
 constexpr int kScale = 3;               // initial window scale
 constexpr double kPixelAspect = 0.86;   // width of a column / height of a line on an NTSC TV
-constexpr double kFrameRate = 59.92;    // NTSC Atari
+constexpr double kFrameRate = rr::PokeySound::kClock / (114 * 262);   // NTSC Atari: 59.92
 
 // Frames of the game per second, and how many display refreshes show one frame. On a display
 // whose refresh rate is a multiple of the Atari's (60, 120 Hz...) the game runs at exactly that
@@ -127,6 +127,7 @@ public:
 
 	const uint8_t (*screen() const)[rr::kScreenWidth] { return screen_; }
 	std::vector<int16_t> &audio() { return audio_; }
+	void setSoundRate(double rate) { pokey_.setSampleRate(rate); }
 	const rr::GameState &state() const { return game_.g; }
 
 private:
@@ -356,6 +357,17 @@ int main(int argc, char **argv) {
 		}
 		std::vector<int16_t> &samples = atari.audio();
 		window.playSound(samples.data(), samples.size());
+		if (!shotPath && sound) {
+			// The sound for the next frames: as many samples per second as the output plays.
+			// When the game runs at the display's rate rather than the Atari's, each frame's
+			// sound is resampled to its real length (the pitch follows the speed, 0.13% at
+			// 60 Hz); and the queue is kept near 50 ms, so the sound card's clock drifting
+			// against the display's neither starves nor fills it (at most 0.5% either way).
+			const double target = kSampleRate * 0.05;
+			const double queued = double(window.queuedSound());
+			const double correction = 1 + 0.005 * std::clamp((target - queued) / target, -1.0, 1.0);
+			atari.setSoundRate(kSampleRate * kFrameRate / paceFor(window.refreshRate()).rate * correction);
+		}
 		samples.clear();
 
 		uint32_t *pixels = window.pixels();
@@ -375,9 +387,9 @@ int main(int argc, char **argv) {
 		stats.pictures++;
 		if (showStats && now - stats.since >= 1000000000) {
 			const double sec = double(now - stats.since) / 1e9;
-			std::fprintf(stderr, "%.1f frames/s, %.1f pictures/s; emulation %.2f ms, present (incl. vsync wait) %.2f ms per picture\n",
+			std::fprintf(stderr, "%.1f frames/s, %.1f pictures/s; emulation %.2f ms, present (incl. vsync wait) %.2f ms per picture; sound queued %.0f ms\n",
 				stats.frames / sec, stats.pictures / sec, stats.emulation / 1e6 / std::max(1L, stats.pictures),
-				stats.present / 1e6 / std::max(1L, stats.pictures));
+				stats.present / 1e6 / std::max(1L, stats.pictures), 1000.0 * double(window.queuedSound()) / kSampleRate);
 			stats = Stats();
 			stats.since = now;
 		}
