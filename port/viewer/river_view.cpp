@@ -1,13 +1,14 @@
 // River viewer (window, sound and input through SDL: sdl/host.h): the game's attract mode, the flight over the river that the original
 // shows when nobody presses START.
 //
-// usage: river_view [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-seed N] [-random N]
+// usage: river_view [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-seed N] [-bridge N] [-random N]
 //   rom: path to the cartridge image; by default rom/River_Raid.rom is looked for in the
 //   current folder and up to three folders above it.
 //   -os file: an Atari OS ROM (10 KB or 16 KB) or its 1 KB font, for Atari's own letters;
 //   without it the AltirraOS font is used (os_font.h).
-//   -seed N: another river (and objects): the river generator starts every game from N
+//   -seed N: another river (and objects): game 1's river starts from generator state N
 //            (1..16777215); games 3-8 start at its bridges 5, 20, 50; difficulty grows as usual
+//   -bridge N: every game starts at bridge N (1..9999) of the river, at that bridge's level
 //   -random N: start of POKEY's random counter (otherwise taken from the clock, as on the real
 //   machine, where it depends on the moment of power-on).
 //
@@ -166,7 +167,7 @@ public:
 		rr::drawStatusBar(rom_, charsets_, panel_, 0xFF, scroller_, logoShown_, screen);   // full tank
 	}
 
-	void setRiverSeed(uint32_t seed) { game_.gen.setSeed(seed); }   // see RiverGen::seed
+	void setRiver(uint32_t seed, int bridge) { game_.gen.setRiver(seed, bridge); }
 
 private:
 	const rr::Rom &rom_;
@@ -192,7 +193,7 @@ std::string findRom(int argc, char **argv) {
 	for (int i = 1; i < argc; i++) {
 		if (argv[i][0] == '-') {
 			if (!std::strcmp(argv[i], "-os") || !std::strcmp(argv[i], "-shot") || !std::strcmp(argv[i], "-seed") ||
-				!std::strcmp(argv[i], "-random") ||
+				!std::strcmp(argv[i], "-bridge") || !std::strcmp(argv[i], "-random") ||
 				!std::strcmp(argv[i], "-colours") || !std::strcmp(argv[i], "-palette"))
 				i++;
 			continue;
@@ -220,6 +221,7 @@ int main(int argc, char **argv) {
 	long shotFrame = 0;
 	uint32_t seed = uint32_t(host::Host::ticksNs() ^ uint64_t(std::time(nullptr)));   // like POKEY at power-on
 	uint32_t riverSeed = 0;            // -seed: 0 = the cartridge's river
+	int startBridge = 0;               // -bridge: 0 = the cartridge's starting bridges
 	for (int i = 1; i < argc; i++) {
 		if (!std::strcmp(argv[i], "-pal")) pal = palColours = true;
 		else if (!std::strcmp(argv[i], "-colours") && i + 1 < argc) palColours = !std::strcmp(argv[++i], "pal");
@@ -228,6 +230,7 @@ int main(int argc, char **argv) {
 		else if (!std::strcmp(argv[i], "-os") && i + 1 < argc) osPath = argv[++i];
 		else if (!std::strcmp(argv[i], "-random") && i + 1 < argc) seed = uint32_t(std::strtoul(argv[++i], nullptr, 0));
 		else if (!std::strcmp(argv[i], "-seed") && i + 1 < argc) riverSeed = uint32_t(std::strtoul(argv[++i], nullptr, 0)) & 0xFFFFFF;
+		else if (!std::strcmp(argv[i], "-bridge") && i + 1 < argc) startBridge = std::atoi(argv[++i]);
 		else if (!std::strcmp(argv[i], "-shot") && i + 1 < argc) {
 			shotPath = argv[++i];
 			if (const char *colon = std::strrchr(shotPath, ':')) {
@@ -279,7 +282,7 @@ int main(int argc, char **argv) {
 	showColours();
 
 	Attract attract(rom, osFont, pal, seed);
-	attract.setRiverSeed(riverSeed);
+	attract.setRiver(riverSeed, startBridge);
 	static uint8_t screen[rr::kScreenHeight][rr::kScreenWidth];
 	// Speed in original frames per real frame; negative = backwards.
 	static const double kSpeeds[] = {-16, -8, -4, -2, -1, -0.5, -0.25, 0, 0.25, 0.5, 1, 2, 4, 8, 16};

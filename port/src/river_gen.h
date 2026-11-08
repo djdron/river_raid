@@ -115,7 +115,7 @@ struct RiverState {
 
 class RiverGen {
 public:
-	explicit RiverGen(const Rom &rom) : rom_(rom) {}
+	explicit RiverGen(const Rom &rom) : rom_(rom) { startsFromRom(); }
 	RiverState s;
 
 	// Game start as the original does it after START: reset (sub $B0F1), starting point of
@@ -133,13 +133,22 @@ public:
 	void nextLine(uint8_t line[kLineBytes]);
 
 	// Load / compare with a 16 KB RAM image of the original ($0000-$3FFF).
-	// Another river: game 1's river starts from this state of the LFSR (1..$FFFFFF: A low byte,
-	// B, C high byte) instead of the cartridge's. The cartridge's starting points of the later
-	// games are where its river is at bridges 5, 20 and 50, so for another river they are
-	// worked out the same way, by running the generator there. 0: the cartridge's river.
-	void setSeed(uint32_t seed);
-	// LFSR A, B, C and bank at the start of games from the given starting bridge (0..3).
-	uint8_t startCheckpoint(int start, int i) const { return seed_ ? seedStarts_[start][i] : rom_.startCheckpoint(start, i); }
+	// Where the games start. Games 1-8 have 4 starting points, 2 games each (one and two
+	// players): bridges 1, 5, 20 and 50 of the same river. The cartridge stores, for each, the
+	// generator's checkpoint there, the level and the bridge counter, so that the game does not
+	// have to run the river up to them.
+	struct Start {
+		uint8_t checkpoint[4];   // LFSR A, B, C and bank
+		uint8_t level;
+		int bridge;              // the bridge counter, 1..9999
+	};
+	// Another river and/or another starting bridge, worked out by running the generator.
+	// seed: game 1's river starts from this state of the LFSR (1..$FFFFFF: A low byte, B, C
+	// high byte) instead of the cartridge's; the other games at its bridges 5, 20 and 50.
+	// bridge: every game starts at this bridge (1..9999) instead.
+	// 0 for both: the cartridge's table.
+	void setRiver(uint32_t seed, int bridge);
+	const Start &start(int n) const { return starts_[n]; }
 	void loadFromRam(const uint8_t *ram);
 	void saveToRam(uint8_t *ram) const;
 	// Load only the fields the rest of the game also changes (enemy movement, animation).
@@ -149,8 +158,8 @@ public:
 
 private:
 	const Rom &rom_;
-	uint32_t seed_ = 0;
-	uint8_t seedStarts_[4][4] = {};
+	Start starts_[4];
+	void startsFromRom();
 	void stepLfsr();                          // sub $B183
 	void countLines();                        // $A711-$A7FA
 	uint8_t chooseSectionWidth();             // $A781-$A7DB (even levels)

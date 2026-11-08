@@ -375,11 +375,12 @@ void Game::setUpGame() {
 		g.panel[kPanelPlayer1Mark] = 0xDB;
 		g.panel[kPanelPlayer2Mark] = 0xD0;
 	}
-	const int start = g.gameNumber >> 1;
-	for (int i = 0; i < 4; i++) g.other.checkpoint[i] = gen.s.checkpoint[i] = gen.startCheckpoint(start, i);
-	gen.s.level = g.other.level = rom_.startLevel(start);
-	g.bridges[1] = g.other.bridges[1] = rom_.startBridges(start);
-	g.bridges[0] = g.other.bridges[0] = 0;
+	const RiverGen::Start &start = gen.start(g.gameNumber >> 1);
+	for (int i = 0; i < 4; i++) g.other.checkpoint[i] = gen.s.checkpoint[i] = start.checkpoint[i];
+	gen.s.level = g.other.level = start.level;
+	// the bridge counter, 4 BCD digits
+	g.bridges[1] = g.other.bridges[1] = uint8_t((start.bridge / 10 % 10) << 4 | start.bridge % 10);
+	g.bridges[0] = g.other.bridges[0] = uint8_t((start.bridge / 1000) << 4 | start.bridge / 100 % 10);
 }
 
 // A699-A6DC: SELECT or OPTION: the next game number, everything back to the start.

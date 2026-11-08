@@ -638,22 +638,49 @@ void RiverGen::restoreCheckpoint() {
 	s.bank = s.checkpoint[3];
 }
 
-void RiverGen::setSeed(uint32_t seed) {
-	seed_ = seed & 0xFFFFFF;
-	if (!seed_) return;
-	// the river from the seed (with the cartridge's first bank position), run up to each
-	// starting bridge: its checkpoint there is that game's start
+void RiverGen::startsFromRom() {
+	for (int n = 0; n < 4; n++) {
+		Start &start = starts_[n];
+		for (int i = 0; i < 4; i++) start.checkpoint[i] = rom_.startCheckpoint(n, i);
+		start.level = rom_.startLevel(n);
+		const uint8_t bcd = rom_.startBridges(n);
+		start.bridge = (bcd >> 4) * 10 + (bcd & 0x0F);
+	}
+}
+
+void RiverGen::setRiver(uint32_t seed, int bridge) {
+	startsFromRom();
+	seed &= 0xFFFFFF;
+	if (!seed && bridge <= 1) {
+		if (bridge == 1) starts_[1] = starts_[2] = starts_[3] = starts_[0];
+		return;
+	}
+	if (bridge > 9999) bridge = 9999;
+	// game 1's river (from the seed, with the cartridge's first bank position), run up to the
+	// starting bridges: its checkpoint there is that game's start
 	RiverGen run(rom_);
 	run.s.depotLevelLimit = 0x2E;
-	for (int i = 0; i < 3; i++) run.s.checkpoint[i] = uint8_t(seed_ >> (8 * i));
-	run.s.checkpoint[3] = rom_.startCheckpoint(0, 3);
-	run.s.level = rom_.startLevel(0);
+	for (int i = 0; i < 4; i++) run.s.checkpoint[i] = starts_[0].checkpoint[i];
+	for (int i = 0; i < 3 && seed; i++) run.s.checkpoint[i] = uint8_t(seed >> (8 * i));
+	run.s.level = starts_[0].level;
 	run.restoreCheckpoint();
-	std::memcpy(seedStarts_[0], run.s.checkpoint, 4);
+	int at = 1;   // the bridge the river is flying towards
 	uint8_t line[kLineBytes];
-	for (int start = 1; start < 4; start++) {
-		while (run.s.level < rom_.startLevel(start)) run.nextLine(line);
-		std::memcpy(seedStarts_[start], run.s.checkpoint, 4);
+	auto runTo = [&](int target, Start &start) {
+		for (; at < target; at++) {
+			// a new checkpoint at each bridge; the level changes with it (after 80: 79, 80, 79...)
+			const uint8_t level = run.s.level;
+			while (run.s.level == level) run.nextLine(line);
+		}
+		std::memcpy(start.checkpoint, run.s.checkpoint, 4);
+		start.level = run.s.level;
+		start.bridge = target;
+	};
+	if (bridge > 0) {
+		runTo(bridge, starts_[0]);
+		starts_[1] = starts_[2] = starts_[3] = starts_[0];
+	} else {
+		for (int n = 0; n < 4; n++) runTo(starts_[n].bridge, starts_[n]);
 	}
 }
 
@@ -662,8 +689,8 @@ void RiverGen::startGame(int gameNumber, bool pal) {
 	s.depotLevelLimit = pal ? 0x2F : 0x2E;              // $A077
 	// $AF9B: the starting point of the selected game (2 games per starting bridge)
 	const int start = ((gameNumber - 1) & 7) >> 1;
-	for (int i = 0; i < 4; i++) s.checkpoint[i] = startCheckpoint(start, i);
-	s.level = rom_.startLevel(start);
+	for (int i = 0; i < 4; i++) s.checkpoint[i] = starts_[start].checkpoint[i];
+	s.level = starts_[start].level;
 	restoreCheckpoint();
 }
 
