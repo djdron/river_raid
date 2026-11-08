@@ -154,53 +154,63 @@ private:
 	}
 	friend void recordScan(const Beam &, Game::Scanline &);
 
-	// Columns of the 384-column screen buffer (2 per colour clock) covered by a sprite.
-	static void playerMask(uint8_t bits, uint8_t hpos, uint8_t size, bool mask[kRowWidth]) {
-		const int w = (size & 3) == 3 ? 4 : (size & 3) == 1 ? 2 : 1;
-		for (int b = 0; b < 8; b++) {
-			if (!(bits & (0x80 >> b))) continue;
-			const int x0 = 2 * (hpos + b * w - 32);
-			for (int x = std::max(0, x0); x < std::min(kRowWidth, x0 + 2 * w); x++) mask[x] = true;
+	// The 192 colour clocks of a scanline (one per playfield pixel, two columns of the screen
+	// buffer), one bit each.
+	struct Mask {
+		uint64_t w[3] = {};
+		void set(int from, int count) {   // colour clocks from..from+count-1, clipped to the line
+			for (int x = std::max(0, from); x < std::min(kClocks, from + count); x++) w[x >> 6] |= uint64_t(1) << (x & 63);
 		}
-	}
-	static void missileMask(uint8_t bits, uint8_t hpos, uint8_t size, bool mask[kRowWidth]) {
+		bool operator&(const Mask &o) const { return (w[0] & o.w[0]) | (w[1] & o.w[1]) | (w[2] & o.w[2]); }
+		bool empty() const { return !(w[0] | w[1] | w[2]); }
+	};
+	static constexpr int kClocks = kLineBytes * 4;
+
+	// The colour clocks a sprite covers: `count` graphics bits (8 for a player, 2 for a
+	// missile), each 1, 2 or 4 clocks wide.
+	static Mask spriteMask(uint8_t bits, int count, uint8_t hpos, uint8_t size) {
+		Mask m;
 		const int w = (size & 3) == 3 ? 4 : (size & 3) == 1 ? 2 : 1;
-		for (int b = 0; b < 2; b++) {
-			if (!(bits & (2 >> b))) continue;
-			const int x0 = 2 * (hpos + b * w - 32);
-			for (int x = std::max(0, x0); x < std::min(kRowWidth, x0 + 2 * w); x++) mask[x] = true;
-		}
+		for (int b = 0; b < count; b++)
+			if (bits & (1 << (count - 1 - b))) m.set(hpos + b * w - 32, w);
+		return m;
 	}
 
+	// GTIA's collision detection for the scanline being drawn: which sprites overlap the
+	// playfield colours and each other.
 	void collide() {
-		bool pl[4][kRowWidth] = {}, ms[4][kRowWidth] = {};
+		Mask pl[4], ms[4];
 		bool any = false;
 		for (int n = 0; n < 4; n++) {
-			if (p_[n]) { playerMask(p_[n], hposP[n], sizeP[n], pl[n]); any = true; }
+			if (p_[n]) { pl[n] = spriteMask(p_[n], 8, hposP[n], sizeP[n]); any = true; }
 			const uint8_t mb = uint8_t((m_ >> (2 * n)) & 3);
-			if (mb) { missileMask(mb, hposM[n], uint8_t(sizeM >> (2 * n)), ms[n]); any = true; }
+			if (mb) { ms[n] = spriteMask(mb, 2, hposM[n], uint8_t(sizeM >> (2 * n))); any = true; }
 		}
 		if (!any) return;
-		// playfield of this scanline: 2-bit values of the river line, 0 outside the river
-		uint8_t pf[kRowWidth] = {};
+		// playfield of this scanline: the river line's pixels by colour (1 bank, 2 edge, 3
+		// water: PF0-PF2); nothing outside the river
+		Mask pf[3];
 		const int row = river(line_);
 		if (row >= 0 && row < kRiverLines && size_t(row) < screen_.size()) {
 			const uint8_t *src = screen_[size_t(row)].data();
-			for (int p = 0; p < kLineBytes * 4; p++) pf[2 * p] = pf[2 * p + 1] = uint8_t((src[p >> 2] >> (6 - 2 * (p & 3))) & 3);
+			for (int p = 0; p < kClocks; p++) {
+				const int value = (src[p >> 2] >> (6 - 2 * (p & 3))) & 3;
+				if (value) pf[value - 1].w[p >> 6] |= uint64_t(1) << (p & 63);
+			}
 		}
-		for (int x = 0; x < kRowWidth; x++) {
-			const uint8_t pfBit = pf[x] ? uint8_t(1 << (pf[x] - 1)) : 0;   // value 1-3 = PF0-PF2
-			for (int n = 0; n < 4; n++) {
-				if (pl[n][x]) {
-					ppf[n] |= pfBit;
-					for (int k = 0; k < 4; k++)
-						if (k != n && pl[k][x]) ppl[n] |= uint8_t(1 << k);
-				}
-				if (ms[n][x]) {
-					mpf[n] |= pfBit;
-					for (int k = 0; k < 4; k++)
-						if (pl[k][x]) mpl[n] |= uint8_t(1 << k);
-				}
+		auto playfieldBits = [&](const Mask &m) {
+			return uint8_t((m & pf[0] ? 1 : 0) | (m & pf[1] ? 2 : 0) | (m & pf[2] ? 4 : 0));
+		};
+		for (int n = 0; n < 4; n++) {
+			if (!pl[n].empty()) {
+				ppf[n] |= playfieldBits(pl[n]);
+				for (int k = 0; k < 4; k++)
+					if (k != n && (pl[n] & pl[k])) ppl[n] |= uint8_t(1 << k);
+			}
+			if (!ms[n].empty()) {
+				mpf[n] |= playfieldBits(ms[n]);
+				for (int k = 0; k < 4; k++)
+					if (ms[n] & pl[k]) mpl[n] |= uint8_t(1 << k);
 			}
 		}
 	}
@@ -468,7 +478,14 @@ void Game::drawRiver(uint8_t out[240][kRowWidth]) const {
 		const uint8_t colours[4] = {0x00, sc.bankColour, g.colourEdge, g.colourWater};
 		if (size_t(k) < screen.size()) {
 			const uint8_t *src = screen[size_t(k)].data();
-			for (int p = 0; p < kLineBytes * 4; p++) row[2 * p] = row[2 * p + 1] = colours[(src[p >> 2] >> (6 - 2 * (p & 3))) & 3];
+			for (int i = 0; i < kLineBytes; i++) {   // 4 pixels per byte, 2 columns per pixel
+				const uint8_t v = src[i];
+				uint8_t *d = row + 8 * i;
+				d[0] = d[1] = colours[v >> 6];
+				d[2] = d[3] = colours[(v >> 4) & 3];
+				d[4] = d[5] = colours[(v >> 2) & 3];
+				d[6] = d[7] = colours[v & 3];
+			}
 		} else {
 			std::fill(row, row + kRowWidth, 0);
 		}
