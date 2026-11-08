@@ -27,6 +27,6 @@ public:
 	}
 
 private:
-	static constexpr float kMoveDistance = 10.0f;   // pixels on the screen
+	static constexpr float kMoveDistance = 20.0f;   // pixels on the screen
 	float hiddenX_ = 0, hiddenY_ = 0;
 };
