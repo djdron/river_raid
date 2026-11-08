@@ -55,6 +55,7 @@ public:
 	bool open(const char *title, int width, int height, double pixelAspect, int scale, int sampleRate);
 	const std::string &error() const;
 	std::string info() const;             // renderer, vsync, window size
+	double refreshRate() const;           // of the display the window is on, 0 if unknown
 
 	bool poll(Event &e);                  // the next event, false when there are none
 	bool keyHeld(Key key) const;

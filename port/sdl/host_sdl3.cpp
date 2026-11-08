@@ -172,6 +172,14 @@ std::string Host::info() const {
 	return buf;
 }
 
+double Host::refreshRate() const {
+	const SDL_DisplayMode *mode = SDL_GetCurrentDisplayMode(SDL_GetDisplayForWindow(impl_->window));
+	if (!mode) return 0;
+	if (mode->refresh_rate_numerator > 0 && mode->refresh_rate_denominator > 0)
+		return double(mode->refresh_rate_numerator) / mode->refresh_rate_denominator;
+	return mode->refresh_rate;
+}
+
 bool Host::poll(Event &out) {
 	Impl &h = *impl_;
 	SDL_Event e;

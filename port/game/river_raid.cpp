@@ -30,6 +30,7 @@
 // joystick 2. D-pad or left stick: joystick; A, B, X, Y or the right trigger: fire;
 // Start: START; Back: SELECT.
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -54,6 +55,26 @@ constexpr int kViewHeight = rr::kScreenHeight;
 constexpr int kScale = 3;               // initial window scale
 constexpr double kPixelAspect = 0.86;   // width of a column / height of a line on an NTSC TV
 constexpr double kFrameRate = 59.92;    // NTSC Atari
+
+// Frames of the game per second, and how many display refreshes show one frame. On a display
+// whose refresh rate is a multiple of the Atari's (60, 120 Hz...) the game runs at exactly that
+// rate divided by the multiple, so that every frame stays on screen the same number of
+// refreshes (at 59.92 against 60 Hz, one frame in 750 would be shown twice); otherwise at the
+// Atari's own rate.
+struct Pace {
+	double rate = kFrameRate;
+	int refreshesPerFrame = 0;   // 0: not locked to the display
+};
+Pace paceFor(double refreshRate) {
+	Pace p;
+	if (refreshRate <= 0) return p;
+	const int n = int(refreshRate / kFrameRate + 0.5);
+	if (n >= 1 && std::abs(refreshRate / n - kFrameRate) < kFrameRate * 0.01) {
+		p.rate = refreshRate / n;
+		p.refreshesPerFrame = n;
+	}
+	return p;
+}
 constexpr int kSampleRate = 48000;
 
 // The Atari with the River Raid cartridge: the game, its random counter and sound chip, and
@@ -233,7 +254,11 @@ int main(int argc, char **argv) {
 		fail(window.error());
 		return 1;
 	}
-	if (showStats) std::fprintf(stderr, "%s\n", window.info().c_str());
+	if (showStats) {
+		const Pace pace = paceFor(window.refreshRate());
+		std::fprintf(stderr, "%s, display %.2f Hz, game %.3f frames/s%s\n", window.info().c_str(), window.refreshRate(),
+			pace.rate, pace.refreshesPerFrame ? " (locked to the display)" : "");
+	}
 
 	uint32_t palette[256];
 	auto makePalette = [&]() {
@@ -254,6 +279,7 @@ int main(int argc, char **argv) {
 
 	Atari atari(rom, osFont, pal, seed);
 	double pending = 0;   // original frames still to run
+	bool presentWaited = false;   // the last present() waited for the display's refresh
 	struct Stats {
 		uint64_t since = 0, emulation = 0, present = 0;
 		long frames = 0, pictures = 0;
@@ -300,20 +326,33 @@ int main(int argc, char **argv) {
 		const double dt = std::min(double(now - last) / 1e9, 0.1);
 		last = now;
 		if (!shotPath) {
-			pending += dt * kFrameRate;
-			if (pending < 1) {
+			const Pace pace = paceFor(window.refreshRate());
+			pending += dt * pace.rate;
+			const bool vsyncPaced = pace.refreshesPerFrame && presentWaited;
+			if (vsyncPaced) {
+				// The last picture waited for the display's refresh (full screen; in a window the
+				// system's compositor usually takes it at once): the refreshes pace the loop, one
+				// pass each. Round small timing jitter to whole refreshes. (Without the wait the
+				// sleep below paces the loop, and rounding would lose its oversleep.)
+				const double step = 1.0 / pace.refreshesPerFrame;
+				const double steps = std::round(pending / step);
+				if (std::abs(pending - steps * step) < step / 4) pending = steps * step;
+			}
+			if (pending < 1 && !vsyncPaced) {
 				// No new frame yet (a display faster than 60 Hz, or no vsync): wait for it instead
 				// of drawing the same picture again.
-				host::Host::delayNs(uint64_t((1 - pending) / kFrameRate * 1e9));
+				host::Host::delayNs(uint64_t((1 - pending) / pace.rate * 1e9));
 				continue;
 			}
-			const uint64_t t0 = host::Host::ticksNs();
-			const rr::Input input = readControls(window);
-			for (; pending >= 1; pending--) {
-				atari.frame(input);
-				stats.frames++;
+			if (pending >= 1) {
+				const uint64_t t0 = host::Host::ticksNs();
+				const rr::Input input = readControls(window);
+				for (; pending >= 1; pending--) {
+					atari.frame(input);
+					stats.frames++;
+				}
+				stats.emulation += host::Host::ticksNs() - t0;
 			}
-			stats.emulation += host::Host::ticksNs() - t0;
 		}
 		std::vector<int16_t> &samples = atari.audio();
 		window.playSound(samples.data(), samples.size());
@@ -329,7 +368,10 @@ int main(int argc, char **argv) {
 		}
 		const uint64_t t1 = host::Host::ticksNs();
 		window.present();
-		stats.present += host::Host::ticksNs() - t1;
+		const uint64_t presentNs = host::Host::ticksNs() - t1;
+		const double refresh = window.refreshRate();
+		presentWaited = refresh > 0 && double(presentNs) > 0.25e9 / refresh;
+		stats.present += presentNs;
 		stats.pictures++;
 		if (showStats && now - stats.since >= 1000000000) {
 			const double sec = double(now - stats.since) / 1e9;
