@@ -25,8 +25,9 @@
 //   F1 / F2 / F3   sound test: explosion / firing / score sound, through the game's own sound
 //                  driver (the attract mode itself is silent, as in the original)
 //   F              full screen
+//   Esc            leave full screen
 //   C / V          NTSC / PAL colours; Altirra / atari800 colour model
-// A mouse click hides the mouse pointer until the mouse moves. Closing the window (or Alt+F4,
+// A mouse click or going full screen hides the mouse pointer until the mouse moves. Closing the window (or Alt+F4,
 // Cmd+Q) quits.
 //
 // Looking back shows the river from a map of the lines as they entered the screen, with the
@@ -34,6 +35,8 @@
 // game continues. The game, and the scrolling line, only run in the present.
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
+
+#include "mouse_pointer.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -301,15 +304,13 @@ int main(int argc, char **argv) {
 	if (shotPath)
 		for (long f = 0; f < shotFrame; f++) attract.frame();
 
+	MousePointer pointer;
 	for (bool running = true; running;) {
 		SDL_Event e;
 		while (SDL_PollEvent(&e)) {
+			pointer.handle(e);
 			if (e.type == SDL_EVENT_QUIT) running = false;
 			else if (e.type == SDL_EVENT_MOUSE_WHEEL) back += long(e.wheel.y * 16);
-			else if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN) SDL_HideCursor();   // until the mouse moves
-			else if (e.type == SDL_EVENT_MOUSE_MOTION) {
-				if (!SDL_CursorVisible()) SDL_ShowCursor();
-			}
 			else if (e.type == SDL_EVENT_KEY_DOWN) {
 				switch (e.key.key) {
 				case SDLK_SPACE: paused = !paused; break;
@@ -349,6 +350,7 @@ int main(int argc, char **argv) {
 				case SDLK_F:
 					SDL_SetWindowFullscreen(window, !(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN));
 					break;
+				case SDLK_ESCAPE: SDL_SetWindowFullscreen(window, false); break;
 				default: break;
 				}
 			}

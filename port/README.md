@@ -29,7 +29,8 @@ After power-on the attract mode flies over the river. START begins a game; SELEC
 | F, F11 or Alt+Enter | full screen |
 | C | NTSC / PAL colours |
 | V | Altirra / atari800 colour model |
-| mouse click | hides the mouse pointer until the mouse moves |
+| Esc | leave full screen |
+| mouse click | hides the mouse pointer until the mouse moves (so does going full screen) |
 
 The keyboard drives both joysticks, so one person can play a two-player game too. Gamepads: the first is joystick 1 (and 2 while there is no second), the second is joystick 2; D-pad or left stick, A/B/X/Y or the right trigger to fire, Start = START, Back = SELECT.
 
@@ -50,7 +51,8 @@ Letters and digits 1–9 come from the OS font, which is not in the cartridge. T
 | F | full screen |
 | C | NTSC / PAL colours |
 | V | Altirra / atari800 colour model |
-| mouse click | hides the mouse pointer until the mouse moves |
+| Esc | leave full screen |
+| mouse click | hides the mouse pointer until the mouse moves (so does going full screen) |
 
 Compared with the original's screens (attract mode, frames 1000–2300, with the original's RANDOM values): the river area and the status panel match pixel for pixel, the scrolling line too apart from its outer columns (left of 24, right of 359), where the emulator handles fine scrolling at the edge differently.
 
@@ -72,6 +74,7 @@ Which object wakes up when is decided by POKEY's RANDOM register, a hardware cou
 | `src/river_state_io.cpp`, `src/game_ram.cpp` | mapping of the generator's and the game's fields to the original's RAM addresses: loading, writing and comparison (for verification) |
 | `game/river_raid.cpp` | the game (SDL3): picture, sound, keyboard and gamepads |
 | `viewer/river_view.cpp` | the river viewer (SDL3), see below |
+| `sdl/mouse_pointer.h` | hiding the mouse pointer (game and viewer) |
 | `tools/river_map.cpp` | generates the river and saves a PNG as the game shows it: `river_map <rom> <game 1..8> <lines> out.png [-pal] [-flat]` (`-flat`: bitmap only, fixed colours) |
 | `tools/sound_check.cpp` | compares the sound driver with the original's POKEY writes (`rr_oracle -vbi`) |
 | `tools/sound_render.cpp` | renders a POKEY write log to WAV with the port's POKEY, to compare with the emulator's sound (`rr_oracle -wav`) |
