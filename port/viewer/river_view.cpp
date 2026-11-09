@@ -83,7 +83,12 @@ public:
 			uint8_t row[rr::kRowWidth];
 			rr::drawScreenLine(rom_, game_.gen.s, line, row);
 			rows_.insert(rows_.end(), row, row + rr::kRowWidth);
-			level_.push_back(game_.gen.s.level);
+			// a new level starts with each bridge: count them as the game's BRIDGE counter would
+			const uint8_t level = game_.gen.s.level;
+			if (level_.empty()) bridgeCount_ = game_.gen.start(0).bridge;
+			else if (level != level_.back()) bridgeCount_++;
+			level_.push_back(level);
+			bridge_.push_back(bridgeCount_);
 		};
 		restart();
 	}
@@ -91,6 +96,7 @@ public:
 	void restart() {
 		rows_.clear();
 		level_.clear();
+		bridge_.clear();
 		scroller_ = rr::Scroller();
 		logoShown_ = 0;
 		frame_ = 0;
@@ -153,6 +159,7 @@ public:
 		return -1;
 	}
 	int level(long line) const { return line >= 0 && line < lines() ? level_[size_t(line)] : 0; }
+	int bridge(long line) const { return line >= 0 && line < lines() ? bridge_[size_t(line)] : 0; }
 	int currentLevel() const { return game_.gen.s.level; }
 
 	// Draws the screen. back = 0: the live frame, with the objects moving; back > 0: the river
@@ -191,7 +198,9 @@ private:
 	static constexpr long kFirstScrollerFrame = 11, kFirstRiverFrame = 38;
 	uint8_t live_[rr::kScreenHeight][rr::kRowWidth];   // the river area of the current frame
 	std::vector<uint8_t> rows_;    // every line as it entered the screen, kRowWidth colour codes each
-	std::vector<uint8_t> level_;   // bridge number of each line
+	std::vector<uint8_t> level_;   // level of each line (the generator's $60)
+	std::vector<int> bridge_;      // number of the bridge that starts each line's section, as on the panel
+	int bridgeCount_ = 0;
 };
 
 std::string findRom(int argc, char **argv) {
@@ -411,8 +420,11 @@ int main(int argc, char **argv) {
 
 		char buf[256];
 		const long shown = attract.lines() - 1 - back;
-		std::snprintf(buf, sizeof buf, "River Raid - bridge %d - line %ld - speed x%g%s%s - %s", attract.level(shown), shown,
-			kSpeeds[speedIndex], back ? " - looking back" : "", paused ? " - paused" : "", colours.c_str());
+		// the newest bridge at the top of the screen or below it: the one on screen, or the one
+		// last passed (sections are much longer than the screen, so at most one is on it)
+		std::snprintf(buf, sizeof buf, "River Raid - bridge %d (level %d) - line %ld - speed x%g%s%s - %s",
+			attract.bridge(shown), attract.level(shown), shown, kSpeeds[speedIndex], back ? " - looking back" : "", paused ? " - paused" : "",
+			colours.c_str());
 		if (title != buf) {
 			title = buf;
 			window.setTitle(buf);
