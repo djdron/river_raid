@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="724.899219pt" height="313.776pt" viewBox="0 0 724.899219 313.776" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 313.776 
+L 724.899219 313.776 
+L 724.899219 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 48.099219 265.589299 
+L 413.335582 265.589299 
+L 413.335582 48.186701 
+L 48.099219 48.186701 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g clip-path="url(#pbd3cb71712)">
+    <image xlink:href="data:image/png;base64,
+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" id="image7654acf542" transform="scale(1 -1) translate(0 -217.44)" x="48.24" y="-48.096" width="365.04" height="217.44"/>
+   </g>
+   <g id="matplotlib.axis_1"/>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_1">
+      <defs>
+       <path id="m62e3d4a3e6" d="M 0 0 
+L -3.5 0 
+" style="stroke: #444444; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#m62e3d4a3e6" x="48.099219" y="48.866084" style="fill: #444444; stroke: #444444; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_1">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC'; text-anchor: end; fill: #444444" x="41.099219" y="52.664913" transform="rotate(-0 41.099219 52.664913)">0</text>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="line2d_2">
+      <g>
+       <use xlink:href="#m62e3d4a3e6" x="48.099219" y="70.606344" style="fill: #444444; stroke: #444444; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_2">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC'; text-anchor: end; fill: #444444" x="41.099219" y="74.405172" transform="rotate(-0 41.099219 74.405172)">16</text>
+     </g>
+    </g>
+    <g id="ytick_3">
+     <g id="line2d_3">
+      <g>
+       <use xlink:href="#m62e3d4a3e6" x="48.099219" y="92.346604" style="fill: #444444; stroke: #444444; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_3">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC'; text-anchor: end; fill: #444444" x="41.099219" y="96.145432" transform="rotate(-0 41.099219 96.145432)">32</text>
+     </g>
+    </g>
+    <g id="ytick_4">
+     <g id="line2d_4">
+      <g>
+       <use xlink:href="#m62e3d4a3e6" x="48.099219" y="114.086864" style="fill: #444444; stroke: #444444; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_4">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC'; text-anchor: end; fill: #444444" x="41.099219" y="117.885692" transform="rotate(-0 41.099219 117.885692)">48</text>
+     </g>
+    </g>
+    <g id="ytick_5">
+     <g id="line2d_5">
+      <g>
+       <use xlink:href="#m62e3d4a3e6" x="48.099219" y="135.827123" style="fill: #444444; stroke: #444444; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_5">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC'; text-anchor: end; fill: #444444" x="41.099219" y="139.625952" transform="rotate(-0 41.099219 139.625952)">64</text>
+     </g>
+    </g>
+    <g id="ytick_6">
+     <g id="line2d_6">
+      <g>
+       <use xlink:href="#m62e3d4a3e6" x="48.099219" y="157.567383" style="fill: #444444; stroke: #444444; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_6">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC'; text-anchor: end; fill: #444444" x="41.099219" y="161.366211" transform="rotate(-0 41.099219 161.366211)">80</text>
+     </g>
+    </g>
+    <g id="ytick_7">
+     <g id="line2d_7">
+      <g>
+       <use xlink:href="#m62e3d4a3e6" x="48.099219" y="179.307643" style="fill: #444444; stroke: #444444; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_7">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC'; text-anchor: end; fill: #444444" x="41.099219" y="183.106471" transform="rotate(-0 41.099219 183.106471)">96</text>
+     </g>
+    </g>
+    <g id="ytick_8">
+     <g id="line2d_8">
+      <g>
+       <use xlink:href="#m62e3d4a3e6" x="48.099219" y="201.047903" style="fill: #444444; stroke: #444444; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_8">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC'; text-anchor: end; fill: #444444" x="41.099219" y="204.846731" transform="rotate(-0 41.099219 204.846731)">112</text>
+     </g>
+    </g>
+    <g id="ytick_9">
+     <g id="line2d_9">
+      <g>
+       <use xlink:href="#m62e3d4a3e6" x="48.099219" y="222.788162" style="fill: #444444; stroke: #444444; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_9">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC'; text-anchor: end; fill: #444444" x="41.099219" y="226.58699" transform="rotate(-0 41.099219 226.58699)">128</text>
+     </g>
+    </g>
+    <g id="ytick_10">
+     <g id="line2d_10">
+      <g>
+       <use xlink:href="#m62e3d4a3e6" x="48.099219" y="244.528422" style="fill: #444444; stroke: #444444; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_10">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC'; text-anchor: end; fill: #444444" x="41.099219" y="248.32725" transform="rotate(-0 41.099219 248.32725)">144</text>
+     </g>
+    </g>
+    <g id="ytick_11">
+     <g id="line2d_11">
+      <g>
+       <use xlink:href="#m62e3d4a3e6" x="48.099219" y="264.909916" style="fill: #444444; stroke: #444444; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_11">
+      <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC'; text-anchor: end; fill: #444444" x="41.099219" y="268.708744" transform="rotate(-0 41.099219 268.708744)">159</text>
+     </g>
+    </g>
+    <g id="text_12">
+     <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; text-anchor: middle; fill: #222222" x="15.609375" y="156.888" transform="rotate(-90 15.609375 156.888)">屏幕行</text>
+    </g>
+   </g>
+   <g id="patch_3">
+    <path d="M 48.099219 234.337675 
+L 413.335582 234.337675 
+L 413.335582 256.077935 
+L 48.099219 256.077935 
+z
+" clip-path="url(#pbd3cb71712)" style="fill: #ffffff; opacity: 0.12; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 48.099219 169.116896 
+L 413.335582 169.116896 
+L 413.335582 212.597416 
+L 48.099219 212.597416 
+z
+" clip-path="url(#pbd3cb71712)" style="fill: #ffffff; opacity: 0.12; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 48.099219 125.636377 
+L 413.335582 125.636377 
+L 413.335582 147.376636 
+L 48.099219 147.376636 
+z
+" clip-path="url(#pbd3cb71712)" style="fill: #ffffff; opacity: 0.12; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 48.099219 82.155857 
+L 413.335582 82.155857 
+L 413.335582 103.896117 
+L 48.099219 103.896117 
+z
+" clip-path="url(#pbd3cb71712)" style="fill: #ffffff; opacity: 0.12; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 48.099219 265.589299 
+L 48.099219 48.186701 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 413.335582 265.589299 
+L 413.335582 48.186701 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 48.099219 265.589299 
+L 413.335582 265.589299 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 48.099219 48.186701 
+L 413.335582 48.186701 
+" style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_12">
+    <path d="M 48.099219 265.589299 
+L 413.335582 265.589299 
+" clip-path="url(#pbd3cb71712)" style="fill: none; stroke: #ffffff; stroke-opacity: 0.8; stroke-width: 0.6; stroke-linecap: square"/>
+   </g>
+   <g id="text_13">
+    <text style="font-size: 8.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; text-anchor: start; fill: #888888" x="425.292725" y="263.450355" transform="rotate(-0 425.292725 263.450355)">（空）</text>
+   </g>
+   <g id="line2d_13">
+    <path d="M 48.099219 256.077935 
+L 413.335582 256.077935 
+" clip-path="url(#pbd3cb71712)" style="fill: none; stroke: #ffffff; stroke-opacity: 0.8; stroke-width: 0.6; stroke-linecap: square"/>
+   </g>
+   <g id="text_14">
+    <text style="font-size: 8.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; text-anchor: start; fill: #222222" x="425.292725" y="247.760793" transform="rotate(-0 425.292725 247.760793)">直升机</text>
+   </g>
+   <g id="line2d_14">
+    <path d="M 48.099219 234.337675 
+L 413.335582 234.337675 
+" clip-path="url(#pbd3cb71712)" style="fill: none; stroke: #ffffff; stroke-opacity: 0.8; stroke-width: 0.6; stroke-linecap: square"/>
+   </g>
+   <g id="text_15">
+    <text style="font-size: 8.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; text-anchor: start; fill: #888888" x="425.292725" y="226.084284" transform="rotate(-0 425.292725 226.084284)">（空）</text>
+   </g>
+   <g id="line2d_15">
+    <path d="M 48.099219 212.597416 
+L 413.335582 212.597416 
+" clip-path="url(#pbd3cb71712)" style="fill: none; stroke: #ffffff; stroke-opacity: 0.8; stroke-width: 0.6; stroke-linecap: square"/>
+   </g>
+   <g id="text_16">
+    <text style="font-size: 8.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; text-anchor: start; fill: #222222" x="425.292725" y="193.414793" transform="rotate(-0 425.292725 193.414793)">热气球</text>
+   </g>
+   <g id="line2d_16">
+    <path d="M 48.099219 169.116896 
+L 413.335582 169.116896 
+" clip-path="url(#pbd3cb71712)" style="fill: none; stroke: #ffffff; stroke-opacity: 0.8; stroke-width: 0.6; stroke-linecap: square"/>
+   </g>
+   <g id="text_17">
+    <text style="font-size: 8.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; text-anchor: start; fill: #222222" x="425.292725" y="160.804403" transform="rotate(-0 425.292725 160.804403)">喷气战机</text>
+   </g>
+   <g id="line2d_17">
+    <path d="M 48.099219 147.376636 
+L 413.335582 147.376636 
+" clip-path="url(#pbd3cb71712)" style="fill: none; stroke: #ffffff; stroke-opacity: 0.8; stroke-width: 0.6; stroke-linecap: square"/>
+   </g>
+   <g id="text_18">
+    <text style="font-size: 8.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; text-anchor: start; fill: #888888" x="425.292725" y="139.123245" transform="rotate(-0 425.292725 139.123245)">（空）</text>
+   </g>
+   <g id="line2d_18">
+    <path d="M 48.099219 125.636377 
+L 413.335582 125.636377 
+" clip-path="url(#pbd3cb71712)" style="fill: none; stroke: #ffffff; stroke-opacity: 0.8; stroke-width: 0.6; stroke-linecap: square"/>
+   </g>
+   <g id="text_19">
+    <text style="font-size: 8.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; text-anchor: start; fill: #222222" x="425.292725" y="117.319235" transform="rotate(-0 425.292725 117.319235)">直升机</text>
+   </g>
+   <g id="line2d_19">
+    <path d="M 48.099219 103.896117 
+L 413.335582 103.896117 
+" clip-path="url(#pbd3cb71712)" style="fill: none; stroke: #ffffff; stroke-opacity: 0.8; stroke-width: 0.6; stroke-linecap: square"/>
+   </g>
+   <g id="text_20">
+    <text style="font-size: 8.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; text-anchor: start; fill: #888888" x="425.292725" y="95.642725" transform="rotate(-0 425.292725 95.642725)">（空）</text>
+   </g>
+   <g id="line2d_20">
+    <path d="M 48.099219 82.155857 
+L 413.335582 82.155857 
+" clip-path="url(#pbd3cb71712)" style="fill: none; stroke: #ffffff; stroke-opacity: 0.8; stroke-width: 0.6; stroke-linecap: square"/>
+   </g>
+   <g id="text_21">
+    <text style="font-size: 8.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; text-anchor: start; fill: #222222" x="425.292725" y="67.724268" transform="rotate(-0 425.292725 67.724268)">加油站</text>
+   </g>
+   <g id="text_22">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; text-anchor: start; fill: #222222" x="48.099219" y="42.186701" transform="rotate(-0 48.099219 42.186701)">屏幕上的河：每个物体一条带，16 行（高物体之后为 32 行）</text>
+   </g>
+   <g id="PathCollection_1">
+    <defs>
+     <path id="m6fc87e72b3" d="M 0 3.535534 
+C 0.937635 3.535534 1.836992 3.163008 2.5 2.5 
+C 3.163008 1.836992 3.535534 0.937635 3.535534 0 
+C 3.535534 -0.937635 3.163008 -1.836992 2.5 -2.5 
+C 1.836992 -3.163008 0.937635 -3.535534 0 -3.535534 
+C -0.937635 -3.535534 -1.836992 -3.163008 -2.5 -2.5 
+C -3.163008 -1.836992 -3.535534 -0.937635 -3.535534 0 
+C -3.535534 0.937635 -3.163008 1.836992 -2.5 2.5 
+C -1.836992 3.163008 -0.937635 3.535534 0 3.535534 
+z
+" style="stroke: #000000; stroke-width: 0.8"/>
+    </defs>
+    <g clip-path="url(#pbd3cb71712)">
+     <use xlink:href="#m6fc87e72b3" x="318.765453" y="245.887188" style="fill: #ffd23f; stroke: #000000; stroke-width: 0.8"/>
+    </g>
+   </g>
+   <g id="PathCollection_2">
+    <defs>
+     <path id="mf394069f35" d="M 0 -3.535534 
+L -3.535534 3.535534 
+L 3.535534 3.535534 
+z
+" style="stroke: #000000; stroke-width: 0.8"/>
+    </defs>
+    <g clip-path="url(#pbd3cb71712)">
+     <use xlink:href="#mf394069f35" x="347.02779" y="202.406669" style="fill: #f28cff; stroke: #000000; stroke-width: 0.8"/>
+    </g>
+   </g>
+   <g id="PathCollection_3">
+    <defs>
+     <path id="mfc1b28d38c" d="M 3.535534 0 
+L -3.535534 -3.535534 
+L -3.535534 3.535534 
+z
+" style="stroke: #000000; stroke-width: 0.8"/>
+    </defs>
+    <g clip-path="url(#pbd3cb71712)">
+     <use xlink:href="#mfc1b28d38c" x="273.110907" y="158.926149" style="fill: #ffffff; stroke: #000000; stroke-width: 0.8"/>
+    </g>
+   </g>
+   <g id="PathCollection_4">
+    <g clip-path="url(#pbd3cb71712)">
+     <use xlink:href="#m6fc87e72b3" x="183.975842" y="115.44563" style="fill: #ffd23f; stroke: #000000; stroke-width: 0.8"/>
+    </g>
+   </g>
+   <g id="PathCollection_5">
+    <defs>
+     <path id="m81754937f7" d="M -0 5 
+L 5 0 
+L 0 -5 
+L -5 -0 
+z
+" style="stroke: #000000; stroke-width: 0.8"/>
+    </defs>
+    <g clip-path="url(#pbd3cb71712)">
+     <use xlink:href="#m81754937f7" x="157.88753" y="71.96511" style="fill: #ff2a8a; stroke: #000000; stroke-width: 0.8"/>
+    </g>
+   </g>
+   <g id="PathCollection_6">
+    <defs>
+     <path id="mc2ce68520e" d="M 0 -4.743416 
+L -4.743416 4.743416 
+L 4.743416 4.743416 
+z
+" style="stroke: #000000"/>
+    </defs>
+    <g clip-path="url(#pbd3cb71712)">
+     <use xlink:href="#mc2ce68520e" x="147.017401" y="256.757318" style="fill: #e8e8e8; stroke: #000000"/>
+    </g>
+   </g>
+   <g id="text_23">
+    <text style="font-size: 8px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; text-anchor: start; fill: #ffffff" x="164.409608" y="259.220131" transform="rotate(-0 164.409608 259.220131)">你的飞机（独立的精灵）</text>
+   </g>
+  </g>
+  <g id="axes_2">
+   <g id="text_24">
+    <text style="font-weight: 700; font-size: 10.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; text-anchor: start; fill: #222222" x="522.906491" y="22.122364" transform="rotate(-0 522.906491 22.122364)">一个精灵如何显示所有物体</text>
+   </g>
+   <g id="text_25">
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; fill: #222222" transform="translate(522.906491 47.6351)">画面从上到下逐行绘制。</text>
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; fill: #222222" transform="translate(522.906491 61.357405)">每条带开始时，一个中断（DLI）</text>
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; fill: #222222" transform="translate(522.906491 74.605452)">把 player 3 移到这条带的物体处，</text>
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; fill: #222222" transform="translate(522.906491 88.879202)">设定宽度和颜色，然后逐行</text>
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; fill: #222222" transform="translate(522.906491 102.740295)">送入它的形状。</text>
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; fill: #222222" transform="translate(522.906491 112.9001)"/>
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; fill: #222222" transform="translate(522.906491 130.184905)">每条带结束时，游戏读取芯片的</text>
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; fill: #222222" transform="translate(522.906491 144.050452)">碰撞寄存器并清零：</text>
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; fill: #222222" transform="translate(522.906491 157.270295)">“player 3 碰到了子弹”就意味着</text>
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; fill: #222222" transform="translate(522.906491 171.638303)">“子弹击中了这条带的物体”。</text>
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; fill: #222222" transform="translate(522.906491 181.7751)"/>
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; fill: #222222" transform="translate(522.906491 199.1601)">每 16 行（高物体之后 32 行）</text>
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; fill: #222222" transform="translate(522.906491 212.825998)">顶部进入一条新带，</text>
+    <text style="font-size: 9.5px; font-family: 'DejaVu Sans', 'Noto Sans CJK SC', 'Noto Sans CJK JP'; fill: #222222" transform="translate(522.906491 226.724202)">最旧的一条从底部离开。</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pbd3cb71712">
+   <rect x="48.099219" y="48.186701" width="365.236364" height="217.402597"/>
+  </clipPath>
+ </defs>
+</svg>

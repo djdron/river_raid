@@ -1,6 +1,6 @@
 # River Raid C++ port
 
-English | [Русский](README.ru.md)
+English | [Русский](README.ru.md) | [Українська](README.uk.md) | [Deutsch](README.de.md) | [Polski](README.pl.md) | [Italiano](README.it.md) | [Español](README.es.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
 An unofficial fan project for educational purposes, not affiliated with Activision or Microsoft; no part of the game is included (see the disclaimer in `../README.md`).
 

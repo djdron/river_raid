@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="684pt" height="272.795375pt" viewBox="0 0 684 272.795375" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 272.795375 
+L 684 272.795375 
+L 684 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 238.916842 67.247414 
+L 321.735789 67.247414 
+L 321.735789 104.037762 
+L 238.916842 104.037762 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #f4c7c3; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 327.022105 67.247414 
+L 409.841053 67.247414 
+L 409.841053 104.037762 
+L 327.022105 104.037762 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #ffe8a3; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 415.127368 67.247414 
+L 497.946316 67.247414 
+L 497.946316 104.037762 
+L 415.127368 104.037762 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #f4c7c3; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 503.232632 67.247414 
+L 586.051579 67.247414 
+L 586.051579 104.037762 
+L 503.232632 104.037762 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #ffffff; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 591.337895 67.247414 
+L 674.156842 67.247414 
+L 674.156842 104.037762 
+L 591.337895 104.037762 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #f4c7c3; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 238.916842 107.236923 
+L 321.735789 107.236923 
+L 321.735789 144.02727 
+L 238.916842 144.02727 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #e3e3e3; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 327.022105 107.236923 
+L 409.841053 107.236923 
+L 409.841053 144.02727 
+L 327.022105 144.02727 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #e3e3e3; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 415.127368 107.236923 
+L 497.946316 107.236923 
+L 497.946316 144.02727 
+L 415.127368 144.02727 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #cdebc8; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 503.232632 107.236923 
+L 586.051579 107.236923 
+L 586.051579 144.02727 
+L 503.232632 144.02727 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #ffffff; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 591.337895 107.236923 
+L 674.156842 107.236923 
+L 674.156842 144.02727 
+L 591.337895 144.02727 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #ffffff; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 238.916842 147.226431 
+L 321.735789 147.226431 
+L 321.735789 184.016778 
+L 238.916842 184.016778 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #e3e3e3; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_13">
+    <path d="M 327.022105 147.226431 
+L 409.841053 147.226431 
+L 409.841053 184.016778 
+L 327.022105 184.016778 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #e3e3e3; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_14">
+    <path d="M 415.127368 147.226431 
+L 497.946316 147.226431 
+L 497.946316 184.016778 
+L 415.127368 184.016778 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #ffffff; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_15">
+    <path d="M 503.232632 147.226431 
+L 586.051579 147.226431 
+L 586.051579 184.016778 
+L 503.232632 184.016778 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #f4c7c3; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_16">
+    <path d="M 591.337895 147.226431 
+L 674.156842 147.226431 
+L 674.156842 184.016778 
+L 591.337895 184.016778 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #ffffff; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_17">
+    <path d="M 238.916842 187.215939 
+L 321.735789 187.215939 
+L 321.735789 224.006286 
+L 238.916842 224.006286 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #ffffff; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_18">
+    <path d="M 327.022105 187.215939 
+L 409.841053 187.215939 
+L 409.841053 224.006286 
+L 327.022105 224.006286 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #e3e3e3; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_19">
+    <path d="M 415.127368 187.215939 
+L 497.946316 187.215939 
+L 497.946316 224.006286 
+L 415.127368 224.006286 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #ffffff; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_20">
+    <path d="M 503.232632 187.215939 
+L 586.051579 187.215939 
+L 586.051579 224.006286 
+L 503.232632 224.006286 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #ffffff; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_21">
+    <path d="M 591.337895 187.215939 
+L 674.156842 187.215939 
+L 674.156842 224.006286 
+L 591.337895 224.006286 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #ffffff; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_22">
+    <path d="M 238.916842 227.205447 
+L 321.735789 227.205447 
+L 321.735789 263.995795 
+L 238.916842 263.995795 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #ffffff; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_23">
+    <path d="M 327.022105 227.205447 
+L 409.841053 227.205447 
+L 409.841053 263.995795 
+L 327.022105 263.995795 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #ffffff; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_24">
+    <path d="M 415.127368 227.205447 
+L 497.946316 227.205447 
+L 497.946316 263.995795 
+L 415.127368 263.995795 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #e3e3e3; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_25">
+    <path d="M 503.232632 227.205447 
+L 586.051579 227.205447 
+L 586.051579 263.995795 
+L 503.232632 263.995795 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #ffffff; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_26">
+    <path d="M 591.337895 227.205447 
+L 674.156842 227.205447 
+L 674.156842 263.995795 
+L 591.337895 263.995795 
+z
+" clip-path="url(#pde502b7fed)" style="fill: #ffffff; stroke: #cccccc; stroke-width: 0.5; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 8.8px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(275.926316 40.614683)">岸</text>
+    <text style="font-weight: 700; font-size: 8.8px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(267.126316 52.058464)">（緑）</text>
+   </g>
+   <g id="text_2">
+    <text style="font-weight: 700; font-size: 8.8px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(355.231579 40.614683)">岸の縁</text>
+    <text style="font-weight: 700; font-size: 8.8px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(350.831579 52.058464)">（茶色）</text>
+   </g>
+   <g id="text_3">
+    <text style="font-weight: 700; font-size: 8.8px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(430.136842 40.614683)">敵、補給所、</text>
+    <text style="font-weight: 700; font-size: 8.8px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(416.875655 52.058464)">橋（プレイヤー 3）</text>
+   </g>
+   <g id="text_4">
+    <text style="font-weight: 700; font-size: 8.8px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(535.842105 40.618808)">自機</text>
+    <text style="font-weight: 700; font-size: 8.8px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(509.380918 52.062589)">（プレイヤー 2）</text>
+   </g>
+   <g id="text_5">
+    <text style="font-weight: 700; font-size: 8.8px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(610.747368 40.627745)">戦車の砲弾</text>
+    <text style="font-weight: 700; font-size: 8.8px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(597.486181 52.071526)">（プレイヤー 0）</text>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 8.8px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; text-anchor: end; fill: #666666" x="227.463158" y="46.296698" transform="rotate(-0 227.463158 46.296698)">触れる相手 →</text>
+   </g>
+   <g id="text_7">
+    <text style="font-size: 9px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; text-anchor: end; fill: #222222" x="227.463158" y="88.413252" transform="rotate(-0 227.463158 88.413252)">自機（プレイヤー 2）</text>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; text-anchor: middle; fill: #222222" x="280.326316" y="88.796588" transform="rotate(-0 280.326316 88.796588)">墜落</text>
+   </g>
+   <g id="text_9">
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(347.681579 83.588338)">判定なし：</text>
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(343.863579 93.979549)">触れてもよい</text>
+   </g>
+   <g id="text_10">
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(444.086842 83.513768)">墜落；</text>
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(427.486842 93.975658)">補給所なら給油</text>
+   </g>
+   <g id="text_11">
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(624.447368 83.609088)">墜落</text>
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(603.697368 93.984088)">（爆発中のみ）</text>
+   </g>
+   <g id="text_12">
+    <text style="font-size: 9px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; text-anchor: end; fill: #222222" x="227.463158" y="128.40276" transform="rotate(-0 227.463158 128.40276)">自機の弾（ミサイル 2）</text>
+   </g>
+   <g id="text_13">
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; text-anchor: middle; fill: #222222" x="280.326316" y="128.789987" transform="rotate(-0 280.326316 128.789987)">消える</text>
+   </g>
+   <g id="text_14">
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; text-anchor: middle; fill: #222222" x="368.431579" y="128.789987" transform="rotate(-0 368.431579 128.789987)">消える</text>
+   </g>
+   <g id="text_15">
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(431.636842 123.602487)">物体が爆発、</text>
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(448.236842 133.969706)">得点</text>
+   </g>
+   <g id="text_16">
+    <text style="font-size: 9px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; text-anchor: end; fill: #222222" x="227.463158" y="168.392269" transform="rotate(-0 227.463158 168.392269)">ヘリのミサイル（ミサイル 0）</text>
+   </g>
+   <g id="text_17">
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; text-anchor: middle; fill: #222222" x="280.326316" y="168.779495" transform="rotate(-0 280.326316 168.779495)">消える</text>
+   </g>
+   <g id="text_18">
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; text-anchor: middle; fill: #222222" x="368.431579" y="168.779495" transform="rotate(-0 368.431579 168.779495)">消える</text>
+   </g>
+   <g id="text_19">
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; text-anchor: middle; fill: #222222" x="544.642105" y="168.775605" transform="rotate(-0 544.642105 168.775605)">墜落</text>
+   </g>
+   <g id="text_20">
+    <text style="font-size: 9px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; text-anchor: end; fill: #222222" x="227.463158" y="208.381777" transform="rotate(-0 227.463158 208.381777)">戦車（プレイヤー 1）</text>
+   </g>
+   <g id="text_21">
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(352.205079 203.706652)">止まって</text>
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(360.131579 213.956503)">撃つ</text>
+   </g>
+   <g id="text_22">
+    <text style="font-size: 9px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; text-anchor: end; fill: #222222" x="227.463158" y="248.371285" transform="rotate(-0 227.463158 248.371285)">戦車の砲弾（プレイヤー 0）</text>
+   </g>
+   <g id="text_23">
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(444.086842 243.534051)">爆発で</text>
+    <text style="font-size: 8.3px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; fill: #222222" transform="translate(439.936842 253.946012)">破壊する</text>
+   </g>
+   <g id="text_24">
+    <text style="font-size: 10px; font-family: 'DejaVu Sans', 'Noto Sans CJK JP'; text-anchor: start; fill: #222222" x="7.2" y="15.659375" transform="rotate(-0 7.2 15.659375)">ゲームが衝突レジスタから読むもの</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pde502b7fed">
+   <rect x="7.2" y="21.659375" width="669.6" height="243.936"/>
+  </clipPath>
+ </defs>
+</svg>

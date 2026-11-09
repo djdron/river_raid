@@ -1,5 +1,7 @@
 # Как устроен River Raid
 
+[English](HOW_IT_WORKS.md) | Русский | [Українська](HOW_IT_WORKS.uk.md) | [Deutsch](HOW_IT_WORKS.de.md) | [Polski](HOW_IT_WORKS.pl.md) | [Italiano](HOW_IT_WORKS.it.md) | [Español](HOW_IT_WORKS.es.md) | [中文](HOW_IT_WORKS.zh.md) | [日本語](HOW_IT_WORKS.ja.md)
+
 Это объяснение для всех, кому интересно, без знания программирования: как River Raid для
 8-битных Atari (Activision, 1983) строит бесконечную реку, расставляет врагов и мосты и узнаёт,
 что во что попало. Всё здесь прочитано из самой программы оригинала и сверено с ней кадр за

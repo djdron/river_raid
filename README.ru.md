@@ -1,6 +1,6 @@
 # River Raid (Atari 8-bit) → C++
 
-[English](README.md) | Русский
+[English](README.md) | Русский | [Українська](README.uk.md) | [Deutsch](README.de.md) | [Polski](README.pl.md) | [Italiano](README.it.md) | [Español](README.es.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
 Реверс-инжиниринг и порт на C++ игры River Raid от Activision для Atari 400/800 (1983). Цель — логика 1 в 1 и звук 1 в 1 на современных Windows, Linux и macOS.
 

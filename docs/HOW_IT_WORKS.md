@@ -1,5 +1,7 @@
 # How River Raid works
 
+English | [Русский](HOW_IT_WORKS.ru.md) | [Українська](HOW_IT_WORKS.uk.md) | [Deutsch](HOW_IT_WORKS.de.md) | [Polski](HOW_IT_WORKS.pl.md) | [Italiano](HOW_IT_WORKS.it.md) | [Español](HOW_IT_WORKS.es.md) | [中文](HOW_IT_WORKS.zh.md) | [日本語](HOW_IT_WORKS.ja.md)
+
 This is an explanation for anyone curious, no programming knowledge needed: how the Atari 8-bit
 River Raid (Activision, 1983) builds its endless river, places enemies and bridges, and finds
 out what hit what. Everything here was read out of the original program and checked against

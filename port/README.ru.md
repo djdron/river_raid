@@ -1,6 +1,6 @@
 # C++ порт River Raid
 
-[English](README.md) | Русский
+[English](README.md) | Русский | [Українська](README.uk.md) | [Deutsch](README.de.md) | [Polski](README.pl.md) | [Italiano](README.it.md) | [Español](README.es.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
 Неофициальный любительский проект в образовательных целях, не связан с Activision и Microsoft; частей игры в нём нет (см. оговорку в `../README.ru.md`).
 

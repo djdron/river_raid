@@ -15,7 +15,8 @@ plain colours of its own (no game graphics):
   bank_range.svg  the limits of the bank's random walk by level
   collisions.svg  which collisions the game reads
   speeds.svg      sideways speeds, steering, the river's speed
-and the same with Russian labels (*.ru.svg).
+and the same in the other languages of the documents (*.ru.svg, *.uk.svg, ...;
+labels in tools/doc_figures_i18n.py).
 """
 import os
 import subprocess
@@ -27,6 +28,9 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import numpy as np
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from doc_figures_i18n import KEYS, LABELS   # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, '..', 'docs', 'img')
@@ -60,51 +64,14 @@ plt.rcParams.update({
 
 
 LANG = 'en'
-# Russian labels for docs/HOW_IT_WORKS.ru.md
-RU = {
-	'jet': 'истребитель',
-	'helicopter': 'вертолёт',
-	'helicopter that fires': 'вертолёт с ракетами',
-	'balloon': 'воздушный шар',
-	'ship': 'корабль',
-	'fuel depot': 'заправка',
-	'bank': 'берег',
-	'edge': 'кромка',
-	'water': 'вода',
-	'bridge': 'мост',
-	'section': 'участок',
-	'block = 32 lines': 'блок = 32 строки',
-	'section = 2 blocks = 64 lines': 'участок = 2 блока = 64 строки',
-	'last section: fixed width, the run-up to the bridge': 'последний участок: постоянная ширина, подход к мосту',
-	'bridge 2': 'мост 2',
-	'lines': 'строк',
-	'From bridge 1 to bridge 2 (level 2). The plane flies to the right; the screen shows 160 lines at a time.\nBrown and blue shapes on the banks are decorations: houses, trees.': 'От моста 1 до моста 2 (уровень 2). Самолёт летит вправо; на экране одновременно 160 строк.\nКоричнево-синие фигуры на берегах — украшения: дома, деревья.',
-	'level 1: straight, enemies stand still': 'уровень 1: прямая река, враги стоят на месте',
-	'level 2 (even): islands, objects next to a bank': 'уровень 2 (чётный): острова, объекты у берега',
-	'level 11 (odd): one width, wider bends': 'уровень 11 (нечётный): одна ширина, повороты шире',
-	'level 12 (even): islands, narrow passages': 'уровень 12 (чётный): острова, узкие проходы',
-	'level 31: enemies in mid-block too': 'уровень 31: враги и в середине блоков',
-	'level 52: an enemy every 16 lines, few depots': 'уровень 52: враг каждые 16 строк, мало заправок',
-	'(empty)': '(пусто)',
-	'your plane (its own sprite)': 'ваш самолёт (свой спрайт)',
-	'screen line': 'строка экрана',
-	'The river on screen: one band per object, 16 lines (32 after a tall one)': 'Река на экране: по полосе на объект, 16 строк (32 после высокого)',
-	'How one sprite shows them all': 'Как один спрайт показывает всех',
-	'The picture is drawn line by line, top to bottom.\nAt the top of each band an interrupt (DLI)\nmoves player 3 to that band\'s object, sets its\nwidth and colours, then feeds it the shape\none line at a time.\n\nAt the end of the band the game reads the\nchip\'s collision registers and clears them:\n"player 3 touched the bullet" now means\n"the bullet hit this band\'s object".\n\nEvery 16 lines (32 after a tall object) a new\nband enters at the top and the oldest leaves\nat the bottom.': 'Картинка рисуется строка за строкой, сверху вниз.\nВ начале каждой полосы прерывание (DLI)\nпереносит игрока 3 к объекту этой полосы,\nзадаёт ему ширину и цвета и подаёт форму\nпо строке.\n\nВ конце полосы игра читает регистры\nстолкновений микросхемы и сбрасывает их:\n«игрок 3 коснулся пули» значит\n«пуля попала в объект этой полосы».\n\nКаждые 16 строк (32 после высокого объекта)\nсверху входит новая полоса, а самая старая\nуходит вниз.',
-	'enemy at a block start': 'враг в начале блока',
-	'enemy in the middle of a block': 'враг в середине блока',
-	'fuel depot at a block start': 'заправка в начале блока',
-	'balloons': 'шары',
-	'jets': 'истребители',
-	'bank tanks': 'танки на берегу',
-	'missile helicopters': 'вертолёты с ракетами',
-	'level (bridge number)': 'уровень (номер моста)',
-	'chance, %': 'вероятность, %',
-}
+LANGUAGES = ('en',) + tuple(LABELS)
+# the font for each language's labels; DejaVu Sans has no Chinese or Japanese characters
+FONTS = {'zh': ['DejaVu Sans', 'Noto Sans CJK SC'], 'ja': ['DejaVu Sans', 'Noto Sans CJK JP']}
+TRANSLATIONS = {lang: dict(zip(KEYS, texts)) for lang, texts in LABELS.items()}
 
 
 def T(text):
-	return RU.get(text, text) if LANG == 'ru' else text
+	return TRANSLATIONS[LANG].get(text, text) if LANG != 'en' else text
 
 
 def read_dump(path):
@@ -143,8 +110,8 @@ def draw_objects(ax, objs, size=22, bridges=True):
 
 def save(fig, name):
 	os.makedirs(OUT, exist_ok=True)
-	if LANG == 'ru':
-		name = name.replace('.svg', '.ru.svg')
+	if LANG != 'en':
+		name = name.replace('.svg', f'.{LANG}.svg')
 	fig.savefig(os.path.join(OUT, name), format='svg', bbox_inches='tight', metadata={'Date': None})
 	plt.close(fig)
 
@@ -318,57 +285,6 @@ def figure_difficulty():
 		ax.spines[s].set_visible(False)
 	ax.legend(frameon=False, fontsize=9, loc='center right')
 	save(fig, 'difficulty.svg')
-
-
-RU.update({
-	# screen layout
-	'The whole picture the Atari sends to the TV (384 × 240)': 'Вся картинка, которую Atari посылает на телевизор (384 × 240)',
-	'river: 160 lines': 'река: 160 строк',
-	'status panel: fuel, score, lives, bridges': 'панель: топливо, очки, жизни, мосты',
-	'scrolling line: credits, Activision logo': 'бегущая строка: титры, логотип Activision',
-	'shown by default (336 × 200), about what a TV showed': 'видно по умолчанию (336 × 200), примерно как на телевизоре',
-	'black border (-border shows it)': 'чёрная рамка (её показывает -border)',
-	'new lines enter here': 'сюда входят новые строки',
-	'the river moves down:\n30 / 60 / 120 lines a second\n(slow / normal / fast)': 'река едет вниз:\n30 / 60 / 120 строк в секунду\n(медленно / обычно / быстро)',
-	'your plane stays here': 'самолёт всегда здесь',
-	# seeds
-	'One river for all games: games 3–8 start further along it': 'Одна река на все игры: игры 3–8 начинаются дальше по ней',
-	'games 1–2': 'игры 1–2', 'games 3–4': 'игры 3–4', 'games 5–6': 'игры 5–6', 'games 7–8': 'игры 7–8',
-	'bridge': 'мост',
-	'the cartridge\'s river (every game, every Atari, since 1983)': 'река картриджа (в каждой игре, на каждой Atari, с 1983 года)',
-	'-seed 12345: another river from the same rules': '-seed 12345: другая река по тем же правилам',
-	'-seed 777': '-seed 777',
-	'The first 3 bridges of three rivers': 'Первые 3 моста трёх рек',
-	# zoom
-	'A bank, close up (40 lines × 72 dots)': 'Берег крупно (40 строк × 72 точки)',
-	'byte: 4 dots': 'байт: 4 точки',
-	'each line the bank moves\nby at most one dot': 'в каждой строке берег сдвигается\nне больше чем на одну точку',
-	'the edge: 4 dots, at any\ndot, across two bytes': 'кромка: 4 точки, с любой\nточки, через два байта',
-	'dot': 'точка', 'line': 'строка',
-	# object mix
-	'What enters the river every 16 lines (measured on game 1)': 'Что входит в реку каждые 16 строк (подсчитано на игре 1)',
-	'levels': 'уровни', 'nothing': 'ничего', 'share, %': 'доля, %',
-	# bank range
-	'How far the bank may wander: the limits of its random walk': 'Как далеко может уходить берег: пределы его случайного блуждания',
-	'odd level': 'нечётный уровень', 'even level': 'чётный уровень', 'bank position, dots': 'положение берега, точки',
-	# collisions
-	'What the game reads from the collision registers': 'Что игра читает из регистров столкновений',
-	'touches →': 'касается →',
-	'bank\n(green)': 'берег\n(зелёный)', 'edge\n(brown)': 'кромка\n(коричневая)', 'enemies, depots,\nbridges (player 3)': 'враги, заправки,\nмосты (игрок 3)',
-	'your plane\n(player 2)': 'ваш самолёт\n(игрок 2)', 'tank shell\n(player 0)': 'снаряд танка\n(игрок 0)',
-	'your plane (player 2)': 'ваш самолёт (игрок 2)', 'your bullet (missile 2)': 'ваша пуля (ракета 2)',
-	'helicopter\'s missile (missile 0)': 'ракета вертолёта (ракета 0)', 'tank (player 1)': 'танк (игрок 1)', 'tank shell (player 0)': 'снаряд танка (игрок 0)',
-	'crash': 'авария', 'not checked:\nyou may touch it': 'не проверяется:\nкасаться можно', 'crash; a depot\nrefuels': 'авария;\nу заправки —\nтопливо',
-	'crash, while\nit explodes': 'авария,\nпока он\nвзрывается', 'stops': 'исчезает', 'the object\nexplodes, points': 'объект\nвзрывается, очки',
-	'stops and\nfires': 'встаёт\nи стреляет', 'destroys it,\nwhile exploding': 'уничтожает\nпри взрыве',
-	# speeds
-	'Sideways speed, dots a second': 'Скорость вбок, точек в секунду',
-	'balloon': 'воздушный шар', 'ship, helicopter': 'корабль, вертолёт', 'jet': 'истребитель', 'your plane, full turn': 'ваш самолёт, полный поворот',
-	'helicopter\'s missile': 'ракета вертолёта', 'the screen is 168 dots wide': 'ширина экрана — 168 точек',
-	'Holding the stick sideways': 'Ручка в сторону', 'seconds': 'секунд', 'dots a second': 'точек в секунду',
-	'Stick forward for 1.5 s, then let go': 'Ручка вперёд 1,5 с, потом отпустить',
-	'lines a second': 'строк в секунду', 'How fast the river comes': 'Как быстро идёт река', 'Stick back for 1.5 s, then let go': 'Ручка назад 1,5 с, потом отпустить',
-})
 
 
 def run_dump(tool, rom, lines, seed=None):
@@ -659,7 +575,8 @@ def main():
 	tool = sys.argv[2] if len(sys.argv) > 2 else os.path.join(HERE, '..', 'port', 'build', 'river_dump')
 	lines, objects = run_dump(tool, rom, 56000)
 	global LANG
-	for LANG in ('en', 'ru'):
+	for LANG in LANGUAGES:
+		plt.rcParams['font.family'] = FONTS.get(LANG, ['DejaVu Sans'])
 		figure_stretch(lines, objects)
 		figure_levels(lines, objects)
 		figure_screen(lines, objects)
