@@ -38,14 +38,17 @@
 // A mouse click or going full screen hides the mouse pointer until the mouse moves. Closing the window (or Alt+F4,
 // Cmd+Q) quits.
 //
-// Looking back shows the river from a map of the lines as they entered the screen, with the
-// objects where they were placed; flying forward again replays it up to the present, where the
-// game continues. The game, and the scrolling line, only run in the present.
+// Looking back runs the attract mode again from a snapshot up to the moment asked for, so the
+// past is shown as it was, objects moving, flying forwards or backwards; the sound plays only
+// in the present.
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <functional>
+#include <new>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -73,73 +76,58 @@ constexpr double kFrameRate = 59.92;   // NTSC Atari
 constexpr int kSampleRate = 48000;
 
 // The attract mode: the game running without a player, from power-on, plus the status bar.
+//
+// The present is run once (head_); every line it generates is recorded with its level and
+// bridge. Looking back runs the past again: snapshots of the whole machine are kept every
+// kSnapshotFrames frames, and a second copy (replay_) is started from the nearest one and run
+// to the line asked for, so any earlier moment is shown as it was, objects moving.
 class Attract {
 public:
 	Attract(const rr::Rom &rom, const uint8_t osFont[rr::kOsFontBytes], bool pal, uint32_t seed)
-		: rom_(rom), game_(rom), pal_(pal), seed_(seed), charsets_(rr::buildCharsets(rom, osFont)) {
+		: rom_(rom), pal_(pal), seed_(seed), charsets_(rr::buildCharsets(rom, osFont)), head_(rom, seed) {
 		rr::initialPanel(rom, panel_);
-		game_.afterLine = [this](const uint8_t *line) {
-			// look-back map: each line as it enters the screen, objects where they were placed
-			uint8_t row[rr::kRowWidth];
-			rr::drawScreenLine(rom_, game_.gen.s, line, row);
-			rows_.insert(rows_.end(), row, row + rr::kRowWidth);
-			// a new level starts with each bridge: count them as the game's BRIDGE counter would
-			const uint8_t level = game_.gen.s.level;
-			if (level_.empty()) bridgeCount_ = game_.gen.start(0).bridge;
-			else if (level != level_.back()) bridgeCount_++;
-			level_.push_back(level);
-			bridge_.push_back(bridgeCount_);
-		};
 		restart();
 	}
 
 	void restart() {
-		rows_.clear();
+		head_ = Machine(rom_, seed_);
+		head_.game.gen.setRiver(riverSeed_, startBridge_);
 		level_.clear();
 		bridge_.clear();
-		scroller_ = rr::Scroller();
-		logoShown_ = 0;
-		frame_ = 0;
-		random_ = rr::PokeyRandom(seed_);
+		snapshots_.clear();
+		replay_.reset();
+		std::memset(live_, 0, sizeof live_);
 		pokey_ = rr::PokeySound(kSampleRate);
 		audio_.clear();
-		std::memset(live_, 0, sizeof live_);
-		running_ = false;
 	}
 
-	// One frame of the original. Timing after power-on as in the original: the scrolling line
-	// starts moving at frame 11, the game (and its river) at frame 38.
+	// One frame of the original, in the present.
 	void frame() {
-		frame_++;
-		if (frame_ == kFirstRiverFrame) {
-			game_.startAttract(pal_);
-			running_ = true;
-		} else if (running_) {
-			game_.prepare();
-			game_.display();
-			game_.drawRiver(live_);
-			game_.logic(rr::Input(), [this] { return random_.read(192, 13); });   // A205, after scanline 160
-			game_.vbi([this] { return random_.read(248, 30); });
-		}
+		if (head_.frame % kSnapshotFrames == 0 && head_.frame / kSnapshotFrames == long(snapshots_.size()))
+			snapshots_.push_back(head_);
+		head_.step(pal_, live_, [this](const rr::RiverState &s) {
+			// a new level starts with each bridge: count them as the game's BRIDGE counter would
+			if (level_.empty()) bridgeCount_ = head_.game.gen.start(0).bridge;
+			else if (s.level != level_.back()) bridgeCount_++;
+			level_.push_back(s.level);
+			bridge_.push_back(bridgeCount_);
+		});
 		// sound: the registers the VBI set at the end of the previous frame play for one frame
 		pokey_.run(rr::PokeyRandom::kCyclesPerLine * rr::PokeyRandom::kLinesPerFrame, audio_);
 		for (int c = 0; c < 4; c++) {
-			pokey_.write(2 * c, game_.g.pokey.audf[c]);
-			pokey_.write(2 * c + 1, game_.g.pokey.audc[c]);
+			pokey_.write(2 * c, head_.game.g.pokey.audf[c]);
+			pokey_.write(2 * c + 1, head_.game.g.pokey.audc[c]);
 		}
-		random_.nextFrame();
-		logoShown_ = scroller_.logoX;   // the display uses the position from before the step
-		if (frame_ >= kFirstScrollerFrame) scroller_.step(true);
 	}
 
 	// Sound test: start one of the game's sound effects through its own sound driver.
 	// (The attract mode itself is silent, as in the original.)
 	void soundTest(int which) {
-		if (!running_) return;
+		if (!head_.running) return;
 		switch (which) {
-		case 0: game_.g.soundExplosion = 0x17; break;   // explosion, as A4E6 sets it
-		case 1: game_.g.soundFire = 0x0F; break;        // firing (A5A6)
-		case 2: game_.g.soundBonus = 0x40; break;       // score (A587)
+		case 0: head_.game.g.soundExplosion = 0x17; break;   // explosion, as A4E6 sets it
+		case 1: head_.game.g.soundFire = 0x0F; break;        // firing (A5A6)
+		case 2: head_.game.g.soundBonus = 0x40; break;       // score (A587)
 		default: break;
 		}
 	}
@@ -160,48 +148,103 @@ public:
 	}
 	int level(long line) const { return line >= 0 && line < lines() ? level_[size_t(line)] : 0; }
 	int bridge(long line) const { return line >= 0 && line < lines() ? bridge_[size_t(line)] : 0; }
-	int currentLevel() const { return game_.gen.s.level; }
 
-	// Draws the screen. back = 0: the live frame, with the objects moving; back > 0: the river
-	// `back` lines earlier, from the map of lines as they entered the screen.
-	// The panel's BRIDGE counter shows the bridge of the newest line on screen.
-	void draw(long back, uint8_t screen[rr::kScreenHeight][rr::kScreenWidth]) const {
-		std::memset(screen, 0, size_t(rr::kScreenHeight) * rr::kScreenWidth);
-		if (back == 0) {
-			std::memcpy(screen[rr::kRiverTop], live_[rr::kRiverTop], size_t(rr::kRiverRows) * rr::kRowWidth);
-		} else {
-			const long newest = lines() - 1 - back;
-			for (int k = 0; k < rr::kRiverRows; k++) {
-				const long i = newest - k;
-				if (i < 0) break;
-				std::memcpy(screen[rr::kRiverTop + k], &rows_[size_t(i) * rr::kRowWidth], rr::kRowWidth);
+	// Draws the screen at the moment line `back` lines before the newest one entered it: the
+	// present for back = 0, otherwise that moment run again. The panel's BRIDGE counter shows
+	// the bridge of the newest line on screen.
+	void draw(long back, uint8_t screen[rr::kScreenHeight][rr::kScreenWidth]) {
+		const Machine *m = &head_;
+		const uint8_t (*live)[rr::kRowWidth] = live_;
+		const long target = lines() - 1 - back;
+		if (back > 0 && target >= 0) {
+			// run on from where the replay is, or start again from the nearest snapshot before
+			if (!replay_ || replay_->lines - 1 > target || target - (replay_->lines - 1) > kSnapshotFrames) {
+				size_t i = snapshots_.size();
+				while (i > 1 && snapshots_[i - 1].lines - 1 >= target) i--;   // at least one frame to run
+				replay_.emplace(snapshots_[i - 1]);
 			}
+			while (replay_->lines - 1 < target)   // draw only the frames that may reach the line
+				replay_->step(pal_, replay_->lines >= target ? replayLive_ : nullptr, nullptr);
+			m = &*replay_;
+			live = replayLive_;
 		}
+		std::memset(screen, 0, size_t(rr::kScreenHeight) * rr::kScreenWidth);
+		std::memcpy(screen[rr::kRiverTop], live[rr::kRiverTop], size_t(rr::kRiverRows) * rr::kRowWidth);
 		uint8_t panel[rr::kPanelBytes];
 		std::memcpy(panel, panel_, sizeof panel);
-		if (lines() > 0) rr::showPanelBridge(panel, bridge(lines() - 1 - back));
-		rr::drawStatusBar(rom_, charsets_, panel, 0xFF, scroller_, logoShown_, screen);   // full tank
+		if (lines() > 0) rr::showPanelBridge(panel, bridge(std::max(target, 0L)));
+		rr::drawStatusBar(rom_, charsets_, panel, 0xFF, m->scroller, m->logoShown, screen);   // full tank
 	}
 
-	void setRiver(uint32_t seed, int bridge) { game_.gen.setRiver(seed, bridge); }
+	void setRiver(uint32_t seed, int bridge) {
+		riverSeed_ = seed;
+		startBridge_ = bridge;
+		restart();
+	}
 
 private:
+	static constexpr long kSnapshotFrames = 128;
+	static constexpr long kFirstScrollerFrame = 11, kFirstRiverFrame = 38;
+
+	// Everything that runs: the game, POKEY's random counter, the scrolling line. Copied whole
+	// for a snapshot.
+	struct Machine {
+		rr::Game game;
+		rr::PokeyRandom random;
+		rr::Scroller scroller;
+		uint8_t logoShown = 0;
+		long frame = 0;
+		long lines = 0;             // lines generated so far
+		bool running = false;
+
+		Machine(const rr::Rom &rom, uint32_t seed) : game(rom), random(seed) {}
+		Machine(const Machine &) = default;
+		Machine &operator=(Machine &&m) {   // Game holds a reference to the ROM: rebuild in place
+			this->~Machine();
+			new (this) Machine(m);
+			return *this;
+		}
+
+		// One frame of the original. Timing after power-on as in the original: the scrolling
+		// line starts moving at frame 11, the game (and its river) at frame 38. live: if not null, the
+		// river area is drawn there. newLine: called with the generator state after each new line.
+		void step(bool pal, uint8_t (*live)[rr::kRowWidth], const std::function<void(const rr::RiverState &)> &newLine) {
+			frame++;
+			game.afterLine = [this, &newLine](const uint8_t *) {
+				lines++;
+				if (newLine) newLine(game.gen.s);
+			};
+			if (frame == kFirstRiverFrame) {
+				game.startAttract(pal);
+				running = true;
+			} else if (running) {
+				game.prepare();
+				game.display();
+				if (live) game.drawRiver(live);
+				game.logic(rr::Input(), [this] { return random.read(192, 13); });   // A205, after scanline 160
+				game.vbi([this] { return random.read(248, 30); });
+			}
+			game.afterLine = nullptr;
+			random.nextFrame();
+			logoShown = scroller.logoX;   // the display uses the position from before the step
+			if (frame >= kFirstScrollerFrame) scroller.step(true);
+		}
+	};
+
 	const rr::Rom &rom_;
-	rr::Game game_;
 	bool pal_;
 	uint32_t seed_;
-	rr::PokeyRandom random_;
-	rr::PokeySound pokey_{kSampleRate};
-	std::vector<int16_t> audio_;
-	bool running_ = false;
+	uint32_t riverSeed_ = 0;   // -seed, -bridge
+	int startBridge_ = 0;
 	rr::Charsets charsets_;
 	uint8_t panel_[rr::kPanelBytes];
-	rr::Scroller scroller_;
-	uint8_t logoShown_ = 0;
-	long frame_ = 0;
-	static constexpr long kFirstScrollerFrame = 11, kFirstRiverFrame = 38;
-	uint8_t live_[rr::kScreenHeight][rr::kRowWidth];   // the river area of the current frame
-	std::vector<uint8_t> rows_;    // every line as it entered the screen, kRowWidth colour codes each
+	Machine head_;                       // the present
+	std::vector<Machine> snapshots_;     // head_ at frames 0, kSnapshotFrames, 2 * kSnapshotFrames...
+	std::optional<Machine> replay_;      // the past, run again from a snapshot
+	uint8_t live_[rr::kScreenHeight][rr::kRowWidth] = {};        // the present's river area
+	uint8_t replayLive_[rr::kScreenHeight][rr::kRowWidth] = {};  // the replay's
+	rr::PokeySound pokey_{kSampleRate};
+	std::vector<int16_t> audio_;
 	std::vector<uint8_t> level_;   // level of each line (the generator's $60)
 	std::vector<int> bridge_;      // number of the bridge that starts each line's section, as on the panel
 	int bridgeCount_ = 0;
