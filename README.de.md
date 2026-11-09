@@ -24,4 +24,4 @@ Gegner auf dem Bildschirm zeigt.
 ## Hinweis
 Dies ist ein inoffizielles Fanprojekt zu Lernzwecken: Es soll zeigen, wie ein Spiel von 1983 funktioniert, wie sein Code den Fluss, die Gegner und den Sound erzeugt, und das in lesbarem C++ darstellen. Es steht in keiner Verbindung zu Activision oder Microsoft und wird von ihnen weder unterstützt noch gefördert. River Raid und Activision sind Marken ihrer Inhaber; sie werden hier nur genannt, um zu sagen, um welches Spiel es geht.
 
-Kein Teil des Spiels ist enthalten: kein ROM, keine Grafik, kein Sound. Um die Portierung zu starten, brauchen Sie Ihr eigenes Abbild des River-Raid-Moduls (8 KB, siehe `rom/README.md`). Bitte fragen Sie nicht in Issues, wo man es bekommt.
+Kein Teil des Spiels ist enthalten: kein ROM, keine Grafik, kein Sound. Um die Portierung zu starten, brauchen Sie Ihr eigenes Abbild des River-Raid-Moduls (8 KB, siehe [`rom/README.de.md`](rom/README.de.md)). Bitte fragen Sie nicht in Issues, wo man es bekommt.

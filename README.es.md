@@ -24,4 +24,4 @@ enemigos de la pantalla.
 ## Aviso
 Este es un proyecto no oficial de aficionados, hecho con fines educativos: entender cómo funciona un juego de 1983, cómo su código crea el río, los enemigos y el sonido, y mostrarlo en un C++ legible. No está afiliado, respaldado ni patrocinado por Activision ni Microsoft. River Raid y Activision son marcas de sus propietarios; aquí se usan solo para decir de qué juego se trata.
 
-No se incluye ninguna parte del juego: ni ROM, ni gráficos, ni sonido. Para ejecutar el port necesita su propio volcado del cartucho de River Raid (8 KB, vea `rom/README.md`). Por favor, no abra issues preguntando dónde conseguirlo.
+No se incluye ninguna parte del juego: ni ROM, ni gráficos, ni sonido. Para ejecutar el port necesita su propio volcado del cartucho de River Raid (8 KB, vea [`rom/README.es.md`](rom/README.es.md)). Por favor, no abra issues preguntando dónde conseguirlo.

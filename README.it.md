@@ -24,4 +24,4 @@ nemici sullo schermo.
 ## Avvertenza
 Questo è un progetto amatoriale non ufficiale, realizzato a scopo didattico: capire come funziona un gioco del 1983, come il suo codice crea il fiume, i nemici e il suono, e mostrarlo in un C++ leggibile. Non è affiliato, approvato né sponsorizzato da Activision o Microsoft. River Raid e Activision sono marchi dei rispettivi proprietari; sono usati qui solo per dire di quale gioco si tratta.
 
-Nessuna parte del gioco è inclusa: niente ROM, niente grafica, niente suono. Per avviare il port serve il proprio dump della cartuccia di River Raid (8 KB, vedi `rom/README.md`). Per favore non aprite issue per chiedere dove trovarlo.
+Nessuna parte del gioco è inclusa: niente ROM, niente grafica, niente suono. Per avviare il port serve il proprio dump della cartuccia di River Raid (8 KB, vedi [`rom/README.it.md`](rom/README.it.md)). Per favore non aprite issue per chiedere dove trovarlo.

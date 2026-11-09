@@ -24,4 +24,4 @@ wszystkich wrogów na ekranie.
 ## Zastrzeżenie
 To nieoficjalny projekt fanowski, stworzony w celach edukacyjnych: by zrozumieć, jak działa gra z 1983 roku, jak jej kod tworzy rzekę, wrogów i dźwięk, i pokazać to w czytelnym C++. Nie jest powiązany z Activision ani Microsoft, ani przez nie popierany czy sponsorowany. River Raid i Activision są znakami towarowymi ich właścicieli; użyto ich tu tylko po to, by powiedzieć, o jaką grę chodzi.
 
-Projekt nie zawiera żadnej części gry: ani ROM-u, ani grafiki, ani dźwięku. Aby uruchomić port, potrzebny jest własny zrzut kartridża River Raid (8 KB, zob. `rom/README.md`). Prosimy nie pytać w issues, skąd go wziąć.
+Projekt nie zawiera żadnej części gry: ani ROM-u, ani grafiki, ani dźwięku. Aby uruchomić port, potrzebny jest własny zrzut kartridża River Raid (8 KB, zob. [`rom/README.pl.md`](rom/README.pl.md)). Prosimy nie pytać w issues, skąd go wziąć.

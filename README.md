@@ -23,4 +23,4 @@ and bridges are placed, why it gets harder, and how one sprite shows every enemy
 ## Disclaimer
 This is an unofficial fan project, made for educational purposes: to study how a 1983 game works, how its code makes the river, the enemies and the sound, and to show it in readable C++. It is not affiliated with, endorsed or sponsored by Activision or Microsoft. River Raid and Activision are trademarks of their owners; they are used here only to say which game this is about.
 
-No part of the game is included: no ROM, no graphics, no sound. To run the port you need your own dump of the River Raid cartridge (8 KB, see `rom/README.md`). Please do not open issues asking where to get one.
+No part of the game is included: no ROM, no graphics, no sound. To run the port you need your own dump of the River Raid cartridge (8 KB, see [`rom/README.md`](rom/README.md)). Please do not open issues asking where to get one.
