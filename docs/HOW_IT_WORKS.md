@@ -21,6 +21,8 @@ one line per picture, 60 lines a second; pushing the stick forward doubles it, p
 halves it (`scrollRiver`). There is never a whole river stored anywhere: each line exists only
 from the moment it is drawn at the top until it scrolls off the bottom.
 
+![The screen: the river, the panel, the scrolling line and the border around them](img/screen_layout.svg)
+
 ## A river that is always the same
 
 River Raid's river looks random but is identical in every game, on every Atari, since 1983. It
@@ -30,6 +32,11 @@ sequence of numbers, so the same bends, islands and enemies appear in the same p
 starting points of games 1-8 (bridge 1, 5, 20 or 50) are the states of that register, and the
 bank position, at those bridges of the same river, stored so that the game does not have to
 run the river up to them.
+
+The port's `-seed N` starts the same register from another value: the rules stay the same, the
+river is another one.
+
+![One river for all games, and the rivers of other seeds](img/seeds.svg)
 
 ## Blocks, sections and bridges
 
@@ -78,6 +85,8 @@ whichever side has room.
 Each line is finally assembled from whole bytes of bank and water colour, with short ready-made
 "edge pieces" where water meets land, so the shore can stop at any dot (`drawLine`).
 
+![A bank close up: bytes of 4 dots, the edge, one step per line](img/bank_zoom.svg)
+
 ## Enemies, fuel and bridges
 
 The screen is divided into **11 horizontal bands** ("slots"); each holds at most one object.
@@ -94,6 +103,8 @@ times in eight each, a jet or a hot-air balloon once each. Jets only come from l
 from level 3 and only at block starts; where the river is too narrow a ship becomes a
 helicopter. From level 13, now and then, a helicopter is one that fires missiles at you (only
 one of those at a time).
+
+![What enters the river every 16 lines, by level](img/object_mix.svg)
 
 Where across the river the object goes depends on the level: on odd levels anywhere, at
 random; on even levels next to one bank or the other, or beside the island
@@ -166,6 +177,8 @@ there go from about 51% to 87%.
 the river is almost straight (the bank moves within about 8 positions); later about 15; on odd
 levels from 10 on about 39, and from 20 on almost the whole screen.
 
+![The limits of the bank's random walk by level](img/bank_range.svg)
+
 **Room at the banks.** Below level 9, objects keep a few dots further from the banks and
 sections are never very narrow; below level 20 the narrowest section width is not used.
 
@@ -183,6 +196,8 @@ which gives its difficulty. Without the level the river would have the same shap
   2 seconds; below a quarter a warning beeps. An empty tank is a crash.
 - **Firing:** one bullet at a time; it flies up 6 lines per picture until it hits something or
   the bank.
+
+![Sideways speeds, steering and the river's speed](img/speeds.svg)
 
 You lose a plane by touching the bank, any enemy or a bridge, by a tank shell or a helicopter's
 missile, or by running out of fuel. The river then restarts from the last bridge (the generator
@@ -216,7 +231,10 @@ sprite's dots fall on dots of another sprite or of the bank colours, it sets a b
 collision register. Right after each band the game reads these registers and clears them. So it
 knows exactly which band, and therefore which object, the bullet or the plane touched, without
 any calculation of its own. "The plane hit the bank" is likewise just "player 2 overlapped the
-bank colour".
+bank colour". Only the green counts: the brown edge, 4 dots wide, is not checked for the plane,
+so it may graze it.
+
+![Which collisions the game reads, and what happens](img/collisions.svg)
 
 Because these reads happen while the picture is being drawn, their exact moment matters: if the
 bullet touches an object only on the very line where the register is read, whether that counts

@@ -1,7 +1,7 @@
 // Dump the generated river as text, for the pictures in docs/HOW_IT_WORKS.md
 // (tools/doc_figures.py draws them).
 //
-// usage: river_dump <rom> <game 1..8> <lines> <out.txt>
+// usage: river_dump <rom> <game 1..8> <lines> <out.txt> [-seed N]
 //   One line per generated line, in generation order:
 //     L <level> <sections left> <blocks left> <line in block> <192 digits 0..3>
 //   the digits being the 2-bit colour of each dot (0 black, 1 bank, 2 bank edge, 3 water),
@@ -10,12 +10,13 @@
 //   with type as in rom.h (object::kShip...).
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 #include "../src/river_gen.h"
 
 int main(int argc, char **argv) {
 	if (argc < 5) {
-		std::fprintf(stderr, "usage: %s <rom> <game 1..8> <lines> <out.txt>\n", argv[0]);
+		std::fprintf(stderr, "usage: %s <rom> <game 1..8> <lines> <out.txt> [-seed N]\n", argv[0]);
 		return 2;
 	}
 	rr::Rom rom;
@@ -24,6 +25,7 @@ int main(int argc, char **argv) {
 	FILE *f = std::fopen(argv[4], "w");
 	if (!f) { std::fprintf(stderr, "cannot write %s\n", argv[4]); return 1; }
 	rr::RiverGen gen(rom);
+	if (argc > 6 && !std::strcmp(argv[5], "-seed")) gen.setRiver(uint32_t(std::strtoul(argv[6], nullptr, 0)), 0);
 	gen.startGame(game, false);
 	for (int i = 0; i < lines; i++) {
 		const uint8_t enteringLines = gen.s.enteringLines;

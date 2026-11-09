@@ -8,6 +8,13 @@ plain colours of its own (no game graphics):
   levels.svg      stretches at different levels: how the river changes
   screen.svg      the screen: one object per band, one sprite for all of them
   difficulty.svg  chance of an enemy or a depot by level
+  screen_layout.svg  the frame: river, panel, scrolling line, border
+  seeds.svg       one river for all games; the rivers of other seeds
+  bank_zoom.svg   a bank close up: bytes, the edge, one step per line
+  object_mix.svg  what enters the river, by level (counted)
+  bank_range.svg  the limits of the bank's random walk by level
+  collisions.svg  which collisions the game reads
+  speeds.svg      sideways speeds, steering, the river's speed
 and the same with Russian labels (*.ru.svg).
 """
 import os
@@ -295,22 +302,357 @@ def figure_difficulty():
 	save(fig, 'difficulty.svg')
 
 
+RU.update({
+	# screen layout
+	'The whole picture the Atari sends to the TV (384 × 240)': 'Вся картинка, которую Atari посылает на телевизор (384 × 240)',
+	'river: 160 lines': 'река: 160 строк',
+	'status panel: fuel, score, lives, bridges': 'панель: топливо, очки, жизни, мосты',
+	'scrolling line: credits, Activision logo': 'бегущая строка: титры, логотип Activision',
+	'shown by default (336 × 200), about what a TV showed': 'видно по умолчанию (336 × 200), примерно как на телевизоре',
+	'black border (-border shows it)': 'чёрная рамка (её показывает -border)',
+	'new lines enter here': 'сюда входят новые строки',
+	'the river moves down:\n30 / 60 / 120 lines a second\n(slow / normal / fast)': 'река едет вниз:\n30 / 60 / 120 строк в секунду\n(медленно / обычно / быстро)',
+	'your plane stays here': 'самолёт всегда здесь',
+	# seeds
+	'One river for all games: games 3–8 start further along it': 'Одна река на все игры: игры 3–8 начинаются дальше по ней',
+	'games 1–2': 'игры 1–2', 'games 3–4': 'игры 3–4', 'games 5–6': 'игры 5–6', 'games 7–8': 'игры 7–8',
+	'bridge': 'мост',
+	'the cartridge\'s river (every game, every Atari, since 1983)': 'река картриджа (в каждой игре, на каждой Atari, с 1983 года)',
+	'-seed 12345: another river from the same rules': '-seed 12345: другая река по тем же правилам',
+	'-seed 777': '-seed 777',
+	'The first 3 bridges of three rivers': 'Первые 3 моста трёх рек',
+	# zoom
+	'A bank, close up (40 lines × 72 dots)': 'Берег крупно (40 строк × 72 точки)',
+	'byte: 4 dots': 'байт: 4 точки',
+	'each line the bank moves\nby at most one dot': 'в каждой строке берег сдвигается\nне больше чем на одну точку',
+	'the edge: 4 dots, at any\ndot, across two bytes': 'кромка: 4 точки, с любой\nточки, через два байта',
+	'dot': 'точка', 'line': 'строка',
+	# object mix
+	'What enters the river every 16 lines (measured on game 1)': 'Что входит в реку каждые 16 строк (подсчитано на игре 1)',
+	'levels': 'уровни', 'nothing': 'ничего', 'share, %': 'доля, %',
+	# bank range
+	'How far the bank may wander: the limits of its random walk': 'Как далеко может уходить берег: пределы его случайного блуждания',
+	'odd level': 'нечётный уровень', 'even level': 'чётный уровень', 'bank position, dots': 'положение берега, точки',
+	# collisions
+	'What the game reads from the collision registers': 'Что игра читает из регистров столкновений',
+	'touches →': 'касается →',
+	'bank\n(green)': 'берег\n(зелёный)', 'edge\n(brown)': 'кромка\n(коричневая)', 'enemies, depots,\nbridges (player 3)': 'враги, заправки,\nмосты (игрок 3)',
+	'your plane\n(player 2)': 'ваш самолёт\n(игрок 2)', 'tank shell\n(player 0)': 'снаряд танка\n(игрок 0)',
+	'your plane (player 2)': 'ваш самолёт (игрок 2)', 'your bullet (missile 2)': 'ваша пуля (ракета 2)',
+	'helicopter\'s missile (missile 0)': 'ракета вертолёта (ракета 0)', 'tank (player 1)': 'танк (игрок 1)', 'tank shell (player 0)': 'снаряд танка (игрок 0)',
+	'crash': 'авария', 'not checked:\nyou may touch it': 'не проверяется:\nкасаться можно', 'crash; a depot\nrefuels': 'авария;\nу заправки —\nтопливо',
+	'crash, while\nit explodes': 'авария,\nпока он\nвзрывается', 'stops': 'исчезает', 'the object\nexplodes, points': 'объект\nвзрывается, очки',
+	'stops and\nfires': 'встаёт\nи стреляет', 'destroys it,\nwhile exploding': 'уничтожает\nпри взрыве',
+	# speeds
+	'Sideways speed, dots a second': 'Скорость вбок, точек в секунду',
+	'balloon': 'воздушный шар', 'ship, helicopter': 'корабль, вертолёт', 'jet': 'истребитель', 'your plane, full turn': 'ваш самолёт, полный поворот',
+	'helicopter\'s missile': 'ракета вертолёта', 'the screen is 168 dots wide': 'ширина экрана — 168 точек',
+	'Holding the stick sideways': 'Ручка в сторону', 'seconds': 'секунд', 'dots a second': 'точек в секунду',
+	'Stick forward for 1.5 s, then let go': 'Ручка вперёд 1,5 с, потом отпустить',
+	'lines a second': 'строк в секунду', 'How fast the river comes': 'Как быстро идёт река', 'Stick back for 1.5 s, then let go': 'Ручка назад 1,5 с, потом отпустить',
+})
+
+
+def run_dump(tool, rom, lines, seed=None):
+	with tempfile.TemporaryDirectory() as tmp:
+		path = os.path.join(tmp, 'river.txt')
+		cmd = [tool, rom, '1', str(lines), path] + (['-seed', str(seed)] if seed else [])
+		subprocess.run(cmd, check=True)
+		return read_dump(path)
+
+
+def figure_screen_layout(lines):
+	# the frame in columns (half colour clocks, 0..383) and lines (0..239); a column is 0.86
+	# of a line wide
+	idx = [i for i, l in enumerate(lines) if l[0] == 12]
+	top = idx[0] + 600
+	frame = np.zeros((240, 384), dtype=np.uint8)
+	for row in range(160):
+		dots = lines[top - row][4]
+		frame[20 + row, 24:360] = np.repeat(dots, 2)[24:360]
+	frame[181:210, 24:360] = 4                       # panel
+	frame[211:218, 24:360] = 5                       # scrolling line
+	colours = ListedColormap(['#000000', '#4f8f3a', '#9a7a3c', '#3d6fd0', '#9a9a9a', '#3a3a3a'])
+	fig, ax = plt.subplots(figsize=(10, 6.3))
+	ax.imshow(frame, cmap=colours, vmin=0, vmax=5, aspect=1 / 0.86, interpolation='nearest')
+	ax.add_patch(plt.Rectangle((23.5, 18.5), 336, 200, fill=False, ec='#ffcf33', lw=1.6, ls='--'))
+	ax.scatter([24 + 2 * 72], [20 + 153], s=110, c='#e8e8e8', marker='^', edgecolors='#000000', zorder=4)
+	kw = dict(fontsize=9, va='center')
+	ax.text(392, 100, T('river: 160 lines'), **kw)
+	ax.text(392, 195, T('status panel: fuel, score, lives, bridges'), **kw)
+	ax.text(392, 214, T('scrolling line: credits, Activision logo'), **kw)
+	ax.text(392, 20, T('new lines enter here'), **kw)
+	ax.text(392, 173, T('your plane stays here'), **kw)
+	ax.text(392, 60, T('the river moves down:\n30 / 60 / 120 lines a second\n(slow / normal / fast)'), fontsize=9,
+		va='center', linespacing=1.4)
+	ax.annotate('', xy=(372, 150), xytext=(372, 30), annotation_clip=False,
+		arrowprops=dict(arrowstyle='->', color='#222222', lw=1.4))
+	ax.text(192, 232, T('shown by default (336 × 200), about what a TV showed'), color='#ffcf33', fontsize=8.5,
+		ha='center', va='center')
+	ax.text(192, 8, T('black border (-border shows it)'), color='#bbbbbb', fontsize=8.5, ha='center', va='center')
+	ax.set_xticks([0, 24, 359, 383])
+	ax.set_yticks([0, 20, 179, 209, 218, 239])
+	ax.tick_params(labelsize=8)
+	ax.set_title(T('The whole picture the Atari sends to the TV (384 × 240)'), fontsize=10, loc='left')
+	save(fig, 'screen_layout.svg')
+
+
+def figure_seeds(tool, rom, lines):
+	n = 3 * 1024 + 40
+	rivers = [(lines, T('the cartridge\'s river (every game, every Atari, since 1983)'))]
+	rivers.append((run_dump(tool, rom, n, 12345)[0], T('-seed 12345: another river from the same rules')))
+	rivers.append((run_dump(tool, rom, n, 777)[0], T('-seed 777')))
+	fig = plt.figure(figsize=(13, 7.4))
+	gs = fig.add_gridspec(4, 1, height_ratios=[0.7, 1, 1, 1], hspace=0.45)
+	ax = fig.add_subplot(gs[0])
+	ax.set_xlim(0, 61)
+	ax.set_ylim(0, 1)
+	ax.axhline(0.35, color='#3d6fd0', lw=6, solid_capstyle='butt')
+	for b in range(1, 61):
+		ax.plot([b, b], [0.25, 0.45], color='#666666', lw=0.8)
+	for b, label, ha in ((1, T('games 1–2'), 'right'), (5, T('games 3–4'), 'left'), (20, T('games 5–6'), 'center'),
+			(50, T('games 7–8'), 'center')):
+		ax.plot([b, b], [0.2, 0.6], color='#d1495b', lw=2.2)
+		ax.text(b + {'left': -0.3, 'right': 0.3, 'center': 0}[ha], 0.68, label, ha=ha, va='bottom',
+			fontsize=9, color='#d1495b')
+		ax.text(b, 0.1, f"{T('bridge')} {b}", ha='center', va='top', fontsize=8)
+	ax.axis('off')
+	ax.set_title(T('One river for all games: games 3–8 start further along it'), fontsize=10, loc='left')
+	for k, (data, title) in enumerate(rivers):
+		ax = fig.add_subplot(gs[k + 1])
+		img = np.array([l[4][FIRST_DOT:LAST_DOT + 1] for l in data[:n]]).T
+		ax.imshow(img, cmap=RIVER_COLOURS, vmin=0, vmax=3, aspect='auto', interpolation='nearest', origin='lower')
+		ax.set_xticks([])
+		ax.set_yticks([])
+		ax.set_title(title, fontsize=9.5, loc='left', pad=3)
+	fig.text(0.125, 0.085, T('The first 3 bridges of three rivers'), fontsize=9, color='#555555')
+	save(fig, 'seeds.svg')
+
+
+def figure_bank_zoom(lines):
+	# a window of 40 lines on a left bank that moves, without decorations nearby
+	best = None
+	for start in range(40000, 52000, 7):
+		rows = [lines[i][4][:72] for i in range(start, start + 40)]
+		edges = []
+		ok = True
+		for r in rows:
+			s = ''.join(map(str, r))
+			e = s.find('2222')
+			if e < 10 or e > 60 or '2' in s[:e] or '3' in s[:e] or s[e + 4:e + 12] != '33333333':
+				ok = False
+				break
+			edges.append(e)
+		if ok:
+			moves = sum(a != b for a, b in zip(edges, edges[1:]))
+			if best is None or moves > best[0]:
+				best = (moves, start, edges)
+	_, start, edges = best
+	lo_dot = max(0, min(edges) - 14)
+	lo_dot -= lo_dot % 4
+	img = np.array([lines[i][4][lo_dot:lo_dot + 48] for i in range(start + 39, start - 1, -1)])
+	fig, ax = plt.subplots(figsize=(9.5, 6))
+	ax.imshow(img, cmap=RIVER_COLOURS, vmin=0, vmax=3, aspect=1 / 1.72, interpolation='nearest')
+	for x in range(0, 49, 4):
+		ax.axvline(x - 0.5, color='#ffffff', lw=0.7, alpha=0.85)
+	for y in range(41):
+		ax.axhline(y - 0.5, color='#000000', lw=0.25, alpha=0.35)
+	row = 20
+	e = edges[39 - row] - lo_dot
+	ax.annotate(T('the edge: 4 dots, at any\ndot, across two bytes'), xy=(e + 2, row), xytext=(52, 8),
+		annotation_clip=False, fontsize=9, va='center', arrowprops=dict(arrowstyle='->', color='#222222'))
+	ax.annotate(T('each line the bank moves\nby at most one dot'), xy=(edges[39 - 32] - lo_dot - 0.5, 32),
+		xytext=(52, 30), annotation_clip=False, fontsize=9, va='center',
+		arrowprops=dict(arrowstyle='->', color='#222222'))
+	ax.annotate('', xy=(0 - 0.5, -2.2), xytext=(4 - 0.5, -2.2), annotation_clip=False,
+		arrowprops=dict(arrowstyle='<->', color='#222222', lw=1))
+	ax.text(4.5, -2.2, T('byte: 4 dots'), fontsize=9, va='center')
+	ax.set_xticks(range(0, 48, 8))
+	ax.set_xticklabels([str(lo_dot + x) for x in range(0, 48, 8)])
+	ax.set_yticks([])
+	ax.set_xlabel(T('dot'))
+	ax.set_title(T('A bank, close up (40 lines × 72 dots)').replace('72', '48'), fontsize=10, loc='left', pad=22)
+	save(fig, 'bank_zoom.svg')
+
+
+def figure_object_mix(lines, objects):
+	bands = [(1, 2), (3, 4), (5, 12), (13, 39), (40, 55)]
+	kinds = [(13, 'ship'), (8, 'helicopter'), (10, 'helicopter that fires'), (7, 'jet'), (12, 'balloon'), (15, 'fuel depot'),
+		((0, 1), 'nothing')]
+	colours = ['#111111', '#ffd23f', '#ff5a36', '#9ec5ff', '#f28cff', '#ff2a8a', '#dddddd']
+	shares = []
+	for a, b in bands:
+		ts = [t for i, t, d in objects if a <= lines[i][0] <= b and t != 14]
+		total = len(ts)
+		shares.append([100 * sum(1 for t in ts if (t in k if isinstance(k, tuple) else t == k)) / total for k, _ in kinds])
+	shares = np.array(shares)
+	fig, ax = plt.subplots(figsize=(10, 3.6))
+	left = np.zeros(len(bands))
+	labels = [f"{T('levels')} {a}–{b}" for a, b in bands]
+	for j, ((k, name), c) in enumerate(zip(kinds, colours)):
+		ax.barh(labels, shares[:, j], left=left, color=c, edgecolor='white', lw=0.6, label=T(name))
+		for y, (v, l) in enumerate(zip(shares[:, j], left)):
+			if v >= 6:
+				ax.text(l + v / 2, y, f'{v:.0f}', ha='center', va='center', fontsize=8,
+					color='white' if c in ('#111111', '#ff2a8a', '#ff5a36') else '#222222')
+		left += shares[:, j]
+	ax.invert_yaxis()
+	ax.set_xlim(0, 100)
+	ax.set_xlabel(T('share, %'))
+	for s in ('top', 'right'):
+		ax.spines[s].set_visible(False)
+	ax.legend(ncol=7, frameon=False, fontsize=8.5, loc='upper left', bbox_to_anchor=(0, -0.22), handlelength=1.2,
+		columnspacing=1)
+	ax.set_title(T('What enters the river every 16 lines (measured on game 1)'), fontsize=10, loc='left')
+	save(fig, 'object_mix.svg')
+
+
+def figure_bank_range():
+	# RiverGen::moveBank: the limits of the bank's random walk by level (without the corridor
+	# and decoration exceptions)
+	def limits(level):
+		if level < 3:
+			return 0x1C, 0x24
+		if level % 2 == 0 or level < 10:
+			return 0x19, 0x28
+		if level < 20:
+			return 0x0D, 0x34
+		return 0x01, 0x40
+	levels = list(range(1, 81))
+	fig, ax = plt.subplots(figsize=(10, 3.6))
+	for lvl in levels:
+		a, b = limits(lvl)
+		ax.plot([lvl, lvl], [a, b], color='#d1495b' if lvl % 2 else '#00798c', lw=3.2, solid_capstyle='butt')
+	ax.plot([], [], color='#d1495b', lw=4, label=T('odd level'))
+	ax.plot([], [], color='#00798c', lw=4, label=T('even level'))
+	ax.set_xlim(0, 81)
+	ax.set_ylim(0, 72)
+	ax.set_xlabel(T('level (bridge number)'))
+	ax.set_ylabel(T('bank position, dots'))
+	ax.grid(True, axis='y', color='#e6e6e6', lw=0.6)
+	for sp in ('top', 'right'):
+		ax.spines[sp].set_visible(False)
+	ax.legend(frameon=False, fontsize=9, loc='upper left', ncol=2)
+	ax.set_title(T('How far the bank may wander: the limits of its random walk'), fontsize=10, loc='left')
+	save(fig, 'bank_range.svg')
+
+
+def figure_collisions():
+	cols = ['bank\n(green)', 'edge\n(brown)', 'enemies, depots,\nbridges (player 3)', 'your plane\n(player 2)', 'tank shell\n(player 0)']
+	rows = ['your plane (player 2)', 'your bullet (missile 2)', 'helicopter\'s missile (missile 0)', 'tank (player 1)',
+		'tank shell (player 0)']
+	# (text, colour): red = you lose a plane, green = good for you, grey = stops, amber = not checked
+	R, G, S, A = '#f4c7c3', '#cdebc8', '#e3e3e3', '#ffe8a3'
+	cells = {
+		(0, 0): ('crash', R), (0, 1): ('not checked:\nyou may touch it', A), (0, 2): ('crash; a depot\nrefuels', R),
+		(0, 4): ('crash, while\nit explodes', R),
+		(1, 0): ('stops', S), (1, 1): ('stops', S), (1, 2): ('the object\nexplodes, points', G),
+		(2, 0): ('stops', S), (2, 1): ('stops', S), (2, 3): ('crash', R),
+		(3, 1): ('stops and\nfires', S),
+		(4, 2): ('destroys it,\nwhile exploding', S),
+	}
+	fig, ax = plt.subplots(figsize=(12, 4.4))
+	ax.set_xlim(-2.6, len(cols))
+	ax.set_ylim(len(rows), -1.1)
+	ax.axis('off')
+	for j, c in enumerate(cols):
+		ax.text(j + 0.5, -0.55, T(c), ha='center', va='center', fontsize=8.8, weight='bold')
+	ax.text(-0.1, -0.55, T('touches →'), ha='right', va='center', fontsize=8.8, color='#666666')
+	for i, r in enumerate(rows):
+		ax.text(-0.1, i + 0.5, T(r), ha='right', va='center', fontsize=9)
+		for j in range(len(cols)):
+			text, colour = cells.get((i, j), ('', '#ffffff'))
+			ax.add_patch(plt.Rectangle((j + 0.03, i + 0.04), 0.94, 0.92, color=colour, ec='#cccccc', lw=0.5))
+			if text:
+				ax.text(j + 0.5, i + 0.5, T(text), ha='center', va='center', fontsize=8.3, linespacing=1.25)
+	ax.set_title(T('What the game reads from the collision registers'), fontsize=10, loc='left')
+	save(fig, 'collisions.svg')
+
+
+def figure_speeds():
+	fig, (a1, a2, a3) = plt.subplots(1, 3, figsize=(13, 3.6), gridspec_kw=dict(width_ratios=[1.25, 1, 1]))
+	names = ['balloon', 'ship, helicopter', 'jet', 'your plane, full turn', 'helicopter\'s missile']
+	speeds = [15, 30, 60, 60, 120]
+	colours = ['#f28cff', '#ffd23f', '#9ec5ff', '#bbbbbb', '#ff5a36']
+	a1.barh([T(n) for n in names], speeds, color=colours, edgecolor='#555555', lw=0.5)
+	for y, v in enumerate(speeds):
+		a1.text(v + 2, y, str(v), va='center', fontsize=8.5)
+	a1.axvline(168, color='#888888', lw=0.8, ls=':')
+	a1.text(166, -0.6, T('the screen is 168 dots wide'), fontsize=8, ha='right', color='#666666')
+	a1.set_xlim(0, 175)
+	a1.invert_yaxis()
+	a1.set_title(T('Sideways speed, dots a second'), fontsize=10, loc='left')
+	# steering (Game::steer): +8 per frame up to $F8, a dot each time the fraction overflows:
+	# accel / 256 dots a frame, a dot every frame once full
+	accel, v = 0, []
+	for f in range(60):
+		if accel + 8 > 0xFF:
+			v.append(59.92)
+		else:
+			accel += 8
+			v.append(accel / 256 * 59.92)
+	t = np.arange(1, 61) / 59.92
+	a2.plot(np.concatenate([[0], t]), np.concatenate([[0], v]), color='#555555', lw=2)
+	a2.set_xlabel(T('seconds'))
+	a2.set_ylabel(T('dots a second'))
+	a2.set_ylim(0, 65)
+	a2.set_title(T('Holding the stick sideways'), fontsize=10, loc='left')
+	# speed (Game::changeSpeed, scrollRiver): +-2 per frame between $40 and $FE, back to $80
+	def run(stick_frames, faster):
+		speed, out = 0x80, []
+		for f in range(200):
+			if f < stick_frames:
+				up = faster
+			elif speed == 0x80:
+				out.append(speed)
+				continue
+			else:
+				up = speed < 0x80
+			if up:
+				if speed <= 0xFD:
+					speed += 2
+			elif speed >= 0x41:
+				speed -= 2
+			out.append(speed)
+		return np.array([2 * 60 if s >= 0xFE else 2 * s / 256 * 59.92 for s in out])
+	t = np.arange(200) / 59.92
+	a3.plot(t, run(90, True), color='#d1495b', lw=2, label=T('Stick forward for 1.5 s, then let go'))
+	a3.plot(t, run(90, False), color='#00798c', lw=2, label=T('Stick back for 1.5 s, then let go'))
+	a3.set_ylim(0, 130)
+	a3.set_title(T('How fast the river comes'), fontsize=10, loc='left')
+	a3.set_xlabel(T('seconds'))
+	a3.set_ylabel(T('lines a second'))
+	a3.legend(frameon=False, fontsize=8, loc='upper left', bbox_to_anchor=(0, -0.22))
+	for a in (a1, a2, a3):
+		for s in ('top', 'right'):
+			a.spines[s].set_visible(False)
+		a.tick_params(labelsize=8.5)
+	for a in (a2, a3):
+		a.grid(True, color='#e6e6e6', lw=0.6)
+	fig.subplots_adjust(wspace=0.45)
+	save(fig, 'speeds.svg')
+
+
 def main():
 	if len(sys.argv) < 2:
 		print(__doc__)
 		return 2
 	rom = sys.argv[1]
 	tool = sys.argv[2] if len(sys.argv) > 2 else os.path.join(HERE, '..', 'port', 'build', 'river_dump')
-	with tempfile.TemporaryDirectory() as tmp:
-		path = os.path.join(tmp, 'river.txt')
-		subprocess.run([tool, rom, '1', '56000', path], check=True)
-		lines, objects = read_dump(path)
+	lines, objects = run_dump(tool, rom, 56000)
 	global LANG
 	for LANG in ('en', 'ru'):
 		figure_stretch(lines, objects)
 		figure_levels(lines, objects)
 		figure_screen(lines, objects)
 		figure_difficulty()
+		figure_screen_layout(lines)
+		figure_seeds(tool, rom, lines)
+		figure_bank_zoom(lines)
+		figure_object_mix(lines, objects)
+		figure_bank_range()
+		figure_collisions()
+		figure_speeds()
 	return 0
 
 
