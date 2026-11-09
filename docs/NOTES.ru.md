@@ -1,6 +1,6 @@
 # River Raid (Atari 8-bit) — находки
 
-[English](NOTES.md) | Русский
+[English](NOTES.md) | Русский | [Українська](NOTES.uk.md) | [Deutsch](NOTES.de.md) | [Polski](NOTES.pl.md) | [Italiano](NOTES.it.md) | [Español](NOTES.es.md) | [中文](NOTES.zh.md) | [日本語](NOTES.ja.md)
 
 Образ: 8192 байта, без заголовка CART, загрузка $A000–$BFFF. Код ~5,9 КБ (2941 инструкция), данные ~2,3 КБ.
 

@@ -1,6 +1,6 @@
 # River Raid (Atari 8-bit) — findings
 
-English | [Русский](NOTES.ru.md)
+English | [Русский](NOTES.ru.md) | [Українська](NOTES.uk.md) | [Deutsch](NOTES.de.md) | [Polski](NOTES.pl.md) | [Italiano](NOTES.it.md) | [Español](NOTES.es.md) | [中文](NOTES.zh.md) | [日本語](NOTES.ja.md)
 
 Image: 8192 bytes, no CART header, loads at $A000–$BFFF. Code ~5.9 KB (2941 instructions), data ~2.3 KB.
 
