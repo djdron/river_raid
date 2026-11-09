@@ -287,11 +287,11 @@ int main(int argc, char **argv) {
 		}
 	};
 	makePalette();
-	// the window title shows the colours in use
+	// the window title shows where the river is, then the colours and the scaling in use
+	std::string colours;
 	auto showColours = [&]() {
-		const std::string title = std::string("River Raid - ") + (palColours ? "PAL" : "NTSC") + " colours, " +
-			rr::paletteName(paletteModel) + ", " + host::filterName(filter) + " scaling";
-		window.setTitle(title);
+		colours = std::string(palColours ? "PAL" : "NTSC") + " colours, " + rr::paletteName(paletteModel) + ", " +
+			host::filterName(filter) + " scaling";
 	};
 	window.setFilter(filter);
 	showColours();
@@ -409,10 +409,10 @@ int main(int argc, char **argv) {
 		if (shotPath) running = false;
 		window.present();
 
-		char buf[160];
+		char buf[256];
 		const long shown = attract.lines() - 1 - back;
-		std::snprintf(buf, sizeof buf, "River Raid - bridge %d - line %ld - speed x%g%s%s", attract.level(shown), shown,
-			kSpeeds[speedIndex], back ? " - looking back" : "", paused ? " - paused" : "");
+		std::snprintf(buf, sizeof buf, "River Raid - bridge %d - line %ld - speed x%g%s%s - %s", attract.level(shown), shown,
+			kSpeeds[speedIndex], back ? " - looking back" : "", paused ? " - paused" : "", colours.c_str());
 		if (title != buf) {
 			title = buf;
 			window.setTitle(buf);
