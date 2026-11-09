@@ -5,13 +5,19 @@ English | [Русский](README.ru.md)
 Reverse engineering and C++ port of Activision's River Raid for Atari 400/800 (1983),
 aiming for 1:1 game logic and 1:1 sound on modern Windows, Linux and macOS.
 
-- `HANDOFF.md` — project state, verified facts, decisions, next steps (start here)
-- `docs/HOW_IT_WORKS.md` — how the game works, for everyone: the river, enemies, bridges, collisions
-- `docs/NOTES.md` — findings with addresses
+**[How River Raid works](docs/HOW_IT_WORKS.md)**: an illustrated explanation for everyone, no
+programming needed: how the endless river is made, why it is the same in every game, how enemies
+and bridges are placed, why it gets harder, and how one sprite shows every enemy on the screen.
+
+[![From bridge 1 to bridge 2](docs/img/stretch.svg)](docs/HOW_IT_WORKS.md)
+
+- [`HANDOFF.md`](HANDOFF.md) — project state, verified facts, decisions, next steps (start here)
+- [`docs/HOW_IT_WORKS.md`](docs/HOW_IT_WORKS.md) — how the game works, for everyone: the river, enemies, bridges, collisions
+- [`docs/NOTES.md`](docs/NOTES.md) — findings with addresses
 - `disasm/` — annotated disassembly
 - `tools/` — disassembler, verification scripts
 - `oracle/` — reference runner on libatari800 (frame-by-frame RAM / POKEY traces)
-- `port/` — C++ port: the game (`river_raid`), the river viewer, check tools
+- [`port/`](port/README.md) — C++ port: the game (`river_raid`), the river viewer, check tools
 - `rom/` — put your own ROM dump here (not included)
 
 ## Disclaimer
