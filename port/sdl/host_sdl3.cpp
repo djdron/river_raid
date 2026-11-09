@@ -106,6 +106,18 @@ struct Host::Impl {
 	float hiddenX = 0, hiddenY = 0;   // where the mouse pointer was hidden, on the screen
 	std::string error;
 
+	int windowedW = 0;   // width of the window before it went full screen
+
+	// In a window: keeps the window's width (by default its current one) and sets its height
+	// to the proportions of the part shown. Full screen draws the part as large as fits, so
+	// nothing changes there.
+	void fitHeight(int w = 0) {
+		if (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) return;
+		int ht = 0;
+		if (w <= 0) SDL_GetWindowSize(window, &w, &ht);
+		SDL_SetWindowSize(window, w, int(w * viewH / (viewW * pixelAspect) + 0.5));
+		SDL_SyncWindow(window);
+	}
 	void hidePointer() {
 		SDL_HideCursor();
 		SDL_GetGlobalMouseState(&hiddenX, &hiddenY);
@@ -248,6 +260,9 @@ bool Host::poll(Event &out) {
 		case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
 			h.hidePointer();
 			break;
+		case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
+			h.fitHeight(h.windowedW);   // also when the system took the window out of full screen
+			break;
 		case SDL_EVENT_MOUSE_MOTION:
 			if (!SDL_CursorVisible()) {
 				// When the window changes size or place (going full screen), the pointer stays
@@ -299,22 +314,25 @@ bool Host::fullscreen() const { return (SDL_GetWindowFlags(impl_->window) & SDL_
 
 // Full screen on the desktop's resolution (SDL3 changes the video mode only when asked to).
 // The pointer is hidden by the SDL_EVENT_WINDOW_ENTER_FULLSCREEN event.
-void Host::setFullscreen(bool on) { SDL_SetWindowFullscreen(impl_->window, on); }
+void Host::setFullscreen(bool on) {
+	Impl &h = *impl_;
+	if (on == fullscreen()) return;
+	if (on) {
+		int ht = 0;
+		SDL_GetWindowSize(h.window, &h.windowedW, &ht);
+	}
+	SDL_SetWindowFullscreen(h.window, on);
+	SDL_SyncWindow(h.window);
+	if (!on) h.fitHeight(h.windowedW);   // the view may have changed while in full screen
+}
 
 void Host::setView(int x, int y, int width, int height) {
 	Impl &h = *impl_;
-	const int oldW = h.viewW, oldH = h.viewH;
 	h.viewX = x;
 	h.viewY = y;
 	h.viewW = width;
 	h.viewH = height;
-	if (fullscreen()) return;
-	// the window keeps the size of a pixel: only the sides that show more or less change
-	int w = 0, ht = 0;
-	SDL_GetWindowSize(h.window, &w, &ht);
-	const double scale = std::min(w / (oldW * h.pixelAspect), double(ht) / oldH);
-	SDL_SetWindowSize(h.window, int(width * h.pixelAspect * scale + 0.5), int(height * scale + 0.5));
-	SDL_SyncWindow(h.window);
+	h.fitHeight();
 }
 
 void Host::setFilter(Filter filter) { impl_->filter = filter; }

@@ -106,6 +106,18 @@ struct Host::Impl {
 	bool initialised = false;
 	std::string error;
 
+	int windowedW = 0;   // width of the window before it went full screen
+
+	// In a window: keeps the window's width (by default its current one) and sets its height
+	// to the proportions of the part shown. Full screen draws the part as large as fits, so
+	// nothing changes there.
+	void fitHeight(int w = 0) {
+		if (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) return;
+		int ht = 0;
+		if (w <= 0) SDL_GetWindowSize(window, &w, &ht);
+		SDL_SetWindowSize(window, w, int(w * viewH / (viewW * pixelAspect) + 0.5));
+		SDL_PumpEvents();   // the renderer learns the new size from the window's events
+	}
 	void hidePointer() {
 		SDL_ShowCursor(SDL_DISABLE);
 		SDL_GetGlobalMouseState(&hiddenX, &hiddenY);
@@ -311,27 +323,26 @@ bool Host::fullscreen() const { return (SDL_GetWindowFlags(impl_->window) & SDL_
 // window, which moves it on the screen (towards the top left corner); put it back.
 void Host::setFullscreen(bool on) {
 	Impl &h = *impl_;
+	if (on == fullscreen()) return;
+	if (on) {
+		int ht = 0;
+		SDL_GetWindowSize(h.window, &h.windowedW, &ht);
+	}
 	int x, y;
 	SDL_GetGlobalMouseState(&x, &y);
 	SDL_SetWindowFullscreen(h.window, on ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 	SDL_WarpMouseGlobal(x, y);
 	if (on) h.hidePointer();
+	else h.fitHeight(h.windowedW);   // the view may have changed while in full screen
 }
 
 void Host::setView(int x, int y, int width, int height) {
 	Impl &h = *impl_;
-	const int oldW = h.viewW, oldH = h.viewH;
 	h.viewX = x;
 	h.viewY = y;
 	h.viewW = width;
 	h.viewH = height;
-	if (fullscreen()) return;
-	// the window keeps the size of a pixel: only the sides that show more or less change
-	int w = 0, ht = 0;
-	SDL_GetWindowSize(h.window, &w, &ht);
-	const double scale = std::min(w / (oldW * h.pixelAspect), double(ht) / oldH);
-	SDL_SetWindowSize(h.window, int(width * h.pixelAspect * scale + 0.5), int(height * scale + 0.5));
-	SDL_PumpEvents();   // the renderer learns the new size from the window's events
+	h.fitHeight();
 }
 
 void Host::setFilter(Filter filter) { impl_->filter = filter; }
