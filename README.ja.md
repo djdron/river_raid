@@ -21,3 +21,10 @@ Activision の Atari 400/800 版 River Raid（1983）のリバースエンジニ
 これは非公式のファンプロジェクトで、教育目的で作られました。1983 年のゲームがどう動くのか、そのコードが川や敵や音をどう作るのかを調べ、読みやすい C++ で示すためのものです。Activision や Microsoft とは無関係で、承認や支援も受けていません。River Raid と Activision はそれぞれの所有者の商標であり、ここではどのゲームの話かを示すためだけに使っています。
 
 ゲームのいかなる部分も含まれていません。ROM も、グラフィックも、サウンドもありません。移植版を動かすには、River Raid のカートリッジを自分でダンプしたもの（8 KB、[`rom/README.ja.md`](rom/README.ja.md) を参照）が必要です。入手先を issues で尋ねないでください。
+
+## ライセンス
+このプロジェクト自身のコードとドキュメントは MIT ライセンスです。[`LICENSE`](LICENSE) を参照してください。例外：
+- `port/src/os_font.cpp` には AltirraOS の文字セット（Copyright © 2008–2018 Avery Lee）が含まれ、それ自身の寛容なライセンス（all-permissive）に従います。その表示はこのファイルに残してあります。
+- `oracle/rr_oracle` は libatari800 とリンクするため GPL-2.0+ です（[`oracle/README.ja.md`](oracle/README.ja.md) を参照）。移植版はこれとリンクしません。
+- `port/src/palette.cpp` の 2 つのパレットモデルは、エミュレーター Altirra と atari800 の色モデルに従っています。コードは新しく書いたものです。
+- River Raid そのもの（ROM、そのコード、グラフィック、サウンド）は権利者のものであり、このライセンスの対象外です。

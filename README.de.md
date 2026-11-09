@@ -25,3 +25,10 @@ Gegner auf dem Bildschirm zeigt.
 Dies ist ein inoffizielles Fanprojekt zu Lernzwecken: Es soll zeigen, wie ein Spiel von 1983 funktioniert, wie sein Code den Fluss, die Gegner und den Sound erzeugt, und das in lesbarem C++ darstellen. Es steht in keiner Verbindung zu Activision oder Microsoft und wird von ihnen weder unterstützt noch gefördert. River Raid und Activision sind Marken ihrer Inhaber; sie werden hier nur genannt, um zu sagen, um welches Spiel es geht.
 
 Kein Teil des Spiels ist enthalten: kein ROM, keine Grafik, kein Sound. Um die Portierung zu starten, brauchen Sie Ihr eigenes Abbild des River-Raid-Moduls (8 KB, siehe [`rom/README.de.md`](rom/README.de.md)). Bitte fragen Sie nicht in Issues, wo man es bekommt.
+
+## Lizenz
+Der eigene Code und die Dokumentation des Projekts stehen unter der MIT-Lizenz, siehe [`LICENSE`](LICENSE). Ausnahmen:
+- `port/src/os_font.cpp` enthält den Zeichensatz von AltirraOS (Copyright © 2008–2018 Avery Lee) unter dessen eigener freizügiger Lizenz (all-permissive); der Hinweis steht in dieser Datei.
+- `oracle/rr_oracle` wird mit libatari800 gelinkt und steht deshalb unter GPL-2.0+ (siehe [`oracle/README.de.md`](oracle/README.de.md)). Die Portierung linkt nicht damit.
+- Die beiden Palettenmodelle in `port/src/palette.cpp` folgen den Farbmodellen der Emulatoren Altirra und atari800; der Code ist neu geschrieben.
+- River Raid selbst (das ROM, sein Code, Grafik und Sound) gehört den Rechteinhabern und fällt nicht unter diese Lizenz.

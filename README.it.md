@@ -25,3 +25,10 @@ nemici sullo schermo.
 Questo è un progetto amatoriale non ufficiale, realizzato a scopo didattico: capire come funziona un gioco del 1983, come il suo codice crea il fiume, i nemici e il suono, e mostrarlo in un C++ leggibile. Non è affiliato, approvato né sponsorizzato da Activision o Microsoft. River Raid e Activision sono marchi dei rispettivi proprietari; sono usati qui solo per dire di quale gioco si tratta.
 
 Nessuna parte del gioco è inclusa: niente ROM, niente grafica, niente suono. Per avviare il port serve il proprio dump della cartuccia di River Raid (8 KB, vedi [`rom/README.it.md`](rom/README.it.md)). Per favore non aprite issue per chiedere dove trovarlo.
+
+## Licenza
+Il codice e la documentazione propri del progetto sono sotto licenza MIT, vedi [`LICENSE`](LICENSE). Eccezioni:
+- `port/src/os_font.cpp` contiene il set di caratteri di AltirraOS (Copyright © 2008–2018 Avery Lee) con la sua licenza permissiva (all-permissive); l'avviso è conservato in quel file.
+- `oracle/rr_oracle` è collegato con libatari800 ed è quindi sotto GPL-2.0+ (vedi [`oracle/README.it.md`](oracle/README.it.md)). Il port non si collega con essa.
+- I due modelli di tavolozza in `port/src/palette.cpp` seguono i modelli di colore degli emulatori Altirra e atari800; il codice è scritto da zero.
+- River Raid stesso (la ROM, il suo codice, la grafica e il suono) appartiene ai titolari dei diritti e non è coperto da questa licenza.
