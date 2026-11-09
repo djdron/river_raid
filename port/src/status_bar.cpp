@@ -66,6 +66,15 @@ void initialPanel(const Rom &rom, uint8_t panel[kPanelBytes]) {
 	panel[0x12] = 0xD0;
 }
 
+void showPanelBridge(uint8_t panel[kPanelBytes], int bridge) {
+	const int digits[4] = {bridge / 1000 % 10, bridge / 100 % 10, bridge / 10 % 10, bridge % 10};
+	bool leading = true;
+	for (int i = 0; i < 4; i++) {
+		leading = leading && digits[i] == 0;
+		panel[kPanelBridges + i] = leading ? 0 : uint8_t(kDigitsBridges + digits[i]);
+	}
+}
+
 void Scroller::step(bool attract) {
 	// B44B-B47F. During play the line shows the logo text at $B8E7 without scrolling.
 	if (!attract) {

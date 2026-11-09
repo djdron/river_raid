@@ -164,6 +164,7 @@ public:
 
 	// Draws the screen. back = 0: the live frame, with the objects moving; back > 0: the river
 	// `back` lines earlier, from the map of lines as they entered the screen.
+	// The panel's BRIDGE counter shows the bridge of the newest line on screen.
 	void draw(long back, uint8_t screen[rr::kScreenHeight][rr::kScreenWidth]) const {
 		std::memset(screen, 0, size_t(rr::kScreenHeight) * rr::kScreenWidth);
 		if (back == 0) {
@@ -176,7 +177,10 @@ public:
 				std::memcpy(screen[rr::kRiverTop + k], &rows_[size_t(i) * rr::kRowWidth], rr::kRowWidth);
 			}
 		}
-		rr::drawStatusBar(rom_, charsets_, panel_, 0xFF, scroller_, logoShown_, screen);   // full tank
+		uint8_t panel[rr::kPanelBytes];
+		std::memcpy(panel, panel_, sizeof panel);
+		if (lines() > 0) rr::showPanelBridge(panel, bridge(lines() - 1 - back));
+		rr::drawStatusBar(rom_, charsets_, panel, 0xFF, scroller_, logoShown_, screen);   // full tank
 	}
 
 	void setRiver(uint32_t seed, int bridge) { game_.gen.setRiver(seed, bridge); }

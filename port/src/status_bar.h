@@ -43,6 +43,11 @@ constexpr int kPanelBytes = 60;
 // Panel as set up at power-on for a one-player game: the table at $BB70 (A0F0) with the
 // second player's markers hidden (sub $AF80).
 void initialPanel(const Rom &rom, uint8_t panel[kPanelBytes]);
+// The bridge counter in the panel: 4 digit characters from kPanelBridges, '0' = kDigitsBridges
+// (yellow), leading zeros blank, as B086 prints it during play.
+constexpr int kPanelBridges = 0x23;
+constexpr uint8_t kDigitsBridges = 0x90;
+void showPanelBridge(uint8_t panel[kPanelBytes], int bridge);   // bridge 1..9999
 
 // State of the scrolling line, updated once per frame in the vertical blank (B44B-B47F).
 struct Scroller {

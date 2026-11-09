@@ -33,13 +33,12 @@ constexpr uint8_t kCrashSound = 1, kOutOfFuelSound = 2, kTankFullSound = 3, kRef
 constexpr int kPanelScore = 0x02;
 constexpr int kPanelPlayer1Mark = 0x0B, kPanelPlayer2Mark = 0x12;
 constexpr int kPanelHighScore = 0x0C;          // or the other player's score
-constexpr int kPanelBridges = 0x23;
 constexpr int kPanelGameNumber = 0x2A;
 constexpr int kPanelLives = 0x33;              // 9 plane symbols; "GAME OVER" text of player 2 there
 constexpr int kPanelOtherBridges = 0x37;
 constexpr uint8_t kLifeSymbol = 0x9C;
 // digit characters for printBcd: '0' in each of the panel's colours
-constexpr uint8_t kDigitsScore = 0x10, kDigitsOther = 0x50, kDigitsBridges = 0x90, kDigitsHighScore = 0xD0;
+constexpr uint8_t kDigitsScore = 0x10, kDigitsOther = 0x50, kDigitsHighScore = 0xD0;
 
 inline bool attract(const GameState &g) { return (g.attractFlags & 0x80) != 0; }
 
