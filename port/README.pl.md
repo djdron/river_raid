@@ -33,7 +33,7 @@ Bez argumentów sama znajduje ROM (zob. `rom`) i startuje jak kartridż: tryb de
 | `-pal` | graj jak komputer PAL: jak na prawdziwym Atari PAL stacje paliw rzedną do poziomu 47 zamiast 46; kolory PAL. Taktowanie obrazu pozostaje NTSC (zob. Jeszcze nie zrobione) |
 | `-colours ntsc\|pal` | kolory komputera NTSC lub PAL; domyślnie PAL. C przełącza w trakcie gry |
 | `-palette altirra\|atari800` | model kolorów: `altirra` (domyślnie) lub `atari800` (ciemniejsze tony średnie). V przełącza w trakcie gry |
-| `-border` | pokazuje całą klatkę z czarną ramką (384×240 bez 10 kolumn z każdej strony), jak emulatory. Domyślnie okno pokazuje tylko obraz gry z całym przewijanym paskiem, 364×200, więc jest on o około 20% większy. O przełącza w trakcie gry |
+| `-border` | pokazuje całą klatkę z czarną ramką (384×240 bez 10 kolumn z każdej strony), jak emulatory. Domyślnie okno pokazuje tylko obraz gry z całym przewijanym paskiem, 364×200, więc na pełnym ekranie jest on o około 20% większy, a okno o tyle samo niższe. O przełącza w trakcie gry |
 | `-filter sharp\|nearest\|linear` | jak obraz jest skalowany do okna lub ekranu: `sharp` (domyślnie) skaluje o całkowitą wielokrotność z ostrymi pikselami, a potem płynnie do docelowego rozmiaru, więc pozostaje ostry, a każdy piksel ma ten sam rozmiar; `nearest` to zwykłe bloki, ale przy niecałkowitej skali (w poziomie zawsze, bo piksele Atari nie są kwadratowe) niektóre kolumny wychodzą o piksel ekranu szersze; `linear` jest gładki i rozmyty. L przełącza w trakcie gry |
 | `-stats` | wypisuje renderer i częstotliwość ekranu, potem co sekundę liczbę klatek, czas na klatkę i kolejkę dźwięku |
 | `-nosound` | bez dźwięku |

@@ -320,14 +320,17 @@ void Host::setFullscreen(bool on) {
 
 void Host::setView(int x, int y, int width, int height) {
 	Impl &h = *impl_;
+	const int oldW = h.viewW, oldH = h.viewH;
 	h.viewX = x;
 	h.viewY = y;
 	h.viewW = width;
 	h.viewH = height;
 	if (fullscreen()) return;
+	// the window keeps the size of a pixel: only the sides that show more or less change
 	int w = 0, ht = 0;
 	SDL_GetWindowSize(h.window, &w, &ht);
-	SDL_SetWindowSize(h.window, int(ht * width * h.pixelAspect / height + 0.5), ht);
+	const double scale = std::min(w / (oldW * h.pixelAspect), double(ht) / oldH);
+	SDL_SetWindowSize(h.window, int(width * h.pixelAspect * scale + 0.5), int(height * scale + 0.5));
 	SDL_PumpEvents();   // the renderer learns the new size from the window's events
 }
 
