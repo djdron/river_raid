@@ -357,11 +357,11 @@ z
 " style="stroke: #000000"/>
     </defs>
     <g clip-path="url(#pf4e9d43519)">
-     <use xlink:href="#mc2ce68520e" x="230.992695" y="256.757318" style="fill: #e8e8e8; stroke: #000000"/>
+     <use xlink:href="#mc2ce68520e" x="146.205682" y="256.757318" style="fill: #e8e8e8; stroke: #000000"/>
     </g>
    </g>
    <g id="text_23">
-    <text style="font-size: 8px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #ffffff" x="248.384903" y="258.835443" transform="rotate(-0 248.384903 258.835443)">ваш самолёт (свой спрайт)</text>
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #ffffff" x="163.59789" y="258.835443" transform="rotate(-0 163.59789 258.835443)">ваш самолёт (свой спрайт)</text>
    </g>
   </g>
   <g id="axes_2">

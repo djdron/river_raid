@@ -357,11 +357,11 @@ z
 " style="stroke: #000000"/>
     </defs>
     <g clip-path="url(#p155347eec5)">
-     <use xlink:href="#mc2ce68520e" x="230.993476" y="256.757318" style="fill: #e8e8e8; stroke: #000000"/>
+     <use xlink:href="#mc2ce68520e" x="146.206463" y="256.757318" style="fill: #e8e8e8; stroke: #000000"/>
     </g>
    </g>
    <g id="text_23">
-    <text style="font-size: 8px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #ffffff" x="248.385684" y="258.835756" transform="rotate(-0 248.385684 258.835756)">your plane (its own sprite)</text>
+    <text style="font-size: 8px; font-family: 'DejaVu Sans'; text-anchor: start; fill: #ffffff" x="163.598671" y="258.835756" transform="rotate(-0 163.598671 258.835756)">your plane (its own sprite)</text>
    </g>
   </g>
   <g id="axes_2">

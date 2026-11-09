@@ -220,6 +220,23 @@ def figure_levels(lines, objects):
 	save(fig, 'levels.svg')
 
 
+def plane_dot(lines, top, rows=range(146, 160)):
+	"""A dot where the plane is over water on screen rows `rows` (row 0 = line `top`): the middle
+	of the widest stretch of water that is clear on all those rows, as in the game, where the
+	plane flies over the river."""
+	clear = np.ones(LAST_DOT - FIRST_DOT + 1, dtype=bool)
+	for row in rows:
+		clear &= lines[top - row][4][FIRST_DOT:LAST_DOT + 1] == 3
+	best, start = (0, 0), None
+	for x, c in enumerate(list(clear) + [False]):
+		if c and start is None:
+			start = x
+		elif not c and start is not None:
+			best = max(best, (x - start, (start + x - 1) // 2))
+			start = None
+	return best[1]
+
+
 def figure_screen(lines, objects):
 	# 160 lines as they are on screen, newest at the top, at level 12
 	idx = [i for i, l in enumerate(lines) if l[0] == 12]
@@ -249,8 +266,9 @@ def figure_screen(lines, objects):
 		else:
 			label, col = T('(empty)'), '#888888'
 		ax.text(LAST_DOT - FIRST_DOT + 6, mid, label, va='center', fontsize=8.5, color=col)
-	ax.scatter([84], [153], s=90, c='#e8e8e8', marker='^', edgecolors='#000000', zorder=4)
-	ax.text(92, 153, T('your plane (its own sprite)'), va='center', fontsize=8, color='#ffffff', zorder=5)
+	px = plane_dot(lines, top)
+	ax.scatter([px], [153], s=90, c='#e8e8e8', marker='^', edgecolors='#000000', zorder=4)
+	ax.text(px + 8, 153, T('your plane (its own sprite)'), va='center', fontsize=8, color='#ffffff', zorder=5)
 	ax.set_xticks([])
 	ax.set_yticks([0, 16, 32, 48, 64, 80, 96, 112, 128, 144, 159])
 	ax.set_ylabel(T('screen line'))
@@ -376,7 +394,7 @@ def figure_screen_layout(lines):
 	fig, ax = plt.subplots(figsize=(10, 6.3))
 	ax.imshow(frame, cmap=colours, vmin=0, vmax=5, aspect=1 / 0.86, interpolation='nearest')
 	ax.add_patch(plt.Rectangle((23.5, 18.5), 336, 200, fill=False, ec='#ffcf33', lw=1.6, ls='--'))
-	ax.scatter([24 + 2 * 72], [20 + 153], s=110, c='#e8e8e8', marker='^', edgecolors='#000000', zorder=4)
+	ax.scatter([24 + 2 * plane_dot(lines, top)], [20 + 153], s=110, c='#e8e8e8', marker='^', edgecolors='#000000', zorder=4)
 	kw = dict(fontsize=9, va='center')
 	ax.text(392, 100, T('river: 160 lines'), **kw)
 	ax.text(392, 195, T('status panel: fuel, score, lives, bridges'), **kw)
