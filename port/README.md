@@ -2,6 +2,8 @@
 
 English | [Русский](README.ru.md)
 
+An unofficial fan project for educational purposes, not affiliated with Activision or Microsoft; no part of the game is included (see the disclaimer in `../README.md`).
+
 The whole game: `river_raid` plays River Raid as the original does — attract mode, game selection, one and two players, the plane, fuel, enemies, bridges, score, lives, high scores, pause and sound. The river generator and the game logic produce the same RAM state as the original frame by frame, the drawing the same screen (see Verification).
 
 ## Build
