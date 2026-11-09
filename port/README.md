@@ -33,7 +33,7 @@ Without arguments it finds the ROM by itself (see `rom`) and starts like the car
 | `-pal` | play as a PAL machine: as on a real PAL Atari, fuel depots keep getting rarer up to level 47 instead of 46; PAL colours. The display timing stays NTSC (see Not done yet) |
 | `-colours ntsc\|pal` | the colours of an NTSC or a PAL machine; PAL by default. C switches while playing |
 | `-palette altirra\|atari800` | the colour model: `altirra` (default) or `atari800` (darker middle tones). V switches while playing |
-| `-border` | shows the whole frame with its black border (384×240 less 10 columns at each side), as emulators do. By default the window shows only the game's picture, 336×200, as a TV did, so it is about 20% larger. O switches while playing |
+| `-border` | shows the whole frame with its black border (384×240 less 10 columns at each side), as emulators do. By default the window shows only the game's picture with the whole scrolling line, 364×200, so it is about 20% larger. O switches while playing |
 | `-filter sharp\|nearest\|linear` | how the picture is scaled to the window or screen: `sharp` (default) scales by whole numbers with sharp pixels and then smoothly to the final size, so it stays sharp and every pixel is the same size; `nearest` is plain blocks, but at a scale that is not a whole number (always so across, as Atari pixels are not square) some columns come out one screen pixel wider; `linear` is smooth and blurred. L switches while playing |
 | `-stats` | prints the renderer and display rate, then once a second the frame rate, time per frame and the sound queue |
 | `-nosound` | no sound |

@@ -56,7 +56,7 @@ Regułę odczytuje się z listingu, a potem sprawdza na śladzie wzorcowym (`too
 - Weryfikacja porównuje RAM portu z wzorcowym `ram.bin` klatka po klatce; wartości RANDOM do niej pochodzą z wzorcowego `random.log`.
 - Żadnych danych ROM w kodzie: tablice kartridża są czytane przez nazwane funkcje (`port/src/rom.h`).
 - Domyślne kolory: PAL, model Altirra; NTSC i model atari800 pod klawiszami.
-- Okno pokazuje obraz gry (336×200, jak telewizor), a nie całą klatkę z czarną ramką (`-border`, O); skalowany ostro o całkowitą wielokrotność, potem płynnie (`-filter`, L).
+- Okno pokazuje obraz gry (364×200 z całym przewijanym paskiem), a nie całą klatkę z czarną ramką (`-border`, O); skalowany ostro o całkowitą wielokrotność, potem płynnie (`-filter`, L).
 - Wyścig taktów przy końcu gry (czy licznik klatek zostanie wyzerowany przed, czy po VBI tej klatki, zależy od taktów pętli głównej, zob. `port/README.pl.md`, „Weryfikacja”) świadomie nie jest odtwarzany.
 - Na ekranie 60/120 Hz gra wiąże się z ekranem (60,00 zamiast 59,92 klatek na sekundę), dźwięk jest pod to przeliczany.
 

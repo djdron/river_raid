@@ -56,7 +56,7 @@ Eine Regel wird aus dem Listing gelesen und dann an einem Referenz-Trace geprüf
 - Die Überprüfung vergleicht das RAM der Portierung Bild für Bild mit dem Referenz-`ram.bin`; die RANDOM-Werte dafür stammen aus dem Referenz-`random.log`.
 - Keine ROM-Daten im Code: Die Tabellen des Moduls werden über benannte Zugriffsfunktionen gelesen (`port/src/rom.h`).
 - Standardfarben: PAL, Modell von Altirra; NTSC und das Modell von atari800 per Taste.
-- Das Fenster zeigt das Spielbild (336×200, wie ein Fernseher), nicht das ganze Bild mit seinem schwarzen Rand (`-border`, O); skaliert scharf um ganze Zahlen, dann weich (`-filter`, L).
+- Das Fenster zeigt das Spielbild (364×200 mit der ganzen Laufschrift), nicht das ganze Bild mit seinem schwarzen Rand (`-border`, O); skaliert scharf um ganze Zahlen, dann weich (`-filter`, L).
 - Das Taktrennen beim Spielende (ob der Bildzähler vor oder nach dem VBI dieses Bilds zurückgesetzt wird, hängt von den Takten der Hauptschleife ab, siehe `port/README.de.md`, „Überprüfung“) wird bewusst nicht nachgebildet.
 - Auf einem 60/120-Hz-Bildschirm koppelt sich das Spiel an den Bildschirm (60,00 statt 59,92 Bilder pro Sekunde), der Sound wird entsprechend umgerechnet.
 

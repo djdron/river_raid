@@ -305,11 +305,11 @@ def figure_screen_layout(lines):
 		dots = lines[top - row][4]
 		frame[20 + row, 24:360] = np.repeat(dots, 2)[24:360]
 	frame[181:210, 24:360] = 4                       # panel
-	frame[211:218, 24:360] = 5                       # scrolling line
+	frame[211:218, 10:374] = 5                       # scrolling line
 	colours = ListedColormap(['#000000', '#4f8f3a', '#9a7a3c', '#3d6fd0', '#9a9a9a', '#3a3a3a'])
 	fig, ax = plt.subplots(figsize=(10, 6.3))
 	ax.imshow(frame, cmap=colours, vmin=0, vmax=5, aspect=1 / 0.86, interpolation='nearest')
-	ax.add_patch(plt.Rectangle((23.5, 18.5), 336, 200, fill=False, ec='#ffcf33', lw=1.6, ls='--'))
+	ax.add_patch(plt.Rectangle((9.5, 18.5), 364, 200, fill=False, ec='#ffcf33', lw=1.6, ls='--'))
 	ax.scatter([24 + 2 * plane_dot(lines, top)], [20 + 153], s=110, c='#e8e8e8', marker='^', edgecolors='#000000', zorder=4)
 	kw = dict(fontsize=9, va='center')
 	ax.text(392, 100, T('river: 160 lines'), **kw)
@@ -321,10 +321,10 @@ def figure_screen_layout(lines):
 		va='center', linespacing=1.4)
 	ax.annotate('', xy=(372, 150), xytext=(372, 30), annotation_clip=False,
 		arrowprops=dict(arrowstyle='->', color='#222222', lw=1.4))
-	ax.text(192, 232, T('shown by default (336 × 200), about what a TV showed'), color='#ffcf33', fontsize=8.5,
+	ax.text(192, 232, T('shown by default (364 × 200): the picture with the whole scrolling line'), color='#ffcf33', fontsize=8.5,
 		ha='center', va='center')
 	ax.text(192, 8, T('black border (-border shows it)'), color='#bbbbbb', fontsize=8.5, ha='center', va='center')
-	ax.set_xticks([0, 24, 359, 383])
+	ax.set_xticks([0, 10, 24, 359, 373])
 	ax.set_yticks([0, 20, 179, 209, 218, 239])
 	ax.tick_params(labelsize=8)
 	ax.set_title(T('The whole picture the Atari sends to the TV (384 × 240)'), fontsize=10, loc='left')

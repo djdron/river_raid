@@ -24,11 +24,12 @@ constexpr int kScreenWidth = 384;
 constexpr int kScreenHeight = 240;
 constexpr int kRiverTop = 20;
 constexpr int kRiverRows = 160;
-// Where the game's picture is (river, panel, scrolling line: columns 24-359, lines 20-217),
-// with a line to spare above and below. A TV showed about this much; the rest of the frame is
-// the black border, which only the ends of the scrolling line and objects leaving the river
-// reach.
-constexpr int kPictureLeft = 24, kPictureWidth = 336;
+// Where the game's picture is: the river and the panel take columns 24-359, the scrolling line
+// is wider and reaches columns 10-373 (as far as anything is ever drawn); lines 20-217, with a
+// line to spare above and below. Shown by default, so the whole scrolling line stays visible,
+// with narrow black strips beside the river and panel; the rest of the frame is the black
+// border above and below.
+constexpr int kPictureLeft = 10, kPictureWidth = 364;
 constexpr int kPictureTop = 19, kPictureHeight = 200;
 
 struct Charsets {

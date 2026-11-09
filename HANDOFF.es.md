@@ -56,7 +56,7 @@ Una regla se lee del listado y luego se comprueba con una traza de referencia (`
 - La verificación compara la RAM del port con el `ram.bin` de referencia fotograma a fotograma; los valores RANDOM para ello vienen del `random.log` de referencia.
 - Ningún dato de la ROM en el código: las tablas del cartucho se leen mediante funciones de acceso con nombre (`port/src/rom.h`).
 - Colores por defecto: PAL, modelo de Altirra; NTSC y el modelo de atari800 con teclas.
-- La ventana muestra la imagen del juego (336×200, como un televisor), no el fotograma completo con su borde negro (`-border`, O); escalada nítida por números enteros y luego suavemente (`-filter`, L).
+- La ventana muestra la imagen del juego (364×200 con todo el rótulo deslizante), no el fotograma completo con su borde negro (`-border`, O); escalada nítida por números enteros y luego suavemente (`-filter`, L).
 - La carrera de ciclos al final de la partida (que el contador de fotogramas se reinicie antes o después del VBI de ese fotograma depende de los ciclos del bucle principal, vea `port/README.es.md`, «Verificación») no se reproduce a propósito.
 - En una pantalla de 60/120 Hz el juego se sincroniza con la pantalla (60,00 en lugar de 59,92 fotogramas por segundo), y el sonido se recalcula en consecuencia.
 
