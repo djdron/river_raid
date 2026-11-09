@@ -207,8 +207,20 @@ lost plane.
 
 ## How it knows what hit what
 
-The Atari has very little graphics hardware: four small *sprites* ("players"), each 8 dots wide,
-plus four narrow ones ("missiles"), drawn over the background. River Raid uses them like this:
+The river itself is just a picture in memory: dots of four colours. Anything that moves over it
+is drawn by the video chip separately, on top of the picture, as a *sprite*. The Atari has
+eight of them, and its manuals call them **players** and **missiles**:
+
+- **players 0, 1, 2, 3**: four sprites 8 dots wide (the chip can also stretch one to 16 or 32
+  dots: ships are drawn double width, bridges four times). Each is a strip as tall as the
+  screen, with its own colour; the program says where across the screen it stands and which of
+  its 8 dots are lit on each line;
+- **missiles 0, 1, 2, 3**: four more, only 2 dots wide, meant for bullets.
+
+The names come from the games the chip was designed for, where each player's character was a
+"player" and its shots were "missiles"; they have nothing to do with the people playing River
+Raid. The numbers are simply the chip's numbering. Moving a sprite only means changing its
+position, the river picture under it stays untouched. River Raid uses them like this:
 
 | sprite | shows |
 |---|---|
