@@ -41,6 +41,8 @@ SDL_Scancode scancode(Key key) {
 	case Key::F2: return SDL_SCANCODE_F2;
 	case Key::F3: return SDL_SCANCODE_F3;
 	case Key::F4: return SDL_SCANCODE_F4;
+	case Key::F7: return SDL_SCANCODE_F7;
+	case Key::F8: return SDL_SCANCODE_F8;
 	case Key::F11: return SDL_SCANCODE_F11;
 	case Key::Alt:
 	case Key::None: break;
@@ -80,6 +82,8 @@ Key keyFromEvent(SDL_Keycode code) {
 	case SDLK_F2: return Key::F2;
 	case SDLK_F3: return Key::F3;
 	case SDLK_F4: return Key::F4;
+	case SDLK_F7: return Key::F7;
+	case SDLK_F8: return Key::F8;
 	case SDLK_F11: return Key::F11;
 	default: return Key::None;
 	}

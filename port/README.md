@@ -57,6 +57,7 @@ After power-on the attract mode flies over the river. START begins a game; SELEC
 | V | Altirra / atari800 colour model |
 | O | the game's picture only / the whole frame with its border |
 | L | scaling: sharp / nearest / linear |
+| F7 / F8 | save the game's state / go back to it (in memory, until quitting) |
 | Esc | leave full screen |
 | mouse click | hides the mouse pointer until the mouse moves (so does going full screen) |
 

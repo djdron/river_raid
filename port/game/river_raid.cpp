@@ -31,6 +31,7 @@
 //   C / V                     NTSC / PAL colours; Altirra / atari800 colour model
 //   O                         the game's picture only / the whole frame with its border
 //   L                         scaling: sharp / nearest / linear
+//   F7 / F8                   save the game's state / go back to it (in memory, until quitting)
 //   Esc                       leave full screen
 // A mouse click or going full screen hides the mouse pointer until the mouse moves. Closing the window (or Alt+F4,
 // Cmd+Q) quits.
@@ -43,6 +44,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -90,13 +92,14 @@ constexpr int kSampleRate = 48000;
 class Atari {
 public:
 	Atari(const rr::Rom &rom, const uint8_t osFont[rr::kOsFontBytes], bool pal, uint32_t seed)
-		: rom_(rom), game_(rom), pal_(pal), random_(seed), pokey_(kSampleRate),
+		: rom_(rom), pal_(pal), random_(seed), pokey_(kSampleRate),
 		charsets_(rr::buildCharsets(rom, osFont)) {
+		game_.emplace(rom);
 		rr::initialPanel(rom, powerOnPanel_);
 		std::memset(screen_, 0, sizeof screen_);
-		game_.afterDisplay = [this] {
+		game_->afterDisplay = [this] {
 			std::memset(screen_, 0, size_t(rr::kRiverTop + rr::kRiverRows) * rr::kRowWidth);
-			game_.drawRiver(screen_);
+			game_->drawRiver(screen_);
 		};
 	}
 
@@ -111,13 +114,13 @@ public:
 			rr::drawStatusBar(rom_, charsets_, powerOnPanel_, 0xFF, powerOnScroller_, powerOnLogo_, screen_);
 		} else {
 			if (frame_ == kGameStartFrame) {
-				game_.startAttract(pal_);
+				game_->startAttract(pal_);
 			} else {
 				// RANDOM is read in the main loop around scanline 192 (A205) and in the VBI (249)
 				int reads = 0;
-				game_.frame(input, [this, &reads] { return random_.read(reads++ ? 249 : 192, 13); });
+				game_->frame(input, [this, &reads] { return random_.read(reads++ ? 249 : 192, 13); });
 			}
-			const rr::GameState &g = game_.g;
+			const rr::GameState &g = game_->g;
 			if (g.idleTime & 0x80) {
 				std::memset(screen_, 0, sizeof screen_);   // screen off after a long time unused
 			} else {
@@ -128,22 +131,36 @@ public:
 		// sound: the registers the VBI set at the end of the previous frame play for one frame
 		pokey_.run(rr::PokeyRandom::kCyclesPerLine * rr::PokeyRandom::kLinesPerFrame, audio_);
 		for (int c = 0; c < 4; c++) {
-			pokey_.write(2 * c, game_.g.pokey.audf[c]);
-			pokey_.write(2 * c + 1, game_.g.pokey.audc[c]);
+			pokey_.write(2 * c, game_->g.pokey.audf[c]);
+			pokey_.write(2 * c + 1, game_->g.pokey.audc[c]);
 		}
 	}
 
 	const uint8_t (*screen() const)[rr::kScreenWidth] { return screen_; }
 	std::vector<int16_t> &audio() { return audio_; }
 	void setSoundRate(double rate) { pokey_.setSampleRate(rate); }
-	const rr::GameState &state() const { return game_.g; }
+	const rr::GameState &state() const { return game_->g; }
 
-	void setRiver(uint32_t seed, int bridge) { game_.gen.setRiver(seed, bridge); }
+	void setRiver(uint32_t seed, int bridge) { game_->gen.setRiver(seed, bridge); }
+
+	// Saved state (F7 / F8): the whole machine, in memory.
+	void saveState() { saved_.emplace(*this); }
+	bool loadState() {
+		if (!saved_) return false;
+		game_.emplace(saved_->game);
+		random_ = saved_->random;
+		pokey_ = saved_->pokey;
+		powerOnScroller_ = saved_->powerOnScroller;
+		powerOnLogo_ = saved_->powerOnLogo;
+		frame_ = saved_->frame;
+		std::memcpy(screen_, saved_->screen, sizeof screen_);
+		return true;
+	}
 
 private:
 	static constexpr long kGameStartFrame = 38;   // the attract mode's river starts
 	const rr::Rom &rom_;
-	rr::Game game_;
+	std::optional<rr::Game> game_;   // optional: a Game cannot be assigned (it refers to the ROM), only rebuilt
 	bool pal_;
 	rr::PokeyRandom random_;
 	rr::PokeySound pokey_;
@@ -154,6 +171,21 @@ private:
 	long frame_ = 0;
 	uint8_t screen_[rr::kScreenHeight][rr::kScreenWidth];
 	std::vector<int16_t> audio_;
+	struct Saved {
+		rr::Game game;
+		rr::PokeyRandom random;
+		rr::PokeySound pokey;
+		rr::Scroller powerOnScroller;
+		uint8_t powerOnLogo;
+		long frame;
+		uint8_t screen[rr::kScreenHeight][rr::kScreenWidth];
+		explicit Saved(const Atari &a)
+			: game(*a.game_), random(a.random_), pokey(a.pokey_), powerOnScroller(a.powerOnScroller_),
+			  powerOnLogo(a.powerOnLogo_), frame(a.frame_) {
+			std::memcpy(screen, a.screen_, sizeof screen);
+		}
+	};
+	std::optional<Saved> saved_;
 };
 
 // Joystick and console keys from the keyboard and up to two gamepads.
@@ -296,9 +328,10 @@ int main(int argc, char **argv) {
 	};
 	makePalette();
 	// the window title shows the colours in use
+	std::string stateNote;   // shown in the title after F7 / F8
 	auto showColours = [&]() {
 		const std::string title = std::string("River Raid - ") + (palColours ? "PAL" : "NTSC") + " colours, " +
-			rr::paletteName(paletteModel) + ", " + host::filterName(filter) + " scaling";
+			rr::paletteName(paletteModel) + ", " + host::filterName(filter) + " scaling" + stateNote;
 		window.setTitle(title);
 	};
 	window.setFilter(filter);
@@ -356,6 +389,13 @@ int main(int argc, char **argv) {
 			} else if (e.key == Key::O) {
 				border = !border;
 				showBorder();
+			} else if (e.key == Key::F7) {
+				atari.saveState();
+				stateNote = " - state saved";
+				showColours();
+			} else if (e.key == Key::F8) {
+				stateNote = atari.loadState() ? " - state loaded" : " - no state saved (F7)";
+				showColours();
 			} else if (e.key == Key::V) {
 				paletteModel = paletteModel == rr::PaletteModel::Altirra ? rr::PaletteModel::Atari800 : rr::PaletteModel::Altirra;
 				makePalette();

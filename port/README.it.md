@@ -57,6 +57,7 @@ Dopo l'accensione la modalità dimostrativa sorvola il fiume. START inizia una p
 | V | modello di colore Altirra / atari800 |
 | O | solo l'immagine del gioco / l'intero fotogramma con il bordo |
 | L | scalatura: sharp / nearest / linear |
+| F7 / F8 | salvare lo stato del gioco / tornarci (in memoria, fino all'uscita) |
 | Esc | esce dallo schermo intero |
 | clic del mouse | nasconde il puntatore finché il mouse non si muove (lo stesso passando a schermo intero) |
 

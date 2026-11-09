@@ -57,6 +57,7 @@ Nach dem Einschalten fliegt der Demo-Modus über den Fluss. START beginnt ein Sp
 | V | Farbmodell Altirra / atari800 |
 | O | nur das Spielbild / das ganze Bild mit Rand |
 | L | Skalierung: sharp / nearest / linear |
+| F7 / F8 | Spielstand speichern / zu ihm zurückkehren (im Speicher, bis zum Beenden) |
 | Esc | Vollbild verlassen |
 | Mausklick | blendet den Mauszeiger aus, bis die Maus bewegt wird (ebenso der Wechsel ins Vollbild) |
 

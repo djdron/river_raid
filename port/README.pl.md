@@ -57,6 +57,7 @@ Po włączeniu tryb demonstracyjny przelatuje nad rzeką. START rozpoczyna grę;
 | V | model kolorów Altirra / atari800 |
 | O | tylko obraz gry / cała klatka z ramką |
 | L | skalowanie: sharp / nearest / linear |
+| F7 / F8 | zapisać stan gry / wrócić do niego (w pamięci, do wyjścia) |
 | Esc | wyjście z pełnego ekranu |
 | kliknięcie myszą | ukrywa wskaźnik myszy, dopóki mysz się nie ruszy (przejście na pełny ekran też) |
 
