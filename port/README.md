@@ -32,10 +32,11 @@ Without arguments it finds the ROM by itself (see `rom`) and starts like the car
 | `-colours ntsc\|pal` | the colours of an NTSC or a PAL machine; PAL by default. C switches while playing |
 | `-palette altirra\|atari800` | the colour model: `altirra` (default) or `atari800` (darker middle tones). V switches while playing |
 | `-border` | shows the whole frame with its black border (384×240 less 10 columns at each side), as emulators do. By default the window shows only the game's picture, 336×200, as a TV did, so it is about 20% larger. O switches while playing |
+| `-filter sharp\|nearest\|linear` | how the picture is scaled to the window or screen: `sharp` (default) scales by whole numbers with sharp pixels and then smoothly to the final size, so it stays sharp and every pixel is the same size; `nearest` is plain blocks, but at a scale that is not a whole number (always so across, as Atari pixels are not square) some columns come out one screen pixel wider; `linear` is smooth and blurred. L switches while playing |
 | `-stats` | prints the renderer and display rate, then once a second the frame rate, time per frame and the sound queue |
 | `-nosound` | no sound |
 
-The window title shows the colours in use. On a display at 60 Hz (or 120 Hz...) the game runs at exactly the display's rate (60 instead of the Atari's 59.92 frames per second), so every frame stays on screen equally long; on other displays at the Atari's rate.
+The window title shows the colours and the scaling in use. On a display at 60 Hz (or 120 Hz...) the game runs at exactly the display's rate (60 instead of the Atari's 59.92 frames per second), so every frame stays on screen equally long; on other displays at the Atari's rate.
 
 Examples: `river_raid -bridge 30` starts at bridge 30; `river_raid -seed 12345` is a different river; `river_raid -seed 12345 -bridge 80` is that river at its hardest.
 
@@ -53,6 +54,7 @@ After power-on the attract mode flies over the river. START begins a game; SELEC
 | C | NTSC / PAL colours |
 | V | Altirra / atari800 colour model |
 | O | the game's picture only / the whole frame with its border |
+| L | scaling: sharp / nearest / linear |
 | Esc | leave full screen |
 | mouse click | hides the mouse pointer until the mouse moves (so does going full screen) |
 
@@ -62,7 +64,7 @@ The keyboard drives both joysticks, so one person can play a two-player game too
 ```
 river_view [rom] [options]
 ```
-It shows the original's attract mode, the flight over the river it plays when nobody presses START: after power-on the screen fills with the river of game 1, which then scrolls 1 line per frame; ships and helicopters wake up and move, tanks drive to the bridges and fire, helicopters fire missiles (the ported game logic, `src/game.cpp`); below are the status panel and the scrolling line with the credits, "Press START key" and the rainbow Activision logo. The options are those of the game: `rom`, `-os`, `-seed`, `-bridge` (the attract mode flies from that bridge), `-random`, `-pal`, `-colours`, `-palette`, `-border`.
+It shows the original's attract mode, the flight over the river it plays when nobody presses START: after power-on the screen fills with the river of game 1, which then scrolls 1 line per frame; ships and helicopters wake up and move, tanks drive to the bridges and fire, helicopters fire missiles (the ported game logic, `src/game.cpp`); below are the status panel and the scrolling line with the credits, "Press START key" and the rainbow Activision logo. The options are those of the game: `rom`, `-os`, `-seed`, `-bridge` (the attract mode flies from that bridge), `-random`, `-pal`, `-colours`, `-palette`, `-border`, `-filter`.
 
 Letters and digits 1–9 come from the OS font, which is not in the cartridge. The port has the font of AltirraOS built in: the free replacement OS that ships with atari800 (licence: copying and modification permitted with the copyright notice kept, see `src/os_font.cpp`); the reference traces were made with it too. `-os file` takes the font of Atari's own OS from an OS ROM image (10 KB or 16 KB) or a 1 KB font file.
 
@@ -79,6 +81,7 @@ Letters and digits 1–9 come from the OS font, which is not in the cartridge. T
 | C | NTSC / PAL colours |
 | V | Altirra / atari800 colour model |
 | O | the game's picture only / the whole frame with its border |
+| L | scaling: sharp / nearest / linear |
 | Esc | leave full screen |
 | mouse click | hides the mouse pointer until the mouse moves (so does going full screen) |
 

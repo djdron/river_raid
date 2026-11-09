@@ -23,6 +23,7 @@ SDL_Scancode scancode(Key key) {
 	case Key::B: return SDL_SCANCODE_B;
 	case Key::C: return SDL_SCANCODE_C;
 	case Key::F: return SDL_SCANCODE_F;
+	case Key::L: return SDL_SCANCODE_L;
 	case Key::O: return SDL_SCANCODE_O;
 	case Key::V: return SDL_SCANCODE_V;
 	case Key::X: return SDL_SCANCODE_X;
@@ -61,6 +62,7 @@ Key keyFromEvent(SDL_Keycode code) {
 	case SDLK_b: return Key::B;
 	case SDLK_c: return Key::C;
 	case SDLK_f: return Key::F;
+	case SDLK_l: return Key::L;
 	case SDLK_o: return Key::O;
 	case SDLK_v: return Key::V;
 	case SDLK_x: return Key::X;
@@ -91,6 +93,9 @@ struct Host::Impl {
 	SDL_Window *window = nullptr;
 	SDL_Renderer *renderer = nullptr;
 	SDL_Texture *texture = nullptr;
+	SDL_Texture *sharp = nullptr;      // Filter::Sharp: the picture scaled by whole numbers
+	int sharpW = 0, sharpH = 0;
+	Filter filter = Filter::Sharp;
 	SDL_AudioDeviceID audio = 0;
 	int width = 0, height = 0, sampleRate = 0;
 	int viewX = 0, viewY = 0, viewW = 0, viewH = 0;   // the part shown
@@ -107,8 +112,6 @@ struct Host::Impl {
 	}
 	void draw() {
 		SDL_UpdateTexture(texture, nullptr, pixels.data(), width * int(sizeof(uint32_t)));
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-		SDL_RenderClear(renderer);
 		int outW = 0, outH = 0;
 		SDL_GetRendererOutputSize(renderer, &outW, &outH);
 		const double imageW = viewW * pixelAspect;
@@ -119,7 +122,30 @@ struct Host::Impl {
 		dst.x = (float(outW) - dst.w) / 2;
 		dst.y = (float(outH) - dst.h) / 2;
 		const SDL_Rect src{viewX, viewY, viewW, viewH};
-		SDL_RenderCopyF(renderer, texture, &src, &dst);
+		SDL_Texture *picture = texture;
+		const SDL_Rect *part = &src;
+		SDL_SetTextureScaleMode(texture, filter == Filter::Linear ? SDL_ScaleModeLinear : SDL_ScaleModeNearest);
+		if (filter == Filter::Sharp) {
+			// first scaled by whole numbers, as large as fits, into a texture of its own
+			const int w = viewW * std::max(1, int(dst.w / float(viewW)));
+			const int h = viewH * std::max(1, int(dst.h / float(viewH)));
+			if (!sharp || sharpW != w || sharpH != h) {
+				if (sharp) SDL_DestroyTexture(sharp);
+				sharp = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_TARGET, w, h);
+				if (sharp) SDL_SetTextureScaleMode(sharp, SDL_ScaleModeLinear);
+				sharpW = w;
+				sharpH = h;
+			}
+			if (sharp && SDL_SetRenderTarget(renderer, sharp) == 0) {
+				SDL_RenderCopyF(renderer, texture, &src, nullptr);
+				SDL_SetRenderTarget(renderer, nullptr);
+				picture = sharp;
+				part = nullptr;
+			}
+		}
+		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+		SDL_RenderClear(renderer);
+		SDL_RenderCopyF(renderer, picture, part, &dst);
 	}
 };
 
@@ -129,6 +155,7 @@ Host::~Host() {
 	Impl &h = *impl_;
 	for (SDL_GameController *p : h.pads) SDL_GameControllerClose(p);
 	if (h.audio) SDL_CloseAudioDevice(h.audio);
+	if (h.sharp) SDL_DestroyTexture(h.sharp);
 	if (h.texture) SDL_DestroyTexture(h.texture);
 	if (h.renderer) SDL_DestroyRenderer(h.renderer);
 	if (h.window) SDL_DestroyWindow(h.window);
@@ -303,6 +330,8 @@ void Host::setView(int x, int y, int width, int height) {
 	SDL_SetWindowSize(h.window, int(ht * width * h.pixelAspect / height + 0.5), ht);
 	SDL_PumpEvents();   // the renderer learns the new size from the window's events
 }
+
+void Host::setFilter(Filter filter) { impl_->filter = filter; }
 
 uint32_t *Host::pixels() { return impl_->pixels.data(); }
 

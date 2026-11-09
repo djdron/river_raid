@@ -4,7 +4,7 @@
 // on the Xbox).
 //
 // It also does the things both programs want from their window: the picture keeps its
-// proportions, centred, scaled with sharp pixels; a mouse click or going full screen hides
+// proportions, centred, scaled as chosen (setFilter); a mouse click or going full screen hides
 // the mouse pointer until the mouse moves (more than a few pixels); gamepads are opened as
 // they are connected.
 #pragma once
@@ -19,7 +19,7 @@ namespace host {
 enum class Key {
 	None,
 	Up, Down, Left, Right,
-	W, A, S, D, B, C, F, O, V, X, Z,
+	W, A, S, D, B, C, F, L, O, V, X, Z,
 	LeftCtrl, RightCtrl, Alt, Return, Space, Backspace, Escape,   // Alt: either Alt key (keyHeld only)
 	PageUp, PageDown, Home,
 	F1, F2, F3, F4, F11,
@@ -33,6 +33,18 @@ struct Event {
 	bool alt = false, shift = false;
 	float wheel = 0;          // MouseWheel: steps, positive away from the user
 };
+
+// How the picture is scaled to the window.
+enum class Filter {
+	Nearest,   // sharp square pixels; at a scale that is not a whole number some columns and
+	           // rows come out one screen pixel wider than others
+	Linear,    // smooth, blurred
+	Sharp,     // scaled by whole numbers with sharp pixels, then smoothly to the window: sharp,
+	           // and all pixels the same size (only their edges are blended)
+};
+inline const char *filterName(Filter f) {
+	return f == Filter::Nearest ? "nearest" : f == Filter::Linear ? "linear" : "sharp";
+}
 
 // A gamepad as an Atari joystick.
 struct Gamepad {
@@ -66,6 +78,7 @@ public:
 	// The part of the picture shown in the window (by default all of it). In a window (not
 	// full screen) the window keeps its height and takes the new proportions.
 	void setView(int x, int y, int width, int height);
+	void setFilter(Filter filter);        // Filter::Sharp by default
 	bool fullscreen() const;
 	void setFullscreen(bool on);
 

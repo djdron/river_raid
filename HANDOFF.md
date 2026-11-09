@@ -55,7 +55,7 @@ A rule is read from the listing, then checked against a reference trace (`tools/
 - Verification compares the port's RAM with the reference `ram.bin` frame by frame; RANDOM values for it come from the reference `random.log`.
 - No ROM data in the code: the cartridge's tables are read through named accessors (`port/src/rom.h`).
 - Default colours: PAL, Altirra's model; NTSC and atari800's model on keys.
-- The window shows the game's picture (336×200, as a TV did), not the whole frame with its black border (`-border`, O).
+- The window shows the game's picture (336×200, as a TV did), not the whole frame with its black border (`-border`, O); scaled sharp by whole numbers, then smoothly (`-filter`, L).
 - The game-over cycle race (whether the frame counter is reset before or after that frame's VBI depends on the main loop's cycles, see `port/README.md`, Verification) is deliberately not reproduced.
 - On a 60/120 Hz display the game locks to the display (60.00 instead of 59.92 frames per second), sound resampled to match.
 

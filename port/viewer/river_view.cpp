@@ -1,7 +1,7 @@
 // River viewer (window, sound and input through SDL: sdl/host.h): the game's attract mode, the flight over the river that the original
 // shows when nobody presses START.
 //
-// usage: river_view [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-border] [-seed N] [-bridge N] [-random N]
+// usage: river_view [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-border] [-filter sharp|nearest|linear] [-seed N] [-bridge N] [-random N]
 //   rom: path to the cartridge image; by default rom/River_Raid.rom is looked for in the
 //   current folder and up to three folders above it.
 //   -os file: an Atari OS ROM (10 KB or 16 KB) or its 1 KB font, for Atari's own letters;
@@ -12,6 +12,8 @@
 //   -random N: start of POKEY's random counter (otherwise taken from the clock, as on the real
 //   machine, where it depends on the moment of power-on).
 //   -border: show the whole frame with its black border, not just the game's picture
+//   -filter: how the picture is scaled to the window: sharp (default: whole-number scale, then
+//   smoothly to fit), nearest (blocky, pixels of slightly uneven size) or linear (blurred)
 //
 // What it shows, as the original's attract mode does (game 1): the game running without a
 // plane (game.h): the river scrolls down 1 line per frame (60 frames a second), ships and
@@ -32,6 +34,7 @@
 //   Esc            leave full screen
 //   C / V          NTSC / PAL colours; Altirra / atari800 colour model
 //   O              the game's picture only / the whole frame with its border
+//   L              scaling: sharp / nearest / linear
 // A mouse click or going full screen hides the mouse pointer until the mouse moves. Closing the window (or Alt+F4,
 // Cmd+Q) quits.
 //
@@ -196,7 +199,8 @@ std::string findRom(int argc, char **argv) {
 		if (argv[i][0] == '-') {
 			if (!std::strcmp(argv[i], "-os") || !std::strcmp(argv[i], "-shot") || !std::strcmp(argv[i], "-seed") ||
 				!std::strcmp(argv[i], "-bridge") || !std::strcmp(argv[i], "-random") ||
-				!std::strcmp(argv[i], "-colours") || !std::strcmp(argv[i], "-palette"))
+				!std::strcmp(argv[i], "-colours") || !std::strcmp(argv[i], "-palette") ||
+				!std::strcmp(argv[i], "-filter"))
 				i++;
 			continue;
 		}
@@ -216,6 +220,7 @@ void fail(const std::string &msg) { host::Host::showError("River Raid viewer", m
 
 int main(int argc, char **argv) {
 	bool pal = false;
+	host::Filter filter = host::Filter::Sharp;   // -filter (L switches)
 	bool border = false;       // -border: the whole frame with its black border (O switches)
 	bool palColours = true;    // colours of a PAL machine (C switches to NTSC)
 	rr::PaletteModel paletteModel = rr::PaletteModel::Altirra;   // V switches
@@ -228,6 +233,11 @@ int main(int argc, char **argv) {
 	for (int i = 1; i < argc; i++) {
 		if (!std::strcmp(argv[i], "-pal")) pal = palColours = true;
 		else if (!std::strcmp(argv[i], "-border")) border = true;
+		else if (!std::strcmp(argv[i], "-filter") && i + 1 < argc) {
+			const char *name = argv[++i];
+			filter = !std::strcmp(name, "nearest") ? host::Filter::Nearest
+				: !std::strcmp(name, "linear") ? host::Filter::Linear : host::Filter::Sharp;
+		}
 		else if (!std::strcmp(argv[i], "-colours") && i + 1 < argc) palColours = !std::strcmp(argv[++i], "pal");
 		else if (!std::strcmp(argv[i], "-palette") && i + 1 < argc)
 			paletteModel = !std::strcmp(argv[++i], "atari800") ? rr::PaletteModel::Atari800 : rr::PaletteModel::Altirra;
@@ -280,9 +290,10 @@ int main(int argc, char **argv) {
 	// the window title shows the colours in use
 	auto showColours = [&]() {
 		const std::string title = std::string("River Raid - ") + (palColours ? "PAL" : "NTSC") + " colours, " +
-			rr::paletteName(paletteModel);
+			rr::paletteName(paletteModel) + ", " + host::filterName(filter) + " scaling";
 		window.setTitle(title);
 	};
+	window.setFilter(filter);
 	showColours();
 	// the game's picture only, or the whole frame
 	auto showBorder = [&]() {
@@ -316,6 +327,7 @@ int main(int argc, char **argv) {
 			else if (e.type == host::Event::Type::KeyDown) {
 				switch (e.key) {
 				case Key::Space: paused = !paused; break;
+				case Key::L: filter = host::Filter((int(filter) + 1) % 3); window.setFilter(filter); showColours(); break;
 				case Key::O: border = !border; showBorder(); break;
 				case Key::C: palColours = !palColours; makePalette(); showColours(); break;
 				case Key::V:
