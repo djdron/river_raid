@@ -1,6 +1,6 @@
 # rr_oracle — эталонный прогон River Raid
 
-[English](README.md) | Русский
+[English](README.md) | Русский | [Українська](README.uk.md) | [Deutsch](README.de.md) | [Polski](README.pl.md) | [Italiano](README.it.md) | [Español](README.es.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
 Headless-прогон оригинального картриджа на libatari800 (Atari 800, NTSC по умолчанию, встроенная AltirraOS, BASIC выключен). Нужен, чтобы покадрово сверять с ним C++-порт.
 

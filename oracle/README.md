@@ -1,6 +1,6 @@
 # rr_oracle — River Raid reference runner
 
-English | [Русский](README.ru.md)
+English | [Русский](README.ru.md) | [Українська](README.uk.md) | [Deutsch](README.de.md) | [Polski](README.pl.md) | [Italiano](README.it.md) | [Español](README.es.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
 Runs the original cartridge headless on libatari800 (Atari 800, NTSC by default, built-in AltirraOS, BASIC off). Used to compare the C++ port with the original frame by frame.
 

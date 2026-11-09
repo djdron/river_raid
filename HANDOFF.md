@@ -1,6 +1,6 @@
 # River Raid (Atari 8-bit) → C++ port: project state
 
-English | [Русский](HANDOFF.ru.md)
+English | [Русский](HANDOFF.ru.md) | [Українська](HANDOFF.uk.md) | [Deutsch](HANDOFF.de.md) | [Polski](HANDOFF.pl.md) | [Italiano](HANDOFF.it.md) | [Español](HANDOFF.es.md) | [中文](HANDOFF.zh.md) | [日本語](HANDOFF.ja.md)
 
 This file is for picking the work up on any computer or in a new chat. Start a new session with "read HANDOFF.md and docs/NOTES.md".
 
@@ -46,7 +46,7 @@ The game is complete and playable: `port/game/river_raid.cpp` (attract mode, gam
 ## Environment limits
 - `oracle/build.sh` builds on Linux, macOS, WSL and MSYS2 (intercepted emulator functions are renamed at compile time, no GNU `--wrap`); the C++ port builds with plain CMake (MSVC, Xcode, gcc).
 - The ROM is not in the repository (`.gitignore`); put your dump at `rom/River_Raid.rom`.
-- Code is indented with tabs, continuation lines too (`.editorconfig`). Documentation is bilingual: `X.md` in English, `X.ru.md` in Russian.
+- Code is indented with tabs, continuation lines too (`.editorconfig`). Documentation: `X.md` in English, `X.ru.md` in Russian, and `X.uk.md`, `X.de.md`, `X.pl.md`, `X.it.md`, `X.es.md`, `X.zh.md`, `X.ja.md`; `tools/doc_languages.py` writes the language line under each title, the picture labels are in `tools/doc_figures_i18n.py`. A change to a document goes into every language.
 
 ## Method
 A rule is read from the listing, then checked against a reference trace (`tools/verify_trace.py`, then the C++ check tools). Traces alone are only used to find where to look. Changes that should not change behaviour (renaming, restructuring) are checked with `port/tools/equivalence` against an older commit: 0 differences required, plus all checks in `port/README.md`, "Verification".
