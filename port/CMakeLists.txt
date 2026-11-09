@@ -43,6 +43,9 @@ target_compile_options(terrain_check PRIVATE ${RR_WARNINGS})
 add_executable(river_map tools/river_map.cpp)
 target_link_libraries(river_map rrcore)
 target_compile_options(river_map PRIVATE ${RR_WARNINGS})
+add_executable(river_dump tools/river_dump.cpp)
+target_link_libraries(river_dump rrcore)
+target_compile_options(river_dump PRIVATE ${RR_WARNINGS})
 
 # Compare the drawing with the screen of the original (oracle/rr_oracle -ghost -strip 20).
 add_executable(render_check tools/render_check.cpp)

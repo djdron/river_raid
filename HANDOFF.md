@@ -28,6 +28,7 @@ The game is complete and playable: `port/game/river_raid.cpp` (attract mode, gam
 | `tools/dis6502.py` | disassembler: `python dis6502.py <rom> <out.asm> B500 B2A5 B485` |
 | `tools/check_lfsr.py`, `tools/verify_trace.py` | checks of documented rules against reference traces |
 | `tools/level_map.py` | pictures of the whole river, section by section |
+| `tools/doc_figures.py` | the pictures in `docs/HOW_IT_WORKS.md` (`docs/img/`), from `port/tools/river_dump` |
 | `oracle/` | reference runner on libatari800: `rr_oracle.c`, `build.sh`, `README.md`, input scripts, `-bot` autopilot, `-ghost` invulnerable plane |
 | `docs/oracle_demo.png` | frames from a reference run |
 

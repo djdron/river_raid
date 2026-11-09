@@ -28,6 +28,7 @@
 | `tools/dis6502.py` | дизассемблер: `python dis6502.py <rom> <out.asm> B500 B2A5 B485` |
 | `tools/check_lfsr.py`, `tools/verify_trace.py` | проверка задокументированных правил по эталонным трассам |
 | `tools/level_map.py` | картинки всей реки по секциям |
+| `tools/doc_figures.py` | картинки в `docs/HOW_IT_WORKS.ru.md` (`docs/img/`), по `port/tools/river_dump` |
 | `oracle/` | эталонный прогон на libatari800: `rr_oracle.c`, `build.sh`, `README.md`, сценарии ввода, автопилот `-bot`, неуязвимый самолёт `-ghost` |
 | `docs/oracle_demo.png` | кадры эталонного прогона |
 

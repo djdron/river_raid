@@ -4,7 +4,8 @@ This is an explanation for anyone curious, no programming knowledge needed: how 
 River Raid (Activision, 1983) builds its endless river, places enemies and bridges, and finds
 out what hit what. Everything here was read out of the original program and checked against
 it frame by frame (see `port/README.md`). Numbers are given as the game uses them; where it
-helps, the name of the matching function in the port's code is in brackets.
+helps, the name of the matching function in the port's code is in brackets. The pictures are
+drawn from the port's river generator in plain colours of their own (`tools/doc_figures.py`).
 
 ## The screen
 
@@ -44,6 +45,8 @@ At the start of each block and section the generator decides what comes next (`c
 The last section before a bridge is special: no island, a fixed width, and its second block is
 a straight run-up, always the same shape, ending in the bridge with a road across the banks.
 The bank colour alternates between two greens from one bridge to the next.
+
+![One stretch of the river from bridge 1 to bridge 2, with blocks, sections and objects](img/stretch.svg)
 
 The **level** is simply the number of the bridge you are flying towards. It makes the river
 harder: tighter bends, more enemies, fewer fuel depots. It stops growing at 80; after that the
@@ -131,6 +134,8 @@ is how the game reads them. Almost every decision of the generator compares a ra
 grows. The same random numbers that gave an empty stretch at bridge 5 give an enemy at bridge
 25.
 
+![The river at levels 1, 2, 11, 12, 31 and 52](img/levels.svg)
+
 **Enemies in the middle of a block.** Threshold: (level − 8) × 8.
 
 | level | chance of an enemy |
@@ -145,6 +150,8 @@ grows. The same random numbers that gave an empty stretch at bridge 5 give an en
 below it a fuel depot half the time, otherwise nothing. A depot comes at about 24% of block
 starts at level 1, 17% at level 20 and 6.6% at level 46 (no rarer after that), while enemies
 there go from about 51% to 87%.
+
+![Chance of an enemy or a fuel depot by level](img/difficulty.svg)
 
 **New enemies by level.**
 
@@ -201,6 +208,8 @@ How can one sprite show eleven objects? While the picture is being drawn, line b
 to bottom, the game interrupts itself at chosen lines (a *display list interrupt*). In each band
 it moves player 3 to that band's object, sets its width and colours, and feeds it the object's
 shape line by line. The same sprite is reused down the screen (`display`).
+
+![The screen: one band per object, one sprite for all of them](img/screen.svg)
 
 The Atari's video chip also records **collisions** by itself: whenever, on a line being drawn, a
 sprite's dots fall on dots of another sprite or of the bank colours, it sets a bit in a
