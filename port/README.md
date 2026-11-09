@@ -31,6 +31,7 @@ Without arguments it finds the ROM by itself (see `rom`) and starts like the car
 | `-pal` | play as a PAL machine: as on a real PAL Atari, fuel depots keep getting rarer up to level 47 instead of 46; PAL colours. The display timing stays NTSC (see Not done yet) |
 | `-colours ntsc\|pal` | the colours of an NTSC or a PAL machine; PAL by default. C switches while playing |
 | `-palette altirra\|atari800` | the colour model: `altirra` (default) or `atari800` (darker middle tones). V switches while playing |
+| `-border` | shows the whole frame with its black border (384×240 less 10 columns at each side), as emulators do. By default the window shows only the game's picture, 336×200, as a TV did, so it is about 20% larger. O switches while playing |
 | `-stats` | prints the renderer and display rate, then once a second the frame rate, time per frame and the sound queue |
 | `-nosound` | no sound |
 
@@ -51,6 +52,7 @@ After power-on the attract mode flies over the river. START begins a game; SELEC
 | F, F11 or Alt+Enter | full screen |
 | C | NTSC / PAL colours |
 | V | Altirra / atari800 colour model |
+| O | the game's picture only / the whole frame with its border |
 | Esc | leave full screen |
 | mouse click | hides the mouse pointer until the mouse moves (so does going full screen) |
 
@@ -60,7 +62,7 @@ The keyboard drives both joysticks, so one person can play a two-player game too
 ```
 river_view [rom] [options]
 ```
-It shows the original's attract mode, the flight over the river it plays when nobody presses START: after power-on the screen fills with the river of game 1, which then scrolls 1 line per frame; ships and helicopters wake up and move, tanks drive to the bridges and fire, helicopters fire missiles (the ported game logic, `src/game.cpp`); below are the status panel and the scrolling line with the credits, "Press START key" and the rainbow Activision logo. The options are those of the game: `rom`, `-os`, `-seed`, `-bridge` (the attract mode flies from that bridge), `-random`, `-pal`, `-colours`, `-palette`.
+It shows the original's attract mode, the flight over the river it plays when nobody presses START: after power-on the screen fills with the river of game 1, which then scrolls 1 line per frame; ships and helicopters wake up and move, tanks drive to the bridges and fire, helicopters fire missiles (the ported game logic, `src/game.cpp`); below are the status panel and the scrolling line with the credits, "Press START key" and the rainbow Activision logo. The options are those of the game: `rom`, `-os`, `-seed`, `-bridge` (the attract mode flies from that bridge), `-random`, `-pal`, `-colours`, `-palette`, `-border`.
 
 Letters and digits 1–9 come from the OS font, which is not in the cartridge. The port has the font of AltirraOS built in: the free replacement OS that ships with atari800 (licence: copying and modification permitted with the copyright notice kept, see `src/os_font.cpp`); the reference traces were made with it too. `-os file` takes the font of Atari's own OS from an OS ROM image (10 KB or 16 KB) or a 1 KB font file.
 
@@ -76,6 +78,7 @@ Letters and digits 1–9 come from the OS font, which is not in the cartridge. T
 | F | full screen |
 | C | NTSC / PAL colours |
 | V | Altirra / atari800 colour model |
+| O | the game's picture only / the whole frame with its border |
 | Esc | leave full screen |
 | mouse click | hides the mouse pointer until the mouse moves (so does going full screen) |
 

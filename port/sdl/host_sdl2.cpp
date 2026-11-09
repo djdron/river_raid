@@ -23,6 +23,7 @@ SDL_Scancode scancode(Key key) {
 	case Key::B: return SDL_SCANCODE_B;
 	case Key::C: return SDL_SCANCODE_C;
 	case Key::F: return SDL_SCANCODE_F;
+	case Key::O: return SDL_SCANCODE_O;
 	case Key::V: return SDL_SCANCODE_V;
 	case Key::X: return SDL_SCANCODE_X;
 	case Key::Z: return SDL_SCANCODE_Z;
@@ -60,6 +61,7 @@ Key keyFromEvent(SDL_Keycode code) {
 	case SDLK_b: return Key::B;
 	case SDLK_c: return Key::C;
 	case SDLK_f: return Key::F;
+	case SDLK_o: return Key::O;
 	case SDLK_v: return Key::V;
 	case SDLK_x: return Key::X;
 	case SDLK_z: return Key::Z;
@@ -91,6 +93,7 @@ struct Host::Impl {
 	SDL_Texture *texture = nullptr;
 	SDL_AudioDeviceID audio = 0;
 	int width = 0, height = 0, sampleRate = 0;
+	int viewX = 0, viewY = 0, viewW = 0, viewH = 0;   // the part shown
 	double pixelAspect = 1;
 	std::vector<uint32_t> pixels;
 	std::vector<SDL_GameController *> pads;
@@ -108,14 +111,15 @@ struct Host::Impl {
 		SDL_RenderClear(renderer);
 		int outW = 0, outH = 0;
 		SDL_GetRendererOutputSize(renderer, &outW, &outH);
-		const double imageW = width * pixelAspect;
-		const double scale = std::min(outW / imageW, double(outH) / height);
+		const double imageW = viewW * pixelAspect;
+		const double scale = std::min(outW / imageW, double(outH) / viewH);
 		SDL_FRect dst;
 		dst.w = float(imageW * scale);
-		dst.h = float(height * scale);
+		dst.h = float(viewH * scale);
 		dst.x = (float(outW) - dst.w) / 2;
 		dst.y = (float(outH) - dst.h) / 2;
-		SDL_RenderCopyF(renderer, texture, nullptr, &dst);
+		const SDL_Rect src{viewX, viewY, viewW, viewH};
+		SDL_RenderCopyF(renderer, texture, &src, &dst);
 	}
 };
 
@@ -135,6 +139,8 @@ bool Host::open(const char *title, int width, int height, double pixelAspect, in
 	Impl &h = *impl_;
 	h.width = width;
 	h.height = height;
+	h.viewW = width;
+	h.viewH = height;
 	h.pixelAspect = pixelAspect;
 	h.pixels.assign(size_t(width) * size_t(height), 0);
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) != 0 && SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -283,6 +289,19 @@ void Host::setFullscreen(bool on) {
 	SDL_SetWindowFullscreen(h.window, on ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
 	SDL_WarpMouseGlobal(x, y);
 	if (on) h.hidePointer();
+}
+
+void Host::setView(int x, int y, int width, int height) {
+	Impl &h = *impl_;
+	h.viewX = x;
+	h.viewY = y;
+	h.viewW = width;
+	h.viewH = height;
+	if (fullscreen()) return;
+	int w = 0, ht = 0;
+	SDL_GetWindowSize(h.window, &w, &ht);
+	SDL_SetWindowSize(h.window, int(ht * width * h.pixelAspect / height + 0.5), ht);
+	SDL_PumpEvents();   // the renderer learns the new size from the window's events
 }
 
 uint32_t *Host::pixels() { return impl_->pixels.data(); }

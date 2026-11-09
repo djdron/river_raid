@@ -23,6 +23,7 @@ SDL_Scancode scancode(Key key) {
 	case Key::B: return SDL_SCANCODE_B;
 	case Key::C: return SDL_SCANCODE_C;
 	case Key::F: return SDL_SCANCODE_F;
+	case Key::O: return SDL_SCANCODE_O;
 	case Key::V: return SDL_SCANCODE_V;
 	case Key::X: return SDL_SCANCODE_X;
 	case Key::Z: return SDL_SCANCODE_Z;
@@ -60,6 +61,7 @@ Key keyFromEvent(SDL_Keycode code) {
 	case SDLK_B: return Key::B;
 	case SDLK_C: return Key::C;
 	case SDLK_F: return Key::F;
+	case SDLK_O: return Key::O;
 	case SDLK_V: return Key::V;
 	case SDLK_X: return Key::X;
 	case SDLK_Z: return Key::Z;
@@ -91,6 +93,7 @@ struct Host::Impl {
 	SDL_Texture *texture = nullptr;
 	SDL_AudioStream *audio = nullptr;
 	int width = 0, height = 0, sampleRate = 0;
+	int viewX = 0, viewY = 0, viewW = 0, viewH = 0;   // the part shown
 	double pixelAspect = 1;
 	bool vsync = false;
 	std::vector<uint32_t> pixels;
@@ -108,14 +111,15 @@ struct Host::Impl {
 		SDL_RenderClear(renderer);
 		int outW = 0, outH = 0;
 		SDL_GetRenderOutputSize(renderer, &outW, &outH);
-		const double imageW = width * pixelAspect;
-		const double scale = std::min(outW / imageW, double(outH) / height);
+		const double imageW = viewW * pixelAspect;
+		const double scale = std::min(outW / imageW, double(outH) / viewH);
 		SDL_FRect dst;
 		dst.w = float(imageW * scale);
-		dst.h = float(height * scale);
+		dst.h = float(viewH * scale);
 		dst.x = (float(outW) - dst.w) / 2;
 		dst.y = (float(outH) - dst.h) / 2;
-		SDL_RenderTexture(renderer, texture, nullptr, &dst);
+		const SDL_FRect src{float(viewX), float(viewY), float(viewW), float(viewH)};
+		SDL_RenderTexture(renderer, texture, &src, &dst);
 	}
 };
 
@@ -135,6 +139,8 @@ bool Host::open(const char *title, int width, int height, double pixelAspect, in
 	Impl &h = *impl_;
 	h.width = width;
 	h.height = height;
+	h.viewW = width;
+	h.viewH = height;
 	h.pixelAspect = pixelAspect;
 	h.pixels.assign(size_t(width) * size_t(height), 0);
 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD) && !SDL_Init(SDL_INIT_VIDEO)) {
@@ -267,6 +273,19 @@ bool Host::fullscreen() const { return (SDL_GetWindowFlags(impl_->window) & SDL_
 // Full screen on the desktop's resolution (SDL3 changes the video mode only when asked to).
 // The pointer is hidden by the SDL_EVENT_WINDOW_ENTER_FULLSCREEN event.
 void Host::setFullscreen(bool on) { SDL_SetWindowFullscreen(impl_->window, on); }
+
+void Host::setView(int x, int y, int width, int height) {
+	Impl &h = *impl_;
+	h.viewX = x;
+	h.viewY = y;
+	h.viewW = width;
+	h.viewH = height;
+	if (fullscreen()) return;
+	int w = 0, ht = 0;
+	SDL_GetWindowSize(h.window, &w, &ht);
+	SDL_SetWindowSize(h.window, int(ht * width * h.pixelAspect / height + 0.5), ht);
+	SDL_SyncWindow(h.window);
+}
 
 uint32_t *Host::pixels() { return impl_->pixels.data(); }
 

@@ -1,7 +1,7 @@
 // River Raid (Activision, 1982, Atari 8-bit), the game, C++ port (window, sound and input through
 // SDL: sdl/host.h).
 //
-// usage: river_raid [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-stats] [-nosound] [-seed N] [-bridge N] [-random N]
+// usage: river_raid [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-border] [-stats] [-nosound] [-seed N] [-bridge N] [-random N]
 //   rom: the cartridge image; by default rom/River_Raid.rom is looked for in the current
 //   folder and up to three folders above it.
 //   -os file: an Atari OS ROM (10 KB or 16 KB) or its 1 KB font, for Atari's own letters;
@@ -11,6 +11,7 @@
 //   -bridge N: every game starts at bridge N (1..9999) of the river, at that bridge's level
 //   -random N: start of POKEY's random counter (otherwise taken from the clock, as on the real
 //   machine, where it depends on the moment of power-on).
+//   -border: show the whole frame with its black border, not just the game's picture
 //
 // The whole game runs as the original does (src/game.cpp): after power-on the attract mode
 // flies over the river; START begins a game, SELECT (or OPTION) chooses games 1-8 (even
@@ -26,6 +27,7 @@
 //   Space                     a key of the Atari keyboard: pause
 //   F, F11 or Alt+Enter       full screen
 //   C / V                     NTSC / PAL colours; Altirra / atari800 colour model
+//   O                         the game's picture only / the whole frame with its border
 //   Esc                       leave full screen
 // A mouse click or going full screen hides the mouse pointer until the mouse moves. Closing the window (or Alt+F4,
 // Cmd+Q) quits.
@@ -54,7 +56,7 @@ namespace {
 
 // Part of the 384 x 240 screen buffer shown in the window: everything that is ever drawn.
 constexpr int kViewLeft = 10, kViewWidth = 364;
-constexpr int kViewHeight = rr::kScreenHeight;
+constexpr int kViewTop = 0, kViewHeight = rr::kScreenHeight;
 constexpr int kScale = 3;               // initial window scale
 constexpr double kPixelAspect = 0.86;   // width of a column / height of a line on an NTSC TV
 constexpr double kFrameRate = rr::PokeySound::kClock / (114 * 262);   // NTSC Atari: 59.92
@@ -209,6 +211,7 @@ void fail(const std::string &msg) { host::Host::showError("River Raid", msg); }
 
 int main(int argc, char **argv) {
 	bool pal = false;
+	bool border = false;       // -border: the whole frame with its black border (O switches)
 	bool palColours = true;    // colours of a PAL machine (C switches to NTSC)
 	rr::PaletteModel paletteModel = rr::PaletteModel::Altirra;   // V switches
 	const char *osPath = nullptr;
@@ -222,6 +225,7 @@ int main(int argc, char **argv) {
 	int startBridge = 0;               // -bridge: 0 = the cartridge's starting bridges
 	for (int i = 1; i < argc; i++) {
 		if (!std::strcmp(argv[i], "-pal")) pal = palColours = true;
+		else if (!std::strcmp(argv[i], "-border")) border = true;
 		else if (!std::strcmp(argv[i], "-colours") && i + 1 < argc) palColours = !std::strcmp(argv[++i], "pal");
 		else if (!std::strcmp(argv[i], "-palette") && i + 1 < argc)
 			paletteModel = !std::strcmp(argv[++i], "atari800") ? rr::PaletteModel::Atari800 : rr::PaletteModel::Altirra;
@@ -288,6 +292,12 @@ int main(int argc, char **argv) {
 		window.setTitle(title);
 	};
 	showColours();
+	// the game's picture only, or the whole frame
+	auto showBorder = [&]() {
+		if (border) window.setView(0, 0, kViewWidth, kViewHeight);
+		else window.setView(rr::kPictureLeft - kViewLeft, rr::kPictureTop - kViewTop, rr::kPictureWidth, rr::kPictureHeight);
+	};
+	showBorder();
 
 	Atari atari(rom, osFont, pal, seed);
 	atari.setRiver(riverSeed, startBridge);
@@ -328,6 +338,9 @@ int main(int argc, char **argv) {
 				palColours = !palColours;
 				makePalette();
 				showColours();
+			} else if (e.key == Key::O) {
+				border = !border;
+				showBorder();
 			} else if (e.key == Key::V) {
 				paletteModel = paletteModel == rr::PaletteModel::Altirra ? rr::PaletteModel::Atari800 : rr::PaletteModel::Altirra;
 				makePalette();
@@ -387,6 +400,10 @@ int main(int argc, char **argv) {
 		for (int y = 0; y < kViewHeight; y++)
 			for (int x = 0; x < kViewWidth; x++) pixels[y * kViewWidth + x] = palette[scr[y][kViewLeft + x]];
 		if (shotPath) {
+			for (int i = 0; i < 3; i++) {             // let a resized window settle
+				for (host::Event e; window.poll(e);) {}
+				window.present();
+			}
 			window.savePicture(shotPath);
 			running = false;
 		}

@@ -19,7 +19,7 @@ namespace host {
 enum class Key {
 	None,
 	Up, Down, Left, Right,
-	W, A, S, D, B, C, F, V, X, Z,
+	W, A, S, D, B, C, F, O, V, X, Z,
 	LeftCtrl, RightCtrl, Alt, Return, Space, Backspace, Escape,   // Alt: either Alt key (keyHeld only)
 	PageUp, PageDown, Home,
 	F1, F2, F3, F4, F11,
@@ -63,6 +63,9 @@ public:
 	Gamepad gamepad(int index) const;
 
 	void setTitle(const std::string &title);
+	// The part of the picture shown in the window (by default all of it). In a window (not
+	// full screen) the window keeps its height and takes the new proportions.
+	void setView(int x, int y, int width, int height);
 	bool fullscreen() const;
 	void setFullscreen(bool on);
 
