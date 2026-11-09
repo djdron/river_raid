@@ -60,7 +60,7 @@ namespace {
 // Part of the 384 x 240 screen buffer shown in the window: everything that is ever drawn.
 constexpr int kViewLeft = 10, kViewWidth = 364;
 constexpr int kViewTop = 0, kViewHeight = rr::kScreenHeight;
-constexpr int kScale = 3;               // initial window scale
+constexpr int kScale = 6;               // initial window scale (less if the screen is smaller)
 constexpr double kPixelAspect = 0.86;   // width of a column / height of a line on an NTSC TV
 constexpr double kFrameRate = rr::PokeySound::kClock / (114 * 262);   // NTSC Atari: 59.92
 

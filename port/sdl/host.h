@@ -62,7 +62,7 @@ public:
 	Host &operator=(const Host &) = delete;
 
 	// The window: a picture of width x height pixels, each pixelAspect as wide as it is high,
-	// first at scale times its size. sampleRate: mono 16-bit sound, 0 for none. false on
+	// first at scale times its size, or smaller if that would not fit on the screen. sampleRate: mono 16-bit sound, 0 for none. false on
 	// failure (see error()).
 	bool open(const char *title, int width, int height, double pixelAspect, int scale, int sampleRate);
 	const std::string &error() const;

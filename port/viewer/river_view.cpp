@@ -65,7 +65,7 @@ namespace {
 // Part of the 384 x 240 screen buffer shown in the window: everything that is ever drawn.
 constexpr int kViewLeft = 10, kViewWidth = 364;
 constexpr int kViewTop = 0, kViewHeight = rr::kScreenHeight;
-constexpr int kScale = 3;   // initial window scale
+constexpr int kScale = 6;   // initial window scale (less if the screen is smaller)
 // Width of a column relative to the height of a line on an NTSC TV: a column is half a
 // colour clock, which is a little narrower than a scanline is high.
 constexpr double kPixelAspect = 0.86;

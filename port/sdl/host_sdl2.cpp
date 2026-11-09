@@ -187,8 +187,13 @@ bool Host::open(const char *title, int width, int height, double pixelAspect, in
 		return false;
 	}
 	h.initialised = true;
-	h.window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, int(width * scale * pixelAspect),
-		height * scale, SDL_WINDOW_RESIZABLE);
+	// at the given scale, but no larger than 90% of the screen's usable area
+	double s = scale;
+	SDL_Rect area;
+	if (SDL_GetDisplayUsableBounds(0, &area) == 0 && area.w > 0 && area.h > 0)
+		s = std::min({s, 0.9 * area.w / (width * pixelAspect), 0.9 * area.h / height});
+	h.window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, int(width * s * pixelAspect + 0.5),
+		int(height * s + 0.5), SDL_WINDOW_RESIZABLE);
 	if (!h.window) {
 		h.error = std::string("SDL_CreateWindow: ") + SDL_GetError();
 		return false;
