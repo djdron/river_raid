@@ -52,6 +52,7 @@ struct Gamepad {
 	bool fire = false;        // A, B, X, Y or the right trigger
 	bool start = false;       // Start
 	bool select = false;      // Back
+	bool leftShoulder = false, rightShoulder = false;   // LB, RB
 };
 
 class Host {

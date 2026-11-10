@@ -61,7 +61,7 @@ Nach dem Einschalten fliegt der Demo-Modus über den Fluss. START beginnt ein Sp
 | Esc | Vollbild verlassen |
 | Mausklick | blendet den Mauszeiger aus, bis die Maus bewegt wird (ebenso der Wechsel ins Vollbild) |
 
-Die Tastatur steuert beide Joysticks, sodass auch eine Person ein Spiel für zwei spielen kann. Gamepads: das erste ist Joystick 1 (und 2, solange es kein zweites gibt), das zweite ist Joystick 2; Steuerkreuz oder linker Stick, A/B/X/Y oder der rechte Trigger zum Feuern, Start = START, Back = SELECT.
+Die Tastatur steuert beide Joysticks, sodass auch eine Person ein Spiel für zwei spielen kann. Gamepads: das erste ist Joystick 1 (und 2, solange es kein zweites gibt), das zweite ist Joystick 2; Steuerkreuz oder linker Stick, A/B/X/Y oder der rechte Trigger zum Feuern, Start = START, Back = SELECT, LB / RB = F7 / F8 (Stand speichern / zu ihm zurückkehren).
 
 ## Fluss-Betrachter
 ```

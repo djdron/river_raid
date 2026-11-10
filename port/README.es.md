@@ -61,7 +61,7 @@ Tras encender, el modo de demostración sobrevuela el río. START comienza una p
 | Esc | salir de pantalla completa |
 | clic del ratón | oculta el puntero hasta que se mueva el ratón (también al pasar a pantalla completa) |
 
-El teclado maneja ambos joysticks, así que una sola persona también puede jugar una partida a dos. Mandos: el primero es el joystick 1 (y el 2 mientras no haya un segundo), el segundo es el joystick 2; cruceta o stick izquierdo, A/B/X/Y o el gatillo derecho para disparar, Start = START, Back = SELECT.
+El teclado maneja ambos joysticks, así que una sola persona también puede jugar una partida a dos. Mandos: el primero es el joystick 1 (y el 2 mientras no haya un segundo), el segundo es el joystick 2; cruceta o stick izquierdo, A/B/X/Y o el gatillo derecho para disparar, Start = START, Back = SELECT, LB / RB = F7 / F8 (guardar el estado / volver a él).
 
 ## Visor del río
 ```

@@ -321,6 +321,8 @@ Gamepad Host::gamepad(int index) const {
 		SDL_GameControllerGetAxis(p, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 16000;
 	g.start = SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_START);
 	g.select = SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_BACK);
+	g.leftShoulder = SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
+	g.rightShoulder = SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
 	return g;
 }
 

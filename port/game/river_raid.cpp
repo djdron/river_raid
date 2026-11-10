@@ -37,7 +37,7 @@
 // Cmd+Q) quits.
 // Gamepads: the first one is joystick 1 (and 2 while there is no second), the second one
 // joystick 2. D-pad or left stick: joystick; A, B, X, Y or the right trigger: fire;
-// Start: START; Back: SELECT.
+// Start: START; Back: SELECT; LB / RB: save the state / go back to it (as F7 / F8).
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -368,7 +368,31 @@ int main(int argc, char **argv) {
 		atari.audio().clear();
 	}
 
+	auto saveState = [&]() {
+		atari.saveState();
+		stateNote = " - state saved";
+		showColours();
+	};
+	auto loadState = [&]() {
+		stateNote = atari.loadState() ? " - state loaded" : " - no state saved (F7)";
+		showColours();
+	};
+	bool shoulderHeld[2] = {};   // LB, RB on any gamepad, last pass
+
 	for (bool running = true; running;) {
+		{
+			// gamepad: LB saves the state, RB goes back to it (on pressing)
+			bool held[2] = {};
+			for (int i = 0; i < window.gamepadCount(); i++) {
+				const host::Gamepad pad = window.gamepad(i);
+				held[0] = held[0] || pad.leftShoulder;
+				held[1] = held[1] || pad.rightShoulder;
+			}
+			if (held[0] && !shoulderHeld[0]) saveState();
+			if (held[1] && !shoulderHeld[1]) loadState();
+			shoulderHeld[0] = held[0];
+			shoulderHeld[1] = held[1];
+		}
 		host::Event e;
 		while (window.poll(e)) {
 			using host::Key;
@@ -390,12 +414,9 @@ int main(int argc, char **argv) {
 				border = !border;
 				showBorder();
 			} else if (e.key == Key::F7) {
-				atari.saveState();
-				stateNote = " - state saved";
-				showColours();
+				saveState();
 			} else if (e.key == Key::F8) {
-				stateNote = atari.loadState() ? " - state loaded" : " - no state saved (F7)";
-				showColours();
+				loadState();
 			} else if (e.key == Key::V) {
 				paletteModel = paletteModel == rr::PaletteModel::Altirra ? rr::PaletteModel::Atari800 : rr::PaletteModel::Altirra;
 				makePalette();
