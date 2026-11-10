@@ -78,7 +78,7 @@ public:
 	void setTitle(const std::string &title);
 	// The part of the picture shown in the window (by default all of it). In a window (not
 	// full screen) the window keeps its width and takes the height of the new proportions;
-	// also on leaving full screen.
+	// also on leaving full screen. Called before open(), it sets the window's first size.
 	void setView(int x, int y, int width, int height);
 	void setFilter(Filter filter);        // Filter::Sharp by default
 	bool fullscreen() const;

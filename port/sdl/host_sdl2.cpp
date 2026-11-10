@@ -182,8 +182,11 @@ bool Host::open(const char *title, int width, int height, double pixelAspect, in
 	Impl &h = *impl_;
 	h.width = width;
 	h.height = height;
-	h.viewW = width;
-	h.viewH = height;
+	if (h.viewW <= 0 || h.viewH <= 0) {   // no setView before: the whole picture
+		h.viewX = h.viewY = 0;
+		h.viewW = width;
+		h.viewH = height;
+	}
 	h.pixelAspect = pixelAspect;
 	h.pixels.assign(size_t(width) * size_t(height), 0);
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) != 0 && SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -191,13 +194,14 @@ bool Host::open(const char *title, int width, int height, double pixelAspect, in
 		return false;
 	}
 	h.initialised = true;
-	// at the given scale, but no larger than 90% of the screen's usable area
+	// the part shown at the given scale, but no larger than 90% of the screen's usable area
+	// (for the whole picture, so showing it later still fits)
 	double s = scale;
 	SDL_Rect area;
 	if (SDL_GetDisplayUsableBounds(0, &area) == 0 && area.w > 0 && area.h > 0)
 		s = std::min({s, 0.9 * area.w / (width * pixelAspect), 0.9 * area.h / height});
-	h.window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, int(width * s * pixelAspect + 0.5),
-		int(height * s + 0.5), SDL_WINDOW_RESIZABLE);
+	h.window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, int(h.viewW * s * pixelAspect + 0.5),
+		int(h.viewH * s + 0.5), SDL_WINDOW_RESIZABLE);
 	if (!h.window) {
 		h.error = std::string("SDL_CreateWindow: ") + SDL_GetError();
 		return false;
@@ -353,7 +357,7 @@ void Host::setView(int x, int y, int width, int height) {
 	h.viewY = y;
 	h.viewW = width;
 	h.viewH = height;
-	h.fitHeight();
+	if (h.window) h.fitHeight();   // before open(): the window is made in this size
 }
 
 void Host::setFilter(Filter filter) { impl_->filter = filter; }

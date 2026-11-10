@@ -329,6 +329,12 @@ int main(int argc, char **argv) {
 	}
 
 	host::Host window;
+	// the game's picture only, or the whole frame
+	auto showBorder = [&]() {
+		if (border) window.setView(0, 0, kViewWidth, kViewHeight);
+		else window.setView(rr::kPictureLeft - kViewLeft, rr::kPictureTop - kViewTop, rr::kPictureWidth, rr::kPictureHeight);
+	};
+	showBorder();   // before open(): the window is made in the size of the part shown
 	if (!window.open("River Raid", kViewWidth, kViewHeight, kPixelAspect, kScale, shotPath ? 0 : kSampleRate)) {
 		fail(window.error());
 		return 1;
@@ -351,12 +357,6 @@ int main(int argc, char **argv) {
 	};
 	window.setFilter(filter);
 	showColours();
-	// the game's picture only, or the whole frame
-	auto showBorder = [&]() {
-		if (border) window.setView(0, 0, kViewWidth, kViewHeight);
-		else window.setView(rr::kPictureLeft - kViewLeft, rr::kPictureTop - kViewTop, rr::kPictureWidth, rr::kPictureHeight);
-	};
-	showBorder();
 
 	Attract attract(rom, osFont, pal, seed);
 	attract.setRiver(riverSeed, startBridge);
