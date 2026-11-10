@@ -47,7 +47,7 @@ void initialPanel(const Rom &rom, uint8_t panel[kPanelBytes]);
 // (yellow), leading zeros blank, as B086 prints it during play.
 constexpr int kPanelBridges = 0x23;
 constexpr uint8_t kDigitsBridges = 0x90;
-void showPanelBridge(uint8_t panel[kPanelBytes], int bridge);   // bridge 1..9999
+void showPanelBridge(uint8_t panel[kPanelBytes], int bridge);   // bridge 1..99999
 
 // State of the scrolling line, updated once per frame in the vertical blank (B44B-B47F).
 struct Scroller {

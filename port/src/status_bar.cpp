@@ -67,11 +67,15 @@ void initialPanel(const Rom &rom, uint8_t panel[kPanelBytes]) {
 }
 
 void showPanelBridge(uint8_t panel[kPanelBytes], int bridge) {
-	const int digits[4] = {bridge / 1000 % 10, bridge / 100 % 10, bridge / 10 % 10, bridge % 10};
+	// 4 digits as in the original; from 10000 on (only the viewer gets there) a fifth one, in the
+	// panel's last column
+	const int count = bridge >= 10000 ? 5 : 4;
+	int divisor = count == 5 ? 10000 : 1000;
 	bool leading = true;
-	for (int i = 0; i < 4; i++) {
-		leading = leading && digits[i] == 0;
-		panel[kPanelBridges + i] = leading ? 0 : uint8_t(kDigitsBridges + digits[i]);
+	for (int i = 0; i < count; i++, divisor /= 10) {
+		const int digit = bridge / divisor % 10;
+		leading = leading && digit == 0;
+		panel[kPanelBridges + i] = leading ? 0 : uint8_t(kDigitsBridges + digit);
 	}
 }
 
