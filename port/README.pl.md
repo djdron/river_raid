@@ -80,7 +80,7 @@ Litery i cyfry 1–9 pochodzą z czcionki systemu, której nie ma w kartridżu. 
 | B / Shift+B | następny / poprzedni most |
 | Alt+B / Alt+Shift+B | 10 mostów naprzód / wstecz |
 | Ctrl+B / Ctrl+Shift+B | 100 mostów naprzód / wstecz |
-| Home | od nowa |
+| Home | do mostu 1, na początek rzeki |
 | F1 / F2 / F3 | test dźwięku: wybuch / strzał / dźwięk punktów przez sterownik dźwięku gry (sam tryb demonstracyjny jest cichy, jak w oryginale) |
 | F | pełny ekran |
 | C | kolory NTSC / PAL |

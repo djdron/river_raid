@@ -80,7 +80,7 @@ Las letras y las cifras 1–9 vienen de la fuente del sistema operativo, que no 
 | B / Mayús+B | puente siguiente / anterior |
 | Alt+B / Alt+Mayús+B | 10 puentes adelante / atrás |
 | Ctrl+B / Ctrl+Mayús+B | 100 puentes adelante / atrás |
-| Inicio | empezar de nuevo |
+| Inicio | al puente 1, al principio del río |
 | F1 / F2 / F3 | prueba de sonido: explosión / disparo / sonido de puntos a través del controlador de sonido del juego (el modo de demostración en sí es mudo, como en el original) |
 | F | pantalla completa |
 | C | colores NTSC / PAL |

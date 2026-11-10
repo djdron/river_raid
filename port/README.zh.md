@@ -80,7 +80,7 @@ river_view [rom] [选项]
 | B / Shift+B | 下一座 / 上一座桥 |
 | Alt+B / Alt+Shift+B | 前进 / 后退 10 座桥 |
 | Ctrl+B / Ctrl+Shift+B | 前进 / 后退 100 座桥 |
-| Home | 重新开始 |
+| Home | 回到第 1 座桥，即河的起点 |
 | F1 / F2 / F3 | 声音测试：通过游戏的声音驱动播放爆炸 / 射击 / 得分声（演示模式本身是无声的，和原版一样） |
 | F | 全屏 |
 | C | NTSC / PAL 颜色 |

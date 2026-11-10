@@ -80,7 +80,7 @@ Le lettere e le cifre 1–9 vengono dal font del sistema operativo, che non è n
 | B / Maiusc+B | ponte successivo / precedente |
 | Alt+B / Alt+Maiusc+B | 10 ponti avanti / indietro |
 | Ctrl+B / Ctrl+Maiusc+B | 100 ponti avanti / indietro |
-| Home | ricomincia |
+| Home | al ponte 1, all'inizio del fiume |
 | F1 / F2 / F3 | prova del suono: esplosione / sparo / suono dei punti tramite il driver audio del gioco (la modalità dimostrativa in sé è muta, come nell'originale) |
 | F | schermo intero |
 | C | colori NTSC / PAL |

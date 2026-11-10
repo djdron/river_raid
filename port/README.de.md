@@ -80,7 +80,7 @@ Buchstaben und die Ziffern 1–9 stammen aus der Schrift des Betriebssystems, di
 | B / Umschalt+B | nächste / vorige Brücke |
 | Alt+B / Alt+Umschalt+B | 10 Brücken vor / zurück |
 | Strg+B / Strg+Umschalt+B | 100 Brücken vor / zurück |
-| Pos1 | neu beginnen |
+| Pos1 | zu Brücke 1, an den Anfang des Flusses |
 | F1 / F2 / F3 | Soundtest: Explosion / Schuss / Punkteton über den Soundtreiber des Spiels (der Demo-Modus selbst ist stumm, wie im Original) |
 | F | Vollbild |
 | C | NTSC- / PAL-Farben |

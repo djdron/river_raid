@@ -29,7 +29,7 @@
 //   mouse wheel    scroll along the river by hand (PgUp / PgDn by a screen)
 //   Backspace      back to the newest line, normal speed
 //   B / Shift+B    next / previous bridge; with Alt 10 bridges, with Ctrl 100
-//   Home           start again
+//   Home           to bridge 1, the start of the river (as Shift+B back there)
 //   F1 / F2 / F3   sound test: explosion / firing / score sound, through the game's own sound
 //                  driver (the attract mode itself is silent, as in the original)
 //   F              full screen
@@ -634,7 +634,10 @@ int main(int argc, char **argv) {
 				case Key::PageUp: back += rr::kRiverRows; break;
 				case Key::PageDown: back -= rr::kRiverRows; break;
 				case Key::Backspace: back = 0; speedIndex = 10; break;
-				case Key::Home: attract.restart(); back = 0; break;
+				case Key::Home:   // as Shift+B back to bridge 1
+					back = attract.lines() - 1 - (attract.bridgeLine(0) + Attract::kBridgeMargin);
+					attract.jumpTo(back);
+					break;
 				case Key::B: {
 					// B / Shift+B: next / previous bridge; with Alt 10 bridges, with Ctrl 100. The bridge
 					// line is shown a little above the bottom of the river area; Shift+B just after a
