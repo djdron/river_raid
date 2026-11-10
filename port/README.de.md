@@ -87,7 +87,7 @@ Buchstaben und die Ziffern 1–9 stammen aus der Schrift des Betriebssystems, di
 | V | Farbmodell Altirra / atari800 |
 | O | nur das Spielbild / das ganze Bild mit Rand |
 | L | Skalierung: sharp / nearest / linear |
-| M | Ton an / aus: Panzergranaten, Hubschrauberraketen und der Motor eines Flugzeugs, wie im Spiel (nicht im Original, dessen Demo-Modus stumm ist); nur bei normaler Geschwindigkeit |
+| M | Ton an / aus: Panzergranaten, Hubschrauberraketen und der Motor eines Flugzeugs, wie im Spiel (nicht im Original, dessen Demo-Modus stumm ist); beim Vorwärtsfliegen bei jeder Geschwindigkeit, der Motor folgt ihr wie bei einem Flugzeug, das beschleunigt oder bremst; rückwärts stumm |
 | Esc | Vollbild verlassen |
 | Mausklick | blendet den Mauszeiger aus, bis die Maus bewegt wird (ebenso der Wechsel ins Vollbild) |
 

@@ -821,6 +821,10 @@ void Game::soundDriver(const std::function<uint8_t()> &random) {
 			pitch = lo(0x1F - (g.speed >> 4));
 			if (g.crashPitch >= 0x1B) pitch = g.crashPitch--;   // falling pitch after a crash
 			control = last = rom_.engineTone(g.joystick);       // tone from up/down
+			if (attractSound && attract(g)) {     // (not in the original: the viewer's plane)
+				if (attractEnginePitch) pitch = attractEnginePitch;
+				control = last = rom_.engineTone(attractEngineStick);
+			}
 		}
 	}
 	if (setPitch) p.audf[0] = pitch;

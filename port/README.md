@@ -87,7 +87,7 @@ Letters and digits 1–9 come from the OS font, which is not in the cartridge. T
 | V | Altirra / atari800 colour model |
 | O | the game's picture only / the whole frame with its border |
 | L | scaling: sharp / nearest / linear |
-| M | sound on / off: tank shells, helicopter missiles and a plane's engine, as in a game (not in the original, whose attract mode is silent); only at normal speed |
+| M | sound on / off: tank shells, helicopter missiles and a plane's engine, as in a game (not in the original, whose attract mode is silent); when flying forward, at any speed, the engine following it as a plane speeding up or slowing down; silent backwards |
 | Esc | leave full screen |
 | mouse click | hides the mouse pointer until the mouse moves (so does going full screen) |
 

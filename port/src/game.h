@@ -200,6 +200,10 @@ public:
 	// set they sound in the attract mode too, and channel 1 plays the engine of a plane flying
 	// at normal speed. Only g.pokey changes: the game itself runs the same.
 	bool attractSound = false;
+	// The attract mode's engine (with attractSound): its pitch (AUDF; 0: from g.speed, as a game
+	// does) and the stick its tone follows (up: speeding up, down: slowing down).
+	uint8_t attractEnginePitch = 0;
+	uint8_t attractEngineStick = 0x0F;
 	// The sound part of the VBI (B2A5-B3D8): sets g.pokey from the game state.
 	void soundDriver(const std::function<uint8_t()> &random);
 

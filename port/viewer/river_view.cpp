@@ -39,7 +39,8 @@
 //   O              the game's picture only / the whole frame with its border
 //   L              scaling: sharp / nearest / linear
 //   M              sound on / off: tank shells, helicopter missiles and a plane's engine (not in
-//                  the original, whose attract mode is silent; -sound starts with it on)
+//                  the original, whose attract mode is silent; -sound starts with it on); flying
+//                  forward at any speed, the engine following it; silent backwards
 // A mouse click or going full screen hides the mouse pointer until the mouse moves. Closing the window (or Alt+F4,
 // Cmd+Q) quits.
 //
@@ -150,6 +151,8 @@ public:
 		keep();
 		liveStale_ = fast;
 		head_.game.attractSound = sounds_;
+		head_.game.attractEnginePitch = engine_.first;
+		head_.game.attractEngineStick = engine_.second;
 		head_.step(pal_, fast ? nullptr : live_, newLine());
 		play(head_, !fast && sound);
 	}
@@ -158,6 +161,25 @@ public:
 	// tank shells, the helicopters' missiles and the engine of a plane flying.
 	void setSounds(bool on) { sounds_ = on; }
 	bool sounds() const { return sounds_; }
+	// The engine follows the viewer's speed (speed: frames of the original per real frame), as a
+	// plane speeding up or slowing down would: up to x2 as in a game (stick up, $FE at x2; stick
+	// down, $40 at x1/4), higher above it.
+	void setEngine(double speed) {
+		uint8_t pitch = 0, stick = 0x0F;
+		if (speed > 1) {
+			stick = 0x0E;   // up
+			pitch = speed <= 2 ? 0x10 : speed <= 4 ? 0x0C : speed <= 8 ? 0x09 : 0x07;
+		} else if (speed < 1) {
+			stick = 0x0D;   // down
+			pitch = speed <= 0.25 ? 0x1B : 0x19;
+		}
+		engine_ = {pitch, stick};
+	}
+	// Sound for `seconds` of real time from the registers as they are (at speeds other than x1,
+	// where frames do not come one per 1/60 s).
+	void playFor(double seconds) {
+		if (sounds_) pokey_.run(long(seconds * rr::PokeySound::kClock), audio_);
+	}
 
 	// Flies the present on until line `line` has come (the river only while it is far, whole
 	// frames for the last kSettleFrames, drawing only the last one); false if the river stops
@@ -450,6 +472,8 @@ private:
 			}
 		}
 		replay_->game.attractSound = sounds_;
+		replay_->game.attractEnginePitch = engine_.first;
+		replay_->game.attractEngineStick = engine_.second;
 		while (replay_->lines - 1 < target) {
 			const long before = replay_->lines;
 			// the river only while far; settled `cover` frames before the line, so snapshots are kept
@@ -505,6 +529,7 @@ private:
 	std::vector<int16_t> audio_;
 	bool liveStale_ = false;   // the present's last frame ran without drawing
 	bool sounds_ = false;      // -sound, M
+	std::pair<uint8_t, uint8_t> engine_{0, 0x0F};   // see setEngine
 };
 
 std::string findRom(int argc, char **argv) {
@@ -697,7 +722,11 @@ int main(int argc, char **argv) {
 		last = now;
 		if (!paused && !shotPath) {
 			pending += kSpeeds[speedIndex] * dt * kFrameRate;
-			const bool normalSpeed = kSpeeds[speedIndex] == 1;   // sound only at normal speed
+			// sound: at x1 frame by frame; flying forward faster or slower, for the real time from
+			// the registers of the last frame (the engine follows the speed); backwards, none
+			const bool normalSpeed = kSpeeds[speedIndex] == 1;
+			attract.setEngine(kSpeeds[speedIndex]);
+			if (kSpeeds[speedIndex] > 0 && !normalSpeed) attract.playFor(dt);
 			for (; pending >= 1; pending--) {
 				if (back > 0) back--;   // replay lines already generated
 				else attract.frame(false, normalSpeed);
