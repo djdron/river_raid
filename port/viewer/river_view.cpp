@@ -97,15 +97,18 @@ public:
 		snapshots_.clear();
 		replay_.reset();
 		std::memset(live_, 0, sizeof live_);
+		liveStale_ = false;
 		pokey_ = rr::PokeySound(kSampleRate);
 		audio_.clear();
 	}
 
-	// One frame of the original, in the present.
-	void frame() {
+	// One frame of the original, in the present. fast: skip what is only seen or heard (the
+	// picture and the sound), for flying ahead.
+	void frame(bool fast = false) {
 		if (head_.frame % kSnapshotFrames == 0 && head_.frame / kSnapshotFrames == long(snapshots_.size()))
 			snapshots_.push_back(head_);
-		head_.step(pal_, live_, [this](const rr::RiverState &s) {
+		liveStale_ = fast;
+		head_.step(pal_, fast ? nullptr : live_, [this](const rr::RiverState &s) {
 			// a new level starts with each bridge: count them as the game's BRIDGE counter would
 			if (level_.empty()) bridgeCount_ = head_.game.gen.start(0).bridge;
 			else if (s.level != level_.back()) bridgeCount_++;
@@ -113,7 +116,7 @@ public:
 			bridge_.push_back(bridgeCount_);
 		});
 		// sound: the registers the VBI set at the end of the previous frame play for one frame
-		pokey_.run(rr::PokeyRandom::kCyclesPerLine * rr::PokeyRandom::kLinesPerFrame, audio_);
+		if (!fast) pokey_.run(rr::PokeyRandom::kCyclesPerLine * rr::PokeyRandom::kLinesPerFrame, audio_);
 		for (int c = 0; c < 4; c++) {
 			pokey_.write(2 * c, head_.game.g.pokey.audf[c]);
 			pokey_.write(2 * c + 1, head_.game.g.pokey.audc[c]);
@@ -156,7 +159,7 @@ public:
 		const Machine *m = &head_;
 		const uint8_t (*live)[rr::kRowWidth] = live_;
 		const long target = lines() - 1 - back;
-		if (back > 0 && target >= 0) {
+		if ((back > 0 || liveStale_) && target >= 0) {   // (the present not drawn: run it again too)
 			// run on from where the replay is, or start again from the nearest snapshot before
 			if (!replay_ || replay_->lines - 1 > target || target - (replay_->lines - 1) > kSnapshotFrames) {
 				size_t i = snapshots_.size();
@@ -248,6 +251,7 @@ private:
 	std::vector<uint8_t> level_;   // level of each line (the generator's $60)
 	std::vector<int> bridge_;      // number of the bridge that starts each line's section, as on the panel
 	int bridgeCount_ = 0;
+	bool liveStale_ = false;   // the present's last frame ran without drawing
 };
 
 std::string findRom(int argc, char **argv) {
@@ -406,11 +410,12 @@ int main(int argc, char **argv) {
 						back = attract.lines() - 1 - (attract.bridgeBefore(shown - 64) + kMargin);
 					} else {
 						long next = attract.bridgeAfter(shown);
-						while (next < 0) {   // not generated yet: fly on
-							for (int i = 0; i < 64; i++) attract.frame();
+						// not generated yet: fly on, drawing only the last frame
+						while (next < 0) {
+							for (int i = 0; i < 64; i++) attract.frame(true);
 							next = attract.bridgeAfter(shown);
 						}
-						while (attract.lines() - 1 < next + kMargin) attract.frame();
+						while (attract.lines() - 1 < next + kMargin) attract.frame(attract.lines() < next + kMargin);
 						back = attract.lines() - 1 - (next + kMargin);
 					}
 					break;

@@ -5,6 +5,7 @@
 // random as on the real machine, but not the same sequence as a particular emulator run.
 #pragma once
 #include <cstdint>
+#include <vector>
 
 namespace rr {
 
@@ -13,25 +14,45 @@ public:
 	static constexpr int kCyclesPerLine = 114;
 	static constexpr int kLinesPerFrame = 262;   // NTSC
 
-	explicit PokeyRandom(uint32_t seed = 1) : state_(seed % 0x1FFFF ? seed % 0x1FFFF : 1) {}
+	explicit PokeyRandom(uint32_t seed = 1) : pos_(table().position[seed % 0x1FFFF ? seed % 0x1FFFF : 1]) {}
 
 	// Value read on `scanline` at cycle `cycle` of the current frame.
 	uint8_t read(int scanline, int cycle) {
 		advanceTo(frameStart_ + uint64_t(scanline) * kCyclesPerLine + uint64_t(cycle));
-		return uint8_t(state_ >> 9);
+		return uint8_t(table().state[pos_] >> 9);
 	}
 	// Start of the next frame.
 	void nextFrame() { frameStart_ += uint64_t(kLinesPerFrame) * kCyclesPerLine; }
 
 private:
-	uint32_t state_;           // 17 bits
+	// The counter steps through all 2^17 - 1 non-zero states in a fixed cycle, so it is kept as
+	// a position in that cycle, and jumping ahead any number of cycles is one addition.
+	static constexpr uint32_t kPeriod = 0x1FFFF;
+	struct Table {
+		std::vector<uint32_t> state;      // state at each position of the cycle
+		std::vector<uint32_t> position;   // position of each state (0 is never reached)
+		Table() : state(kPeriod), position(kPeriod + 1) {
+			uint32_t s = 1;
+			for (uint32_t i = 0; i < kPeriod; i++) {
+				state[i] = s;
+				position[s] = i;
+				const uint32_t bit = (s ^ (s >> 5)) & 1;   // x^17 + x^12 + 1, one step per cycle
+				s = (s >> 1) | (bit << 16);
+			}
+		}
+	};
+	static const Table &table() {
+		static const Table t;
+		return t;
+	}
+
+	uint32_t pos_;
 	uint64_t cycle_ = 0, frameStart_ = 0;
 
 	void advanceTo(uint64_t cycle) {
-		for (; cycle_ < cycle; cycle_++) {
-			const uint32_t bit = (state_ ^ (state_ >> 5)) & 1;   // x^17 + x^12 + 1
-			state_ = (state_ >> 1) | (bit << 16);
-		}
+		if (cycle <= cycle_) return;
+		pos_ = uint32_t((pos_ + (cycle - cycle_) % kPeriod) % kPeriod);
+		cycle_ = cycle;
 	}
 };
 
