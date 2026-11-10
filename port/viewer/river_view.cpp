@@ -79,13 +79,22 @@ constexpr int kSampleRate = 48000;
 
 // The attract mode: the game running without a player, from power-on, plus the status bar.
 //
-// The present is run once (head_); every line it generates is recorded with its level and
-// bridge. Looking back runs the past again: snapshots of the whole machine are kept, and a
-// second copy (replay_) is started from the nearest one and run to the line asked for, so any
-// earlier moment is shown as it was, objects moving. Snapshots (about 16 KB each) are kept
-// every kSnapshotFrames frames near the present and around where the replay is, and only every
-// kCoarseFrames frames elsewhere, so a long flight takes little memory (about 8 MB per
-// 1000 bridges); going far back costs one run of up to kCoarseFrames frames.
+// The present is run once (head_); the sections of the river it generates (bridge to bridge)
+// are recorded. Looking back runs the past again: a second copy (replay_) is started from a
+// saved state and run to the line asked for, so any earlier moment is shown as it was, objects
+// moving.
+//
+// Jumping: the river does not depend on the objects, and the objects live only while they are
+// on screen, so the state at any moment follows from the river alone plus the last
+// kSettleFrames frames: the machine runs ahead with the river only (Machine::skip, the objects
+// standing still), then kSettleFrames whole frames, by which time every object from before
+// has scrolled off and the ones on screen have lived their whole lives as they did. (Checked
+// against flying all the way: every frame drawn the same and the whole state the same, at
+// hundreds of points, from settle times of 600 frames on; kSettleFrames has twice that.)
+// So B flies ahead by the river only, and far back the replay starts from a small anchor
+// (the river's state, about 170 bytes, every kAnchorFrames frames). Whole snapshots (about
+// 16 KB) are kept only near the present and around where the replay is, for running back
+// smoothly.
 class Attract {
 public:
 	Attract(const rr::Rom &rom, const uint8_t osFont[rr::kOsFontBytes], bool pal, uint32_t seed)
@@ -97,8 +106,8 @@ public:
 	void restart() {
 		head_ = Machine(rom_, seed_);
 		head_.game.gen.setRiver(riverSeed_, startBridge_);
-		level_.clear();
-		bridge_.clear();
+		sections_.clear();
+		anchors_.clear();
 		snapshots_.clear();
 		cachedCount_ = 0;
 		replay_.reset();
@@ -111,26 +120,52 @@ public:
 	// One frame of the original, in the present. fast: skip what is only seen or heard (the
 	// picture and the sound), for flying ahead.
 	void frame(bool fast = false) {
-		if (head_.frame % kSnapshotFrames == 0 && !snapshots_.count(head_.frame)) {
-			snapshots_.emplace(head_.frame, Snapshot{head_, false});
-			// the one that has just left the recent stretch goes, unless it is a coarse one
-			const auto old = snapshots_.find(head_.frame - kRecentFrames);
-			if (old != snapshots_.end() && old->first % kCoarseFrames != 0 && !old->second.cached) snapshots_.erase(old);
-		}
+		keep();
 		liveStale_ = fast;
-		head_.step(pal_, fast ? nullptr : live_, [this](const rr::RiverState &s) {
-			// a new level starts with each bridge: count them as the game's BRIDGE counter would
-			if (level_.empty()) bridgeCount_ = head_.game.gen.start(0).bridge;
-			else if (s.level != level_.back()) bridgeCount_++;
-			level_.push_back(s.level);
-			bridge_.push_back(bridgeCount_);
-		});
+		head_.step(pal_, fast ? nullptr : live_, newLine());
 		// sound: the registers the VBI set at the end of the previous frame play for one frame
 		if (!fast) pokey_.run(rr::PokeyRandom::kCyclesPerLine * rr::PokeyRandom::kLinesPerFrame, audio_);
 		for (int c = 0; c < 4; c++) {
 			pokey_.write(2 * c, head_.game.g.pokey.audf[c]);
 			pokey_.write(2 * c + 1, head_.game.g.pokey.audc[c]);
 		}
+	}
+
+	// Flies the present on until line `line` has come (the river only while it is far, whole
+	// frames for the last kSettleFrames, drawing only the last one); false if the river stops
+	// coming.
+	bool flyTo(long line) {
+		for (long stalled = 0; lines() - 1 < line; ) {
+			const long before = lines();
+			if (line - (lines() - 1) > kSettleFrames) {
+				keep();
+				liveStale_ = true;
+				head_.skip(pal_, newLine());
+			} else {
+				frame(lines() < line);
+			}
+			stalled = lines() == before ? stalled + 1 : 0;
+			if (stalled >= 4096) {
+				frame();
+				return false;
+			}
+		}
+		return true;
+	}
+
+	// First line of the section of the next bridge after `line`, generating ahead with the
+	// river alone if needed (-1 if the river stops coming).
+	long nextBridge(long line) {
+		const long known = bridgeAfter(line);
+		if (known >= 0) return known;
+		rr::RiverGen gen = head_.game.gen;
+		const uint8_t level = sections_.empty() ? gen.s.level : sections_.back().level;
+		uint8_t buf[rr::kLineBytes];
+		for (long n = lines(); n < lines() + 100000; n++) {
+			gen.nextLine(buf);
+			if (gen.s.level != level && n > line) return n;
+		}
+		return -1;
 	}
 
 	// Sound test: start one of the game's sound effects through its own sound driver.
@@ -147,20 +182,20 @@ public:
 	// Samples generated so far (taken by the caller).
 	std::vector<int16_t> &audio() { return audio_; }
 
-	long lines() const { return long(level_.size()); }
-	// First line of the bridge section before / after `line` (-1 if none generated yet).
+	long lines() const { return head_.lines; }
+	// First line of the bridge section before / after `line` (before: 0 if none; after: -1 if
+	// not generated yet).
 	long bridgeBefore(long line) const {
-		for (long i = std::min(line, lines() - 1); i > 0; i--)
-			if (level_[size_t(i)] != level_[size_t(i - 1)] && i < line) return i;
-		return 0;
+		long found = 0;
+		for (size_t i = 1; i < sections_.size() && sections_[i].first < line; i++) found = sections_[i].first;
+		return found;
 	}
 	long bridgeAfter(long line) const {
-		for (long i = std::max(line + 1, 1L); i < lines(); i++)
-			if (level_[size_t(i)] != level_[size_t(i - 1)]) return i;
-		return -1;
+		const size_t i = sectionOf(line) + 1;
+		return i < sections_.size() && i > 0 ? sections_[i].first : -1;
 	}
-	int level(long line) const { return line >= 0 && line < lines() ? level_[size_t(line)] : 0; }
-	int bridge(long line) const { return line >= 0 && line < lines() ? bridge_[size_t(line)] : 0; }
+	int level(long line) const { return line >= 0 && line < lines() ? sections_[sectionOf(line)].level : 0; }
+	int bridge(long line) const { return line >= 0 && line < lines() ? sections_[sectionOf(line)].bridge : 0; }
 
 	// Draws the screen at the moment line `back` lines before the newest one entered it: the
 	// present for back = 0, otherwise that moment run again. The panel's BRIDGE counter shows
@@ -169,17 +204,9 @@ public:
 		const Machine *m = &head_;
 		const uint8_t (*live)[rr::kRowWidth] = live_;
 		const long target = lines() - 1 - back;
-		if ((back > 0 || liveStale_) && target >= 0) {   // (the present not drawn: run it again too)
-			// the nearest snapshot before the line (at least one frame to run from it)
-			auto it = snapshots_.end();
-			while (it != snapshots_.begin() && std::prev(it)->second.machine.lines - 1 >= target) --it;
-			if (it != snapshots_.begin()) --it;
-			// run on from where the replay is, or start again from that snapshot if it is nearer
-			if (!replay_ || replay_->lines - 1 > target || it->first > replay_->frame) replay_.emplace(it->second.machine);
-			while (replay_->lines - 1 < target) {   // draw only the frames that may reach the line
-				replay_->step(pal_, replay_->lines >= target ? replayLive_ : nullptr, nullptr);
-				if (replay_->frame % kSnapshotFrames == 0 && !snapshots_.count(replay_->frame)) keepReplay();
-			}
+		// (the present not drawn, or not settled after a jump: run it again too)
+		if ((back > 0 || liveStale_ || !head_.exact()) && target >= 0) {
+			replayTo(target);
 			m = &*replay_;
 			live = replayLive_;
 		}
@@ -199,9 +226,11 @@ public:
 
 private:
 	static constexpr long kSnapshotFrames = 128;     // snapshot spacing near the present and the replay
-	static constexpr long kCoarseFrames = 2048;      // elsewhere
-	static constexpr long kRecentFrames = 8192;      // the stretch before the present kept fine
-	static constexpr size_t kReplaySnapshots = 64;   // fine snapshots kept around the replay
+	static constexpr long kRecentFrames = 8192;      // the stretch before the present kept so
+	static constexpr size_t kReplaySnapshots = 64;   // snapshots kept around the replay
+	static constexpr long kSettleFrames = 1200;      // whole frames after running on with the river only
+	static constexpr long kAnchorFrames = 1024;      // anchor spacing
+	static constexpr long kCoverFrames = 1024;       // whole frames before a far line, for running back
 	static constexpr long kFirstScrollerFrame = 11, kFirstRiverFrame = 38;
 
 	// Everything that runs: the game, POKEY's random counter, the scrolling line. Copied whole
@@ -214,6 +243,7 @@ private:
 		long frame = 0;
 		long lines = 0;             // lines generated so far
 		bool running = false;
+		long exactFrom = 0;         // the objects are right from this frame on (after a skip)
 
 		Machine(const rr::Rom &rom, uint32_t seed) : game(rom), random(seed) {}
 		Machine(const Machine &) = default;
@@ -222,6 +252,7 @@ private:
 			new (this) Machine(m);
 			return *this;
 		}
+		bool exact() const { return frame >= exactFrom; }
 
 		// One frame of the original. Timing after power-on as in the original: the scrolling
 		// line starts moving at frame 11, the game (and its river) at frame 38. live: if not null, the
@@ -250,7 +281,128 @@ private:
 			logoShown = scroller.logoX;   // the display uses the position from before the step
 			if (frame >= kFirstScrollerFrame) scroller.step(true);
 		}
+		// The same frame for the river only (Game::skipFrame): the objects stand still, so they
+		// are right again kSettleFrames whole frames later.
+		void skip(bool pal, const std::function<void(const rr::RiverState &)> &newLine) {
+			if (!running || frame + 1 == kFirstRiverFrame) {
+				step(pal, nullptr, newLine);
+				return;
+			}
+			frame++;
+			exactFrom = frame + kSettleFrames;
+			game.afterLine = [this, &newLine](const uint8_t *) {
+				lines++;
+				if (newLine) newLine(game.gen.s);
+			};
+			game.g.idleTime = 0;
+			game.skipFrame();
+			game.afterLine = nullptr;
+			random.nextFrame();
+			logoShown = scroller.logoX;
+			scroller.step(true);
+		}
 	};
+
+	// What Machine::skip changes: the river and the counters. A machine set to it runs on
+	// exactly, but its objects are those of another moment until it has settled.
+	struct Anchor {
+		rr::RiverState river;
+		uint8_t frameCount, attractFlags, attractTimer, scrollFrac, gameLogo;
+		rr::Scroller gameScroller;
+		uint16_t screenTop;
+		rr::PokeyRandom random;
+		rr::Scroller scroller;
+		uint8_t logoShown;
+		long frame, lines;
+		explicit Anchor(const Machine &m)
+			: river(m.game.gen.s), frameCount(m.game.g.frameCount), attractFlags(m.game.g.attractFlags),
+			  attractTimer(m.game.g.attractTimer), scrollFrac(m.game.g.scrollFrac), gameLogo(m.game.g.logoShown),
+			  gameScroller(m.game.g.scroller), screenTop(m.game.g.screenTop), random(m.random), scroller(m.scroller),
+			  logoShown(m.logoShown), frame(m.frame), lines(m.lines) {}
+		void setUp(Machine &m) const {
+			m.game.gen.s = river;
+			m.game.g.frameCount = frameCount;
+			m.game.g.attractFlags = attractFlags;
+			m.game.g.attractTimer = attractTimer;
+			m.game.g.scrollFrac = scrollFrac;
+			m.game.g.logoShown = gameLogo;
+			m.game.g.scroller = gameScroller;
+			m.game.g.screenTop = screenTop;
+			m.random = random;
+			m.scroller = scroller;
+			m.logoShown = logoShown;
+			m.frame = frame;
+			m.lines = lines;
+			m.exactFrom = frame + kSettleFrames;
+		}
+	};
+
+	struct Section {
+		long first;      // its first line
+		uint8_t level;   // the generator's $60
+		int bridge;      // the number of the bridge it starts with, as the panel counts it
+	};
+	size_t sectionOf(long line) const {
+		const auto i = std::upper_bound(sections_.begin(), sections_.end(), line,
+			[](long l, const Section &s) { return l < s.first; });
+		return i == sections_.begin() ? 0 : size_t(i - sections_.begin() - 1);
+	}
+	// Records each new line's section: a new level starts with each bridge.
+	std::function<void(const rr::RiverState &)> newLine() {
+		return [this](const rr::RiverState &s) {
+			const long line = head_.lines - 1;
+			if (sections_.empty()) sections_.push_back({line, s.level, head_.game.gen.start(0).bridge});
+			else if (s.level != sections_.back().level) sections_.push_back({line, s.level, sections_.back().bridge + 1});
+		};
+	}
+
+	// Before each frame of the present: an anchor every kAnchorFrames frames, a snapshot every
+	// kSnapshotFrames frames while settled (the one leaving the recent stretch goes).
+	void keep() {
+		if (head_.frame % kAnchorFrames == 0 && (anchors_.empty() || anchors_.back().frame < head_.frame))
+			anchors_.emplace_back(head_);
+		if (head_.frame % kSnapshotFrames == 0 && head_.exact() && !snapshots_.count(head_.frame))   // (frame 0: always kept)
+			snapshots_.emplace(head_.frame, Snapshot{head_, false});
+		const auto old = snapshots_.find(head_.frame - kRecentFrames);
+		if (old != snapshots_.end() && !old->second.cached && old->first != 0) snapshots_.erase(old);
+	}
+
+	// Brings the replay to the moment line `target` entered the screen, from the nearest saved
+	// state: where the replay is, a snapshot, or (far away) an anchor.
+	void replayTo(long target) {
+		auto it = snapshots_.end();   // the nearest snapshot before the line
+		while (it != snapshots_.begin() && std::prev(it)->second.machine.lines - 1 >= target) --it;
+		const Snapshot *snap = it == snapshots_.begin() ? nullptr : &std::prev(it)->second;
+		const bool replayUsable = replay_ && replay_->lines - 1 <= target && (!snap || replay_->frame >= snap->machine.frame);
+		if (!replayUsable) {
+			const Anchor *anchor = nullptr;   // the nearest anchor at least kSettleFrames lines before
+			for (auto a = anchors_.rbegin(); a != anchors_.rend(); ++a)
+				if (a->lines - 1 < target - kSettleFrames - kCoverFrames && a->frame >= kFirstRiverFrame) {
+					anchor = &*a;
+					break;
+				}
+			if (snap && (!anchor || target - snap->machine.lines < 2 * kSettleFrames + kCoverFrames || anchor->frame <= snap->machine.frame)) {
+				replay_.emplace(snap->machine);
+			} else if (anchor) {
+				replay_.emplace(head_);   // any machine in the attract mode: its objects settle
+				anchor->setUp(*replay_);
+			} else {
+				replay_.emplace(snapshots_.begin()->second.machine);
+			}
+		}
+		while (replay_->lines - 1 < target) {
+			const long before = replay_->lines;
+			// the river only while far; settled kCoverFrames before the line, so snapshots are kept
+			// behind it too and running back from there is smooth
+			if (target - (replay_->lines - 1) > kSettleFrames + kCoverFrames) {
+				replay_->skip(pal_, nullptr);
+			} else {   // draw only the frames that may reach the line
+				replay_->step(pal_, replay_->lines >= target ? replayLive_ : nullptr, nullptr);
+				if (replay_->frame % kSnapshotFrames == 0 && replay_->exact() && !snapshots_.count(replay_->frame)) keepReplay();
+			}
+			if (replay_->lines == before && replay_->frame > head_.frame + 4096) break;   // the river stopped
+		}
+	}
 
 	const rr::Rom &rom_;
 	bool pal_;
@@ -266,6 +418,8 @@ private:
 	};
 	std::map<long, Snapshot> snapshots_;   // by frame
 	size_t cachedCount_ = 0;
+	std::vector<Anchor> anchors_;          // every kAnchorFrames frames of the present
+	std::vector<Section> sections_;
 
 	// Keeps the replay's state as a snapshot, so running back through this stretch is quick;
 	// of those, the ones farthest from the replay go first.
@@ -279,19 +433,16 @@ private:
 			const long d = std::labs(i->first - replay_->frame);
 			if (d > distance) distance = d, farthest = i;
 		}
-		const bool keep = farthest->first % kCoarseFrames == 0 || head_.frame - farthest->first < kRecentFrames;
+		const bool keep = head_.frame - farthest->first < kRecentFrames;
 		if (keep) farthest->second.cached = false;   // it belongs anyway
 		else snapshots_.erase(farthest);
 		cachedCount_--;
 	}
-	std::optional<Machine> replay_;      // the past, run again from a snapshot
+	std::optional<Machine> replay_;      // the past, run again from a snapshot or an anchor
 	uint8_t live_[rr::kScreenHeight][rr::kRowWidth] = {};        // the present's river area
 	uint8_t replayLive_[rr::kScreenHeight][rr::kRowWidth] = {};  // the replay's
 	rr::PokeySound pokey_{kSampleRate};
 	std::vector<int16_t> audio_;
-	std::vector<uint8_t> level_;   // level of each line (the generator's $60)
-	std::vector<int> bridge_;      // number of the bridge that starts each line's section, as on the panel
-	int bridgeCount_ = 0;
 	bool liveStale_ = false;   // the present's last frame ran without drawing
 };
 
@@ -450,27 +601,9 @@ int main(int argc, char **argv) {
 					if (e.shift) {
 						back = attract.lines() - 1 - (attract.bridgeBefore(shown - 64) + kMargin);
 					} else {
-						long next = attract.bridgeAfter(shown);
-						// not generated yet: fly on, drawing only the last frame (and give up if the river
-						// stops coming, so the window never stops answering)
-						long stalled = 0;
-						while (next < 0 && stalled < 4096) {
-							const long before = attract.lines();
-							for (int i = 0; i < 64; i++) attract.frame(true);
-							stalled = attract.lines() == before ? stalled + 64 : 0;
-							next = attract.bridgeAfter(shown);
-						}
-						if (next < 0) {
-							attract.frame();
-							back = 0;
-							break;
-						}
-						while (attract.lines() - 1 < next + kMargin && stalled < 4096) {
-							const long before = attract.lines();
-							attract.frame(attract.lines() < next + kMargin);
-							stalled = attract.lines() == before ? stalled + 1 : 0;
-						}
-						if (stalled >= 4096) attract.frame();   // draw the present
+						const long next = attract.nextBridge(shown);
+						if (next < 0) break;
+						if (attract.lines() - 1 < next + kMargin) attract.flyTo(next + kMargin);
 						back = attract.lines() - 1 - (next + kMargin);
 					}
 					break;

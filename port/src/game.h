@@ -176,6 +176,12 @@ public:
 	void display();
 	void logic(const Input &input, const std::function<uint8_t()> &random);
 	void vbi(const std::function<uint8_t()> &random);
+	// For jumping ahead in the attract mode (river viewer): one frame of the river only. The
+	// river scrolls and the frame counters and the scrolling line advance as in frame(), but the
+	// objects, the display and the sound do not run; the river (the generator) does not depend
+	// on them, and the objects on screen are right again once the ones from before the jump
+	// have scrolled off (a few hundred whole frames, see viewer/river_view.cpp).
+	void skipFrame();
 	// The sound part of the VBI (B2A5-B3D8): sets g.pokey from the game state.
 	void soundDriver(const std::function<uint8_t()> &random);
 

@@ -592,6 +592,27 @@ void Game::moveShell() {
 	g.shellFrame = frame;
 }
 
+void Game::skipFrame() {
+	// A2F5: the attract timer (in the attract mode it only goes round)
+	if (g.attractTimer && !(g.frameCount & 7)) {
+		const uint8_t timer = lo(g.attractTimer - 1);
+		g.attractTimer = timer ? timer : 0xFF;
+	}
+	scrollRiver();
+	// the counters of vbi()
+	g.frameCount++;
+	if (g.frameCount == 0) {
+		g.attractFlags = lo(g.attractFlags + 1) & 0xC7;
+		if (!(g.attractFlags & 7)) {
+			g.idleTime++;
+			if (g.idleTime == 0) g.idleTime = 0x80;
+		}
+	}
+	g.colourBank = bankColour(gen.s);
+	g.logoShown = g.scroller.logoX;
+	g.scroller.step(g.attractTimer != 0);
+}
+
 // A6FD-A70F: the speed is added twice per frame to a fraction; each carry is one new river
 // line. Speeds $FE and up give a line on both steps.
 void Game::scrollRiver() {
