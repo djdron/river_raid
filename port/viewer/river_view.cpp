@@ -224,6 +224,9 @@ private:
 				game.prepare();
 				game.display();
 				if (live) game.drawRiver(live);
+				// The original turns the screen off and stops after 128 x 2048 frames (about 73 minutes)
+				// without input (A1F5, $78): the viewer keeps flying, as if a key had just been touched.
+				game.g.idleTime = 0;
 				game.logic(rr::Input(), [this] { return random.read(192, 13); });   // A205, after scanline 160
 				game.vbi([this] { return random.read(248, 30); });
 			}
