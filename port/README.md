@@ -78,6 +78,8 @@ Letters and digits 1–9 come from the OS font, which is not in the cartridge. T
 | mouse wheel, PgUp / PgDn | scroll along the river by hand, by a screen |
 | Backspace | back to the newest line at normal speed |
 | B / Shift+B | next / previous bridge |
+| Alt+B / Alt+Shift+B | 10 bridges ahead / back |
+| Ctrl+B / Ctrl+Shift+B | 100 bridges ahead / back |
 | Home | start again |
 | F1 / F2 / F3 | sound test: explosion / firing / score sound through the game's sound driver (the attract mode itself is silent, as in the original) |
 | F | full screen |

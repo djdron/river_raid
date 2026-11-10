@@ -28,7 +28,7 @@
 //   Up / Down      faster / slower, through a stop to flying backwards (x1/4 .. x16 either way)
 //   mouse wheel    scroll along the river by hand (PgUp / PgDn by a screen)
 //   Backspace      back to the newest line, normal speed
-//   B / Shift+B    next / previous bridge
+//   B / Shift+B    next / previous bridge; with Alt 10 bridges, with Ctrl 100
 //   Home           start again
 //   F1 / F2 / F3   sound test: explosion / firing / score sound, through the game's own sound
 //                  driver (the attract mode itself is silent, as in the original)
@@ -217,6 +217,14 @@ public:
 	long bridgeAfter(long line) const {
 		const size_t i = sectionOf(line) + 1;
 		return i < sections_.size() && i > 0 ? sections_[i].first : -1;
+	}
+	// First line of the section of bridge `number` (0 for the start or a bridge before it, -1 if
+	// not generated yet).
+	long bridgeLine(int number) const {
+		if (sections_.empty()) return -1;
+		const long i = long(number) - sections_[0].bridge;
+		if (i <= 0) return 0;
+		return i < long(sections_.size()) ? sections_[size_t(i)].first : -1;
 	}
 	int level(long line) const { return line >= 0 && line < lines() ? sections_[sectionOf(line)].level : 0; }
 	int bridge(long line) const { return line >= 0 && line < lines() ? sections_[sectionOf(line)].bridge : 0; }
@@ -628,18 +636,23 @@ int main(int argc, char **argv) {
 				case Key::Backspace: back = 0; speedIndex = 10; break;
 				case Key::Home: attract.restart(); back = 0; break;
 				case Key::B: {
-					// the bridge line is shown a little above the bottom of the river area; Shift+B just
-					// after a bridge goes to the one before it
+					// B / Shift+B: next / previous bridge; with Alt 10 bridges, with Ctrl 100. The bridge
+					// line is shown a little above the bottom of the river area; Shift+B just after a
+					// bridge goes to the one before it.
 					constexpr long kMargin = Attract::kBridgeMargin;
+					const int count = e.ctrl ? 100 : e.alt ? 10 : 1;
 					const long shown = attract.lines() - 1 - back - kMargin;
 					if (e.shift) {
-						back = attract.lines() - 1 - (attract.bridgeBefore(shown - 64) + kMargin);
+						const int number = attract.bridge(std::max(shown - 64, 0L)) - (count - 1);
+						back = attract.lines() - 1 - (attract.bridgeLine(number) + kMargin);
 						attract.jumpTo(back);
 					} else {
-						const long next = attract.nextBridge(shown);
-						if (next < 0) break;
-						if (attract.lines() - 1 < next + kMargin) attract.flyTo(next + kMargin);
-						back = attract.lines() - 1 - (next + kMargin);
+						const int number = attract.bridge(std::max(shown, 0L)) + count;
+						if (attract.bridgeLine(number) < 0) attract.flyToBridge(number);   // not generated yet
+						const long line = attract.bridgeLine(number);
+						if (line < 0) break;
+						if (attract.lines() - 1 < line + kMargin) attract.flyTo(line + kMargin);
+						back = attract.lines() - 1 - (line + kMargin);
 					}
 					break;
 				}

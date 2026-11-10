@@ -253,6 +253,7 @@ bool Host::poll(Event &out) {
 			out.repeat = e.key.repeat;
 			out.alt = (e.key.mod & SDL_KMOD_ALT) != 0;
 			out.shift = (e.key.mod & SDL_KMOD_SHIFT) != 0;
+			out.ctrl = (e.key.mod & SDL_KMOD_CTRL) != 0;
 			return true;
 		case SDL_EVENT_MOUSE_WHEEL:
 			out.type = Event::Type::MouseWheel;

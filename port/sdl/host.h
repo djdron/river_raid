@@ -30,7 +30,7 @@ struct Event {
 	Type type = Type::None;
 	Key key = Key::None;      // KeyDown
 	bool repeat = false;      // KeyDown: held down, repeated
-	bool alt = false, shift = false;
+	bool alt = false, shift = false, ctrl = false;
 	float wheel = 0;          // MouseWheel: steps, positive away from the user
 };
 
