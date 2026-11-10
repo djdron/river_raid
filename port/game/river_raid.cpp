@@ -95,6 +95,7 @@ public:
 		: rom_(rom), pal_(pal), random_(seed), pokey_(kSampleRate),
 		charsets_(rr::buildCharsets(rom, osFont)) {
 		game_.emplace(rom);
+		game_->keepLineStates = true;   // for small saved states
 		rr::initialPanel(rom, powerOnPanel_);
 		std::memset(screen_, 0, sizeof screen_);
 		game_->afterDisplay = [this] {
@@ -143,17 +144,19 @@ public:
 
 	void setRiver(uint32_t seed, int bridge) { game_->gen.setRiver(seed, bridge); }
 
-	// Saved state (F7 / F8): the whole machine, in memory.
+	// Saved state (F7 / F8): the whole machine, in memory, about 3 KB: screen memory is kept as
+	// the generator's state it was made from (Game::compact), and the picture is drawn again by
+	// the next frame.
 	void saveState() { saved_.emplace(*this); }
 	bool loadState() {
 		if (!saved_) return false;
 		game_.emplace(saved_->game);
+		game_->expand(saved_->screenSource);
 		random_ = saved_->random;
 		pokey_ = saved_->pokey;
 		powerOnScroller_ = saved_->powerOnScroller;
 		powerOnLogo_ = saved_->powerOnLogo;
 		frame_ = saved_->frame;
-		std::memcpy(screen_, saved_->screen, sizeof screen_);
 		return true;
 	}
 
@@ -173,16 +176,16 @@ private:
 	std::vector<int16_t> audio_;
 	struct Saved {
 		rr::Game game;
+		rr::Game::ScreenSource screenSource;
 		rr::PokeyRandom random;
 		rr::PokeySound pokey;
 		rr::Scroller powerOnScroller;
 		uint8_t powerOnLogo;
 		long frame;
-		uint8_t screen[rr::kScreenHeight][rr::kScreenWidth];
 		explicit Saved(const Atari &a)
 			: game(*a.game_), random(a.random_), pokey(a.pokey_), powerOnScroller(a.powerOnScroller_),
 			  powerOnLogo(a.powerOnLogo_), frame(a.frame_) {
-			std::memcpy(screen, a.screen_, sizeof screen);
+			screenSource = game.compact();
 		}
 	};
 	std::optional<Saved> saved_;

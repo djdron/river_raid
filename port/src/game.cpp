@@ -71,6 +71,7 @@ void Game::startAttract(bool pal) {
 	gen.startGame(1, pal);
 	g = GameState();
 	screen.clear();
+	lineStates.clear();
 	drawLogoAndNeedle();
 	for (int i = 0; i < kPanelBytes; i++) g.panel[i] = rom_.panelText(i);   // A0F0
 	// the attract mode's new game: B0F1 with X = $29, AF80, then the respawn (A36E-A3E3) which
@@ -99,10 +100,38 @@ void Game::startAttract(bool pal) {
 	pushLine();
 }
 
+Game::ScreenSource Game::compact() {
+	ScreenSource source;
+	source.lines = uint16_t(screen.size());
+	if (!screen.empty()) source.oldest = lineStates.back();   // needs keepLineStates
+	screen.clear();
+	screen.shrink_to_fit();
+	lineStates.clear();
+	lineStates.shrink_to_fit();
+	return source;
+}
+
+void Game::expand(const ScreenSource &source) {
+	RiverGen run = gen;
+	run.s = source.oldest;
+	screen.clear();
+	lineStates.clear();
+	std::array<uint8_t, kLineBytes> line;
+	for (int i = 0; i < source.lines; i++) {
+		if (keepLineStates) lineStates.insert(lineStates.begin(), run.s);
+		run.nextLine(line.data());
+		screen.insert(screen.begin(), line);
+	}
+}
+
 // A new river line goes above the others. Screen memory is a ring of two 80-line blocks,
 // $2000-$2EFF and $3000-$3EFF; the address of the top line moves up by one line.
 void Game::pushLine() {
 	std::array<uint8_t, kLineBytes> line;
+	if (keepLineStates) {
+		lineStates.insert(lineStates.begin(), gen.s);
+		if (lineStates.size() > 256) lineStates.pop_back();
+	}
 	gen.nextLine(line.data());
 	screen.insert(screen.begin(), line);
 	if (screen.size() > 256) screen.pop_back();
@@ -358,6 +387,7 @@ void Game::reset(bool full) {
 	for (int page = 0; page < 5; page++)
 		for (int row = 1; row < 0xBC; row++) g.pm.bytes[size_t(page * 0x100 + row)] = 0;
 	screen.clear();
+	lineStates.clear();
 	g.screenOn = 0;                               // B101: colours off while clearing
 	busy_ = kResetFrames;
 	drawLogoAndNeedle();
@@ -1089,6 +1119,7 @@ void Game::powerOn(bool pal) {
 	gen.s.depotLevelLimit = pal ? 0x2F : 0x2E;
 	g = GameState();
 	screen.clear();
+	lineStates.clear();
 	for (int i = 0; i < kPanelBytes; i++) g.panel[i] = rom_.panelText(i);
 	// A15D (X = $09): zero page cleared, then a new game's reset
 	reset(true);

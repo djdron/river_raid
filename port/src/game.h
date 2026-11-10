@@ -152,6 +152,19 @@ public:
 
 	// Lines currently in screen memory, newest first: the river area shows lines 0..159.
 	std::vector<std::array<uint8_t, kLineBytes>> screen;
+	// If set: the generator's state before each line in `screen`, newest first, so screen
+	// memory can be made again from the oldest one (a small saved state, see compact()).
+	bool keepLineStates = false;
+	std::vector<RiverState> lineStates;
+	// Saved states: drops screen memory (and lineStates) keeping only what makes it again, the
+	// generator's state before its oldest line; expand() makes it again. The river's lines
+	// depend only on the generator, never on the objects, so they come out the same.
+	struct ScreenSource {
+		RiverState oldest;   // the generator before the oldest line in screen memory
+		uint16_t lines = 0;  // how many lines screen memory held
+	};
+	ScreenSource compact();
+	void expand(const ScreenSource &source);
 	// Called after each new river line (gen.s is the state right after it), if set.
 	std::function<void(const uint8_t *line)> afterLine;
 
