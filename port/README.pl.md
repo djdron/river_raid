@@ -87,7 +87,7 @@ Litery i cyfry 1–9 pochodzą z czcionki systemu, której nie ma w kartridżu. 
 | V | model kolorów Altirra / atari800 |
 | O | tylko obraz gry / cała klatka z ramką |
 | L | skalowanie: sharp / nearest / linear |
-| M | dźwięk wł. / wył.: pociski czołgów, rakiety helikopterów i silnik samolotu, jak w grze (nie z oryginału, gdzie tryb demonstracyjny jest cichy); przy ruchu naprzód z każdą prędkością, silnik idzie za nią jak w samolocie, który przyspiesza lub zwalnia; wstecz bez dźwięku |
+| M | dźwięk wł. / wył.: pociski czołgów, rakiety helikopterów i silnik samolotu, jak w grze (nie z oryginału, gdzie tryb demonstracyjny jest cichy); przy ruchu naprzód z każdą prędkością, silnik idzie za nią jak w samolocie, który przyspiesza lub zwalnia; wstecz dźwięk leci od tyłu, jak przewijana taśma |
 | Esc | wyjście z pełnego ekranu |
 | kliknięcie myszą | ukrywa wskaźnik myszy, dopóki mysz się nie ruszy (przejście na pełny ekran też) |
 

@@ -87,7 +87,7 @@ Las letras y las cifras 1–9 vienen de la fuente del sistema operativo, que no 
 | V | modelo de color Altirra / atari800 |
 | O | solo la imagen del juego / el fotograma completo con su borde |
 | L | escalado: sharp / nearest / linear |
-| M | sonido sí / no: proyectiles de tanques, misiles de helicópteros y el motor de un avión, como en el juego (no en el original, cuyo modo de demostración es mudo); al avanzar a cualquier velocidad, el motor la sigue como un avión que acelera o frena; hacia atrás, mudo |
+| M | sonido sí / no: proyectiles de tanques, misiles de helicópteros y el motor de un avión, como en el juego (no en el original, cuyo modo de demostración es mudo); al avanzar a cualquier velocidad, el motor la sigue como un avión que acelera o frena; hacia atrás, el sonido va al revés, como una cinta |
 | Esc | salir de pantalla completa |
 | clic del ratón | oculta el puntero hasta que se mueva el ratón (también al pasar a pantalla completa) |
 

@@ -87,7 +87,7 @@ Le lettere e le cifre 1–9 vengono dal font del sistema operativo, che non è n
 | V | modello di colore Altirra / atari800 |
 | O | solo l'immagine del gioco / l'intero fotogramma con il bordo |
 | L | scalatura: sharp / nearest / linear |
-| M | suono sì / no: proiettili dei carri armati, missili degli elicotteri e il motore di un aereo, come nel gioco (non nell'originale, dove la modalità dimostrativa è muta); andando avanti a qualsiasi velocità, il motore la segue come un aereo che accelera o rallenta; indietro muto |
+| M | suono sì / no: proiettili dei carri armati, missili degli elicotteri e il motore di un aereo, come nel gioco (non nell'originale, dove la modalità dimostrativa è muta); andando avanti a qualsiasi velocità, il motore la segue come un aereo che accelera o rallenta; indietro il suono va al contrario, come un nastro |
 | Esc | esce dallo schermo intero |
 | clic del mouse | nasconde il puntatore finché il mouse non si muove (lo stesso passando a schermo intero) |
 

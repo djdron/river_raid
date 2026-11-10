@@ -40,7 +40,7 @@
 //   L              scaling: sharp / nearest / linear
 //   M              sound on / off: tank shells, helicopter missiles and a plane's engine (not in
 //                  the original, whose attract mode is silent; -sound starts with it on); flying
-//                  forward at any speed, the engine following it; silent backwards
+//                  forward at any speed, the engine following it; backwards, played backwards
 // A mouse click or going full screen hides the mouse pointer until the mouse moves. Closing the window (or Alt+F4,
 // Cmd+Q) quits.
 //
@@ -48,6 +48,7 @@
 // past is shown as it was, objects moving, flying forwards or backwards; the sound plays only
 // in the present.
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -722,10 +723,14 @@ int main(int argc, char **argv) {
 		last = now;
 		if (!paused && !shotPath) {
 			pending += kSpeeds[speedIndex] * dt * kFrameRate;
-			// sound: at x1 frame by frame; flying forward faster or slower, for the real time from
-			// the registers of the last frame (the engine follows the speed); backwards, none
+			// sound: at x1 frame by frame; faster or slower, for the real time from the registers of
+			// the frame shown (the engine follows the speed). Backwards the same, after draw(),
+			// which sets the registers of the frame shown: the frames come in reverse order, so it
+			// sounds played backwards (a whistle rises, an explosion swells). The samples are not
+			// turned round: within a frame the registers hold still, so that would add nothing but a
+			// jump at every frame's edge, 60 a second, which rasps.
 			const bool normalSpeed = kSpeeds[speedIndex] == 1;
-			attract.setEngine(kSpeeds[speedIndex]);
+			attract.setEngine(std::fabs(kSpeeds[speedIndex]));
 			if (kSpeeds[speedIndex] > 0 && !normalSpeed) attract.playFor(dt);
 			for (; pending >= 1; pending--) {
 				if (back > 0) back--;   // replay lines already generated
@@ -743,6 +748,7 @@ int main(int argc, char **argv) {
 		if (attract.lines() > 0 && back == attract.lines() - 1 && kSpeeds[speedIndex] < 0) pending = 0;
 
 		attract.draw(back, screen, !paused && !shotPath && kSpeeds[speedIndex] == 1);
+		if (!paused && !shotPath && kSpeeds[speedIndex] < 0 && back < attract.lines() - 1) attract.playFor(dt);
 		uint32_t *pixels = window.pixels();
 		for (int y = 0; y < kViewHeight; y++)
 			for (int x = 0; x < kViewWidth; x++) pixels[y * kViewWidth + x] = palette[screen[kViewTop + y][kViewLeft + x]];
