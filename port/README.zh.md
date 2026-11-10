@@ -67,7 +67,7 @@ river_raid [rom] [选项]
 ```
 river_view [rom] [选项]
 ```
-它显示原版的演示模式，即没人按 START 时播放的河上飞行：开机后屏幕被游戏 1 的河填满，然后每帧滚动 1 行；船和直升机醒来并移动，坦克开向桥并开火，直升机发射导弹（移植的游戏逻辑，`src/game.cpp`）；下面是状态栏和滚动字幕，有制作人员、“Press START key”和彩虹色的 Activision 标志。选项与游戏相同：`rom`、`-os`、`-seed`、`-bridge`（演示模式从该桥开始飞）、`-random`、`-pal`、`-colours`、`-palette`、`-border`、`-filter`。
+它显示原版的演示模式，即没人按 START 时播放的河上飞行：开机后屏幕被游戏 1 的河填满，然后每帧滚动 1 行；船和直升机醒来并移动，坦克开向桥并开火，直升机发射导弹（移植的游戏逻辑，`src/game.cpp`）；下面是状态栏和滚动字幕，有制作人员、“Press START key”和彩虹色的 Activision 标志。选项与游戏相同：`rom`、`-os`、`-seed`、`-bridge`（查看器先只用河道从河的起点飞到该桥，9999 需要几秒，然后按连续飞行时的样子显示它；可以一直往回看到起点）、`-random`、`-pal`、`-colours`、`-palette`、`-border`、`-filter`。
 
 字母和数字 1–9 来自操作系统的字体，卡带里没有。移植版内置了 AltirraOS 的字体：随 atari800 一起发布的免费替代操作系统（许可：保留版权声明即可复制和修改，见 `src/os_font.cpp`）；参考记录也是用它做的。`-os 文件` 从 OS ROM 映像（10 KB 或 16 KB）或 1 KB 字体文件中读取 Atari 自己操作系统的字体。
 

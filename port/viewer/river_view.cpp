@@ -8,7 +8,9 @@
 //   without it the AltirraOS font is used (os_font.h).
 //   -seed N: another river (and objects): game 1's river starts from generator state N
 //            (1..16777215); games 3-8 start at its bridges 5, 20, 50; difficulty grows as usual
-//   -bridge N: every game starts at bridge N (1..9999) of the river, at that bridge's level
+//   -bridge N: fly to bridge N (1..99999) of game 1's river first, the river only (a few
+//            seconds for 9999), then show it as the flight from the start would: objects as
+//            they would be there, and the whole way back to the start can be looked at
 //   -random N: start of POKEY's random counter (otherwise taken from the clock, as on the real
 //   machine, where it depends on the moment of power-on).
 //   -border: show the whole frame with its black border, not just the game's picture
@@ -106,7 +108,7 @@ public:
 
 	void restart() {
 		head_ = Machine(rom_, seed_);
-		head_.game.gen.setRiver(riverSeed_, startBridge_);
+		head_.game.gen.setRiver(riverSeed_, 0);
 		sections_.clear();
 		anchors_.clear();
 		snapshots_.clear();
@@ -116,6 +118,27 @@ public:
 		liveStale_ = false;
 		pokey_ = rr::PokeySound(kSampleRate);
 		audio_.clear();
+		if (startBridge_ > 1) flyToBridge(startBridge_);
+	}
+
+	// The line where a bridge is shown on a jump (B, -bridge): a little above the bottom of the
+	// river area.
+	static constexpr long kBridgeMargin = 100;
+
+	// Flies the present from where it is to bridge `n` (its line kBridgeMargin lines down), the
+	// river only until close to it.
+	void flyToBridge(int n) {
+		for (long stalled = 0; sections_.empty() || sections_.back().bridge < n - 1; ) {
+			const long before = lines();
+			keep();
+			liveStale_ = true;
+			head_.skip(pal_, newLine());
+			stalled = lines() == before && head_.running ? stalled + 1 : 0;
+			if (stalled >= 4096) return;
+		}
+		if (sections_.back().bridge >= n) return;
+		const long next = nextBridge(lines() - 1);
+		if (next >= 0) flyTo(next + kBridgeMargin);
 	}
 
 	// One frame of the original, in the present. fast: skip what is only seen or heard (the
@@ -382,14 +405,16 @@ private:
 		auto it = snapshots_.end();   // the nearest snapshot before the line
 		while (it != snapshots_.begin() && std::prev(it)->second.machine.lines - 1 >= target) --it;
 		const Snapshot *snap = it == snapshots_.begin() ? nullptr : &std::prev(it)->second;
-		const bool replayUsable = replay_ && replay_->lines - 1 <= target && (!snap || replay_->frame >= snap->machine.frame);
+		const Anchor *anchor = nullptr;   // the nearest anchor far enough before to settle
+		for (auto a = anchors_.rbegin(); a != anchors_.rend(); ++a)
+			if (a->lines - 1 < target - kSettleFrames - cover && a->frame >= kFirstRiverFrame) {
+				anchor = &*a;
+				break;
+			}
+		// run on from where the replay is, unless a snapshot or an anchor is nearer
+		const bool replayUsable = replay_ && replay_->lines - 1 <= target && (!snap || replay_->frame >= snap->machine.frame) &&
+			(!anchor || replay_->frame >= anchor->frame);
 		if (!replayUsable) {
-			const Anchor *anchor = nullptr;   // the nearest anchor at least kSettleFrames lines before
-			for (auto a = anchors_.rbegin(); a != anchors_.rend(); ++a)
-				if (a->lines - 1 < target - kSettleFrames - cover && a->frame >= kFirstRiverFrame) {
-					anchor = &*a;
-					break;
-				}
 			if (snap && (!anchor || target - snap->machine.lines <= kSettleFrames + cover || anchor->frame <= snap->machine.frame)) {
 				replay_.emplace(snap->machine);
 			} else if (anchor) {
@@ -417,7 +442,7 @@ private:
 	bool pal_;
 	uint32_t seed_;
 	uint32_t riverSeed_ = 0;   // -seed, -bridge
-	int startBridge_ = 0;
+	int startBridge_ = 0;      // -bridge: flown to on a (re)start
 	rr::Charsets charsets_;
 	uint8_t panel_[rr::kPanelBytes];
 	Machine head_;                       // the present
@@ -605,7 +630,7 @@ int main(int argc, char **argv) {
 				case Key::B: {
 					// the bridge line is shown a little above the bottom of the river area; Shift+B just
 					// after a bridge goes to the one before it
-					constexpr long kMargin = 100;
+					constexpr long kMargin = Attract::kBridgeMargin;
 					const long shown = attract.lines() - 1 - back - kMargin;
 					if (e.shift) {
 						back = attract.lines() - 1 - (attract.bridgeBefore(shown - 64) + kMargin);
