@@ -19,7 +19,7 @@ namespace host {
 enum class Key {
 	None,
 	Up, Down, Left, Right,
-	W, A, S, D, B, C, F, L, O, V, X, Z,
+	W, A, S, D, B, C, F, L, M, O, V, X, Z,
 	LeftCtrl, RightCtrl, Alt, Return, Space, Backspace, Escape,   // Alt: either Alt key (keyHeld only)
 	PageUp, PageDown, Home,
 	F1, F2, F3, F4, F7, F8, F11,

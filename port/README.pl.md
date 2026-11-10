@@ -67,7 +67,7 @@ Klawiatura steruje oboma joystickami, więc także jedna osoba może grać w gr�
 ```
 river_view [rom] [opcje]
 ```
-Pokazuje tryb demonstracyjny oryginału, przelot nad rzeką, który gra odtwarza, gdy nikt nie wciska START: po włączeniu ekran wypełnia się rzeką gry 1, która potem przewija się o 1 linię na klatkę; statki i helikoptery budzą się i pływają, czołgi jadą do mostów i strzelają, helikoptery wystrzeliwują rakiety (przeniesiona logika gry, `src/game.cpp`); poniżej panel i przewijany pasek z autorami, „Press START key” i tęczowym logo Activision. Opcje są takie jak w grze: `rom`, `-os`, `-seed`, `-bridge` (przeglądarka najpierw dolatuje do niego od początku rzeki, samą rzeką, dla 9999 to kilka sekund, i pokazuje go tak, jak wyglądałby w locie; wstecz można oglądać aż do początku), `-random`, `-pal`, `-colours`, `-palette`, `-border`, `-filter`.
+Pokazuje tryb demonstracyjny oryginału, przelot nad rzeką, który gra odtwarza, gdy nikt nie wciska START: po włączeniu ekran wypełnia się rzeką gry 1, która potem przewija się o 1 linię na klatkę; statki i helikoptery budzą się i pływają, czołgi jadą do mostów i strzelają, helikoptery wystrzeliwują rakiety (przeniesiona logika gry, `src/game.cpp`); poniżej panel i przewijany pasek z autorami, „Press START key” i tęczowym logo Activision. Opcje są takie jak w grze: `rom`, `-os`, `-seed`, `-bridge` (przeglądarka najpierw dolatuje do niego od początku rzeki, samą rzeką, dla 9999 to kilka sekund, i pokazuje go tak, jak wyglądałby w locie; wstecz można oglądać aż do początku), `-random`, `-pal`, `-colours`, `-palette`, `-border`, `-filter`; oraz własna `-sound`: tryb demonstracyjny z dźwiękiem (zob. M).
 
 Litery i cyfry 1–9 pochodzą z czcionki systemu, której nie ma w kartridżu. Port ma wbudowaną czcionkę AltirraOS: wolnego zamiennika systemu dostarczanego z atari800 (licencja: kopiowanie i modyfikacja dozwolone z zachowaniem informacji o prawach autorskich, zob. `src/os_font.cpp`); z nią powstały też ślady wzorcowe. `-os plik` bierze czcionkę systemu samego Atari z obrazu ROM systemu (10 KB lub 16 KB) albo z pliku czcionki 1 KB.
 
@@ -87,6 +87,7 @@ Litery i cyfry 1–9 pochodzą z czcionki systemu, której nie ma w kartridżu. 
 | V | model kolorów Altirra / atari800 |
 | O | tylko obraz gry / cała klatka z ramką |
 | L | skalowanie: sharp / nearest / linear |
+| M | dźwięk wł. / wył.: pociski czołgów, rakiety helikopterów i silnik samolotu, jak w grze (nie z oryginału, gdzie tryb demonstracyjny jest cichy); tylko przy normalnej prędkości |
 | Esc | wyjście z pełnego ekranu |
 | kliknięcie myszą | ukrywa wskaźnik myszy, dopóki mysz się nie ruszy (przejście na pełny ekran też) |
 

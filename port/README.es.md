@@ -67,7 +67,7 @@ El teclado maneja ambos joysticks, así que una sola persona también puede juga
 ```
 river_view [rom] [opciones]
 ```
-Muestra el modo de demostración del original, el vuelo sobre el río que reproduce cuando nadie pulsa START: tras encender, la pantalla se llena con el río de la partida 1, que luego avanza 1 línea por fotograma; barcos y helicópteros despiertan y se mueven, los tanques van hacia los puentes y disparan, los helicópteros lanzan misiles (la lógica del juego portada, `src/game.cpp`); debajo están el panel y la línea deslizante con los créditos, "Press START key" y el logotipo arcoíris de Activision. Las opciones son las del juego: `rom`, `-os`, `-seed`, `-bridge` (el visor primero vuela hasta él desde el principio del río, solo con el río, para 9999 unos segundos, y lo muestra como sería en el vuelo; se puede mirar atrás hasta el principio), `-random`, `-pal`, `-colours`, `-palette`, `-border`, `-filter`.
+Muestra el modo de demostración del original, el vuelo sobre el río que reproduce cuando nadie pulsa START: tras encender, la pantalla se llena con el río de la partida 1, que luego avanza 1 línea por fotograma; barcos y helicópteros despiertan y se mueven, los tanques van hacia los puentes y disparan, los helicópteros lanzan misiles (la lógica del juego portada, `src/game.cpp`); debajo están el panel y la línea deslizante con los créditos, "Press START key" y el logotipo arcoíris de Activision. Las opciones son las del juego: `rom`, `-os`, `-seed`, `-bridge` (el visor primero vuela hasta él desde el principio del río, solo con el río, para 9999 unos segundos, y lo muestra como sería en el vuelo; se puede mirar atrás hasta el principio), `-random`, `-pal`, `-colours`, `-palette`, `-border`, `-filter`; y su propia `-sound`: el modo de demostración con sonido (véase M).
 
 Las letras y las cifras 1–9 vienen de la fuente del sistema operativo, que no está en el cartucho. El port lleva integrada la fuente de AltirraOS: el sistema operativo libre de reemplazo que se distribuye con atari800 (licencia: se permite copiar y modificar conservando el aviso de copyright, vea `src/os_font.cpp`); las trazas de referencia también se hicieron con ella. `-os archivo` toma la fuente del propio sistema del Atari de una imagen de la ROM del sistema (10 KB o 16 KB) o de un archivo de fuente de 1 KB.
 
@@ -87,6 +87,7 @@ Las letras y las cifras 1–9 vienen de la fuente del sistema operativo, que no 
 | V | modelo de color Altirra / atari800 |
 | O | solo la imagen del juego / el fotograma completo con su borde |
 | L | escalado: sharp / nearest / linear |
+| M | sonido sí / no: proyectiles de tanques, misiles de helicópteros y el motor de un avión, como en el juego (no en el original, cuyo modo de demostración es mudo); solo a velocidad normal |
 | Esc | salir de pantalla completa |
 | clic del ratón | oculta el puntero hasta que se mueva el ratón (también al pasar a pantalla completa) |
 

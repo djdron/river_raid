@@ -797,7 +797,7 @@ void Game::soundDriver(const std::function<uint8_t()> &random) {
 			g.eventSound = 0;
 			last = 0;
 		}
-	} else if (g.planeState != kFlying) {         // B2F9: no plane: channel 1 off
+	} else if (g.planeState != kFlying && !(attractSound && attract(g))) {   // B2F9: no plane: channel 1 off
 		last = g.planeState;
 		setPitch = false;
 	} else {
@@ -835,7 +835,7 @@ void Game::soundDriver(const std::function<uint8_t()> &random) {
 	}
 	if (const uint8_t t = g.soundMissile) {       // B367: the helicopter's missile
 		g.soundMissile--;
-		if (!attract(g)) {
+		if (!attract(g) || attractSound) {
 			control = lo(t + 0x46);
 			pitch = uint8_t(((lo((control ^ 0x0E) + 4)) & 0x0F) << 2);
 		}
@@ -860,7 +860,7 @@ void Game::soundDriver(const std::function<uint8_t()> &random) {
 	p.audc[2] = control;
 	// channel 4
 	control = 0;
-	if (!attract(g) && !(s.shellTimer & 0x80) && s.shellTimer != 0) {   // B3B6: the tank shell
+	if ((!attract(g) || attractSound) && !(s.shellTimer & 0x80) && s.shellTimer != 0) {   // B3B6: the tank shell
 		if (s.shellTimer < 0x11) {
 			p.audf[3] = rom_.shellPitch(s.shellTimer);   // whistling down
 			control = 0xAC;

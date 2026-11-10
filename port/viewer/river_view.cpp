@@ -1,7 +1,7 @@
 // River viewer (window, sound and input through SDL: sdl/host.h): the game's attract mode, the flight over the river that the original
 // shows when nobody presses START.
 //
-// usage: river_view [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-border] [-filter sharp|nearest|linear] [-seed N] [-bridge N] [-random N]
+// usage: river_view [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-border] [-filter sharp|nearest|linear] [-sound] [-seed N] [-bridge N] [-random N]
 //   rom: path to the cartridge image; by default rom/River_Raid.rom is looked for in the
 //   current folder and up to three folders above it.
 //   -os file: an Atari OS ROM (10 KB or 16 KB) or its 1 KB font, for Atari's own letters;
@@ -16,6 +16,7 @@
 //   -border: show the whole frame with its black border, not just the game's picture
 //   -filter: how the picture is scaled to the window: sharp (default: whole-number scale, then
 //   smoothly to fit), nearest (blocky, pixels of slightly uneven size) or linear (blurred)
+//   -sound: the attract mode with sound (M switches): see the key M
 //
 // What it shows, as the original's attract mode does (game 1): the game running without a
 // plane (game.h): the river scrolls down 1 line per frame (60 frames a second), ships and
@@ -37,6 +38,8 @@
 //   C / V          NTSC / PAL colours; Altirra / atari800 colour model
 //   O              the game's picture only / the whole frame with its border
 //   L              scaling: sharp / nearest / linear
+//   M              sound on / off: tank shells, helicopter missiles and a plane's engine (not in
+//                  the original, whose attract mode is silent; -sound starts with it on)
 // A mouse click or going full screen hides the mouse pointer until the mouse moves. Closing the window (or Alt+F4,
 // Cmd+Q) quits.
 //
@@ -142,18 +145,19 @@ public:
 	}
 
 	// One frame of the original, in the present. fast: skip what is only seen or heard (the
-	// picture and the sound), for flying ahead.
-	void frame(bool fast = false) {
+	// picture and the sound), for flying ahead. sound: play this frame's sound (at normal speed).
+	void frame(bool fast = false, bool sound = true) {
 		keep();
 		liveStale_ = fast;
+		head_.game.attractSound = sounds_;
 		head_.step(pal_, fast ? nullptr : live_, newLine());
-		// sound: the registers the VBI set at the end of the previous frame play for one frame
-		if (!fast) pokey_.run(rr::PokeyRandom::kCyclesPerLine * rr::PokeyRandom::kLinesPerFrame, audio_);
-		for (int c = 0; c < 4; c++) {
-			pokey_.write(2 * c, head_.game.g.pokey.audf[c]);
-			pokey_.write(2 * c + 1, head_.game.g.pokey.audc[c]);
-		}
+		play(head_, !fast && sound);
 	}
+
+	// The attract mode with sound (-sound, M; not in the original, see Game::attractSound): the
+	// tank shells, the helicopters' missiles and the engine of a plane flying.
+	void setSounds(bool on) { sounds_ = on; }
+	bool sounds() const { return sounds_; }
 
 	// Flies the present on until line `line` has come (the river only while it is far, whole
 	// frames for the last kSettleFrames, drawing only the last one); false if the river stops
@@ -232,13 +236,17 @@ public:
 	// Draws the screen at the moment line `back` lines before the newest one entered it: the
 	// present for back = 0, otherwise that moment run again. The panel's BRIDGE counter shows
 	// the bridge of the newest line on screen.
-	void draw(long back, uint8_t screen[rr::kScreenHeight][rr::kScreenWidth]) {
+	// sound: when the replay has moved on by one frame (looking back, flying forward at normal
+	// speed), play that frame's sound.
+	void draw(long back, uint8_t screen[rr::kScreenHeight][rr::kScreenWidth], bool sound = false) {
 		const Machine *m = &head_;
 		const uint8_t (*live)[rr::kRowWidth] = live_;
 		const long target = lines() - 1 - back;
 		// (the present not drawn, or not settled after a jump: run it again too)
 		if ((back > 0 || liveStale_ || !head_.exact()) && target >= 0) {
+			const long before = replay_ ? replay_->frame : -1;
 			replayTo(target);
+			if (back > 0) play(*replay_, sound && replay_->frame == before + 1);
 			m = &*replay_;
 			live = replayLive_;
 		}
@@ -407,6 +415,15 @@ private:
 		if (old != snapshots_.end() && !old->second.cached && old->first != 0) snapshots_.erase(old);
 	}
 
+	// Sound: the registers the VBI set at the end of the frame before play for one frame.
+	void play(const Machine &m, bool sound) {
+		if (sound) pokey_.run(rr::PokeyRandom::kCyclesPerLine * rr::PokeyRandom::kLinesPerFrame, audio_);
+		for (int c = 0; c < 4; c++) {
+			pokey_.write(2 * c, m.game.g.pokey.audf[c]);
+			pokey_.write(2 * c + 1, m.game.g.pokey.audc[c]);
+		}
+	}
+
 	// Brings the replay to the moment line `target` entered the screen, from the nearest saved
 	// state: where the replay is, a snapshot, or (far away) an anchor.
 	void replayTo(long target, long cover = kCoverFrames) {
@@ -432,6 +449,7 @@ private:
 				replay_.emplace(snapshots_.begin()->second.machine);
 			}
 		}
+		replay_->game.attractSound = sounds_;
 		while (replay_->lines - 1 < target) {
 			const long before = replay_->lines;
 			// the river only while far; settled `cover` frames before the line, so snapshots are kept
@@ -486,6 +504,7 @@ private:
 	rr::PokeySound pokey_{kSampleRate};
 	std::vector<int16_t> audio_;
 	bool liveStale_ = false;   // the present's last frame ran without drawing
+	bool sounds_ = false;      // -sound, M
 };
 
 std::string findRom(int argc, char **argv) {
@@ -515,6 +534,7 @@ void fail(const std::string &msg) { host::Host::showError("River Raid viewer", m
 int main(int argc, char **argv) {
 	bool pal = false;
 	host::Filter filter = host::Filter::Sharp;   // -filter (L switches)
+	bool sound = false;        // -sound: the attract mode with sound (M switches)
 	bool border = false;       // -border: the whole frame with its black border (O switches)
 	bool palColours = true;    // colours of a PAL machine (C switches to NTSC)
 	rr::PaletteModel paletteModel = rr::PaletteModel::Altirra;   // V switches
@@ -527,6 +547,7 @@ int main(int argc, char **argv) {
 	for (int i = 1; i < argc; i++) {
 		if (!std::strcmp(argv[i], "-pal")) pal = palColours = true;
 		else if (!std::strcmp(argv[i], "-border")) border = true;
+		else if (!std::strcmp(argv[i], "-sound")) sound = true;
 		else if (!std::strcmp(argv[i], "-filter") && i + 1 < argc) {
 			const char *name = argv[++i];
 			filter = !std::strcmp(name, "nearest") ? host::Filter::Nearest
@@ -597,6 +618,7 @@ int main(int argc, char **argv) {
 	showColours();
 
 	Attract attract(rom, osFont, pal, seed);
+	attract.setSounds(sound);
 	attract.setRiver(riverSeed, startBridge);
 	static uint8_t screen[rr::kScreenHeight][rr::kScreenWidth];
 	// Speed in original frames per real frame; negative = backwards.
@@ -623,6 +645,7 @@ int main(int argc, char **argv) {
 				case Key::Space: paused = !paused; break;
 				case Key::L: filter = host::Filter((int(filter) + 1) % 3); window.setFilter(filter); showColours(); break;
 				case Key::O: border = !border; showBorder(); break;
+				case Key::M: attract.setSounds(!attract.sounds()); break;
 				case Key::C: palColours = !palColours; makePalette(); showColours(); break;
 				case Key::V:
 					paletteModel = paletteModel == rr::PaletteModel::Altirra ? rr::PaletteModel::Atari800 : rr::PaletteModel::Altirra;
@@ -674,9 +697,10 @@ int main(int argc, char **argv) {
 		last = now;
 		if (!paused && !shotPath) {
 			pending += kSpeeds[speedIndex] * dt * kFrameRate;
+			const bool normalSpeed = kSpeeds[speedIndex] == 1;   // sound only at normal speed
 			for (; pending >= 1; pending--) {
 				if (back > 0) back--;   // replay lines already generated
-				else attract.frame();
+				else attract.frame(false, normalSpeed);
 			}
 			for (; pending <= -1; pending++) back++;
 		}
@@ -689,7 +713,7 @@ int main(int argc, char **argv) {
 		}
 		if (attract.lines() > 0 && back == attract.lines() - 1 && kSpeeds[speedIndex] < 0) pending = 0;
 
-		attract.draw(back, screen);
+		attract.draw(back, screen, !paused && !shotPath && kSpeeds[speedIndex] == 1);
 		uint32_t *pixels = window.pixels();
 		for (int y = 0; y < kViewHeight; y++)
 			for (int x = 0; x < kViewWidth; x++) pixels[y * kViewWidth + x] = palette[screen[kViewTop + y][kViewLeft + x]];
@@ -713,8 +737,8 @@ int main(int argc, char **argv) {
 		const long shown = attract.lines() - 1 - back;
 		// the newest bridge at the top of the screen or below it: the one on screen, or the one
 		// last passed (sections are much longer than the screen, so at most one is on it)
-		std::snprintf(buf, sizeof buf, "River Raid - bridge %d (level %d) - line %ld - speed x%g%s%s - %s",
-			attract.bridge(shown), attract.level(shown), shown, kSpeeds[speedIndex], back ? " - looking back" : "", paused ? " - paused" : "",
+		std::snprintf(buf, sizeof buf, "River Raid - bridge %d (level %d) - line %ld - speed x%g%s%s%s - %s",
+			attract.bridge(shown), attract.level(shown), shown, kSpeeds[speedIndex], back ? " - looking back" : "", paused ? " - paused" : "", attract.sounds() ? " - sound" : "",
 			colours.c_str());
 		if (title != buf) {
 			title = buf;

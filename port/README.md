@@ -67,7 +67,7 @@ The keyboard drives both joysticks, so one person can play a two-player game too
 ```
 river_view [rom] [options]
 ```
-It shows the original's attract mode, the flight over the river it plays when nobody presses START: after power-on the screen fills with the river of game 1, which then scrolls 1 line per frame; ships and helicopters wake up and move, tanks drive to the bridges and fire, helicopters fire missiles (the ported game logic, `src/game.cpp`); below are the status panel and the scrolling line with the credits, "Press START key" and the rainbow Activision logo. The options are those of the game: `rom`, `-os`, `-seed`, `-bridge` (the viewer first flies there from the start of the river, the river only, a few seconds for 9999, and shows it as the flight would; the way back to the start can be looked at), `-random`, `-pal`, `-colours`, `-palette`, `-border`, `-filter`.
+It shows the original's attract mode, the flight over the river it plays when nobody presses START: after power-on the screen fills with the river of game 1, which then scrolls 1 line per frame; ships and helicopters wake up and move, tanks drive to the bridges and fire, helicopters fire missiles (the ported game logic, `src/game.cpp`); below are the status panel and the scrolling line with the credits, "Press START key" and the rainbow Activision logo. The options are those of the game: `rom`, `-os`, `-seed`, `-bridge` (the viewer first flies there from the start of the river, the river only, a few seconds for 9999, and shows it as the flight would; the way back to the start can be looked at), `-random`, `-pal`, `-colours`, `-palette`, `-border`, `-filter`; and its own `-sound`: the attract mode with sound (see M).
 
 Letters and digits 1–9 come from the OS font, which is not in the cartridge. The port has the font of AltirraOS built in: the free replacement OS that ships with atari800 (licence: copying and modification permitted with the copyright notice kept, see `src/os_font.cpp`); the reference traces were made with it too. `-os file` takes the font of Atari's own OS from an OS ROM image (10 KB or 16 KB) or a 1 KB font file.
 
@@ -87,6 +87,7 @@ Letters and digits 1–9 come from the OS font, which is not in the cartridge. T
 | V | Altirra / atari800 colour model |
 | O | the game's picture only / the whole frame with its border |
 | L | scaling: sharp / nearest / linear |
+| M | sound on / off: tank shells, helicopter missiles and a plane's engine, as in a game (not in the original, whose attract mode is silent); only at normal speed |
 | Esc | leave full screen |
 | mouse click | hides the mouse pointer until the mouse moves (so does going full screen) |
 

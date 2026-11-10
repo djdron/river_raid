@@ -194,6 +194,12 @@ public:
 	// on them, and the objects on screen are right again once the ones from before the jump
 	// have scrolled off (a few hundred whole frames, see viewer/river_view.cpp).
 	void skipFrame();
+	// Not in the original: the attract mode with sound (river viewer). The original keeps the
+	// attract mode silent on purpose: the tank shell (B3B6) and the helicopter's missile (B367)
+	// sound only in a game, and channel 1 plays the engine only while a plane flies. With this
+	// set they sound in the attract mode too, and channel 1 plays the engine of a plane flying
+	// at normal speed. Only g.pokey changes: the game itself runs the same.
+	bool attractSound = false;
 	// The sound part of the VBI (B2A5-B3D8): sets g.pokey from the game state.
 	void soundDriver(const std::function<uint8_t()> &random);
 

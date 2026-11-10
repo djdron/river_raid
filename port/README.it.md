@@ -67,7 +67,7 @@ La tastiera comanda entrambi i joystick, così anche una persona sola può fare 
 ```
 river_view [rom] [opzioni]
 ```
-Mostra la modalità dimostrativa dell'originale, il volo sul fiume che parte quando nessuno preme START: dopo l'accensione lo schermo si riempie del fiume del gioco 1, che poi scorre di 1 riga per fotogramma; navi ed elicotteri si svegliano e si muovono, i carri armati vanno verso i ponti e sparano, gli elicotteri lanciano missili (la logica di gioco portata, `src/game.cpp`); sotto ci sono il pannello e la riga che scorre con i titoli, "Press START key" e il logo arcobaleno di Activision. Le opzioni sono quelle del gioco: `rom`, `-os`, `-seed`, `-bridge` (il visualizzatore prima ci arriva in volo dall'inizio del fiume, solo con il fiume, per 9999 qualche secondo, e lo mostra come sarebbe nel volo; si può guardare indietro fino all'inizio), `-random`, `-pal`, `-colours`, `-palette`, `-border`, `-filter`.
+Mostra la modalità dimostrativa dell'originale, il volo sul fiume che parte quando nessuno preme START: dopo l'accensione lo schermo si riempie del fiume del gioco 1, che poi scorre di 1 riga per fotogramma; navi ed elicotteri si svegliano e si muovono, i carri armati vanno verso i ponti e sparano, gli elicotteri lanciano missili (la logica di gioco portata, `src/game.cpp`); sotto ci sono il pannello e la riga che scorre con i titoli, "Press START key" e il logo arcobaleno di Activision. Le opzioni sono quelle del gioco: `rom`, `-os`, `-seed`, `-bridge` (il visualizzatore prima ci arriva in volo dall'inizio del fiume, solo con il fiume, per 9999 qualche secondo, e lo mostra come sarebbe nel volo; si può guardare indietro fino all'inizio), `-random`, `-pal`, `-colours`, `-palette`, `-border`, `-filter`; e la sua `-sound`: la modalità dimostrativa con il suono (vedi M).
 
 Le lettere e le cifre 1–9 vengono dal font del sistema operativo, che non è nella cartuccia. Il port ha incorporato il font di AltirraOS: il sistema operativo sostitutivo libero distribuito con atari800 (licenza: copia e modifica permesse mantenendo l'avviso di copyright, vedi `src/os_font.cpp`); anche le tracce di riferimento sono state fatte con esso. `-os file` prende il font del sistema dell'Atari stesso da un'immagine della ROM del sistema (10 KB o 16 KB) o da un file di font da 1 KB.
 
@@ -87,6 +87,7 @@ Le lettere e le cifre 1–9 vengono dal font del sistema operativo, che non è n
 | V | modello di colore Altirra / atari800 |
 | O | solo l'immagine del gioco / l'intero fotogramma con il bordo |
 | L | scalatura: sharp / nearest / linear |
+| M | suono sì / no: proiettili dei carri armati, missili degli elicotteri e il motore di un aereo, come nel gioco (non nell'originale, dove la modalità dimostrativa è muta); solo a velocità normale |
 | Esc | esce dallo schermo intero |
 | clic del mouse | nasconde il puntatore finché il mouse non si muove (lo stesso passando a schermo intero) |
 

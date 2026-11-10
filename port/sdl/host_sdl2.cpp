@@ -24,6 +24,7 @@ SDL_Scancode scancode(Key key) {
 	case Key::C: return SDL_SCANCODE_C;
 	case Key::F: return SDL_SCANCODE_F;
 	case Key::L: return SDL_SCANCODE_L;
+	case Key::M: return SDL_SCANCODE_M;
 	case Key::O: return SDL_SCANCODE_O;
 	case Key::V: return SDL_SCANCODE_V;
 	case Key::X: return SDL_SCANCODE_X;
@@ -65,6 +66,7 @@ Key keyFromEvent(SDL_Keycode code) {
 	case SDLK_c: return Key::C;
 	case SDLK_f: return Key::F;
 	case SDLK_l: return Key::L;
+	case SDLK_m: return Key::M;
 	case SDLK_o: return Key::O;
 	case SDLK_v: return Key::V;
 	case SDLK_x: return Key::X;
