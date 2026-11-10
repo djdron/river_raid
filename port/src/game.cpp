@@ -593,6 +593,16 @@ void Game::moveShell() {
 }
 
 void Game::skipFrame() {
+	// what prepare() does to the river's state: the tank and its shell go once they have
+	// scrolled below the screen (a tank still there would keep the generator from placing the
+	// next one)
+	RiverState &s = gen.s;
+	if (s.tankY >= 0xBC) s.tankKind = s.tankY = 0;
+	if (s.shellY >= 0xBC) {
+		s.shellTimer = 0xFF;
+		g.shellFrame = 0;
+		s.shellY = 0;
+	}
 	// A2F5: the attract timer (in the attract mode it only goes round)
 	if (g.attractTimer && !(g.frameCount & 7)) {
 		const uint8_t timer = lo(g.attractTimer - 1);

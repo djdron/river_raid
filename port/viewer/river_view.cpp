@@ -89,8 +89,9 @@ constexpr int kSampleRate = 48000;
 // kSettleFrames frames: the machine runs ahead with the river only (Machine::skip, the objects
 // standing still), then kSettleFrames whole frames, by which time every object from before
 // has scrolled off and the ones on screen have lived their whole lives as they did. (Checked
-// against flying all the way: every frame drawn the same and the whole state the same, at
-// hundreds of points, from settle times of 600 frames on; kSettleFrames has twice that.)
+// against flying all the way: every following frame drawn the same and the whole state the
+// same, at hundreds of points of several rivers, from settle times of 200 frames on, about the
+// time an object takes to cross the screen; kSettleFrames has twice that.)
 // So B flies ahead by the river only, and far back the replay starts from a small anchor
 // (the river's state, about 170 bytes, every kAnchorFrames frames). Whole snapshots (about
 // 16 KB) are kept only near the present and around where the replay is, for running back
@@ -218,6 +219,14 @@ public:
 		rr::drawStatusBar(rom_, charsets_, panel, 0xFF, m->scroller, m->logoShown, screen);   // full tank
 	}
 
+	// Gets the moment `back` lines before the newest one ready for draw(), for a jump (B /
+	// Shift+B): without the stretch kept for running back from it, so the jump is as quick as
+	// flying ahead; running back from there gets it when it is needed.
+	void jumpTo(long back) {
+		const long target = lines() - 1 - back;
+		if (back > 0 && target >= 0) replayTo(target, 0);
+	}
+
 	void setRiver(uint32_t seed, int bridge) {
 		riverSeed_ = seed;
 		startBridge_ = bridge;
@@ -228,9 +237,9 @@ private:
 	static constexpr long kSnapshotFrames = 128;     // snapshot spacing near the present and the replay
 	static constexpr long kRecentFrames = 8192;      // the stretch before the present kept so
 	static constexpr size_t kReplaySnapshots = 64;   // snapshots kept around the replay
-	static constexpr long kSettleFrames = 1200;      // whole frames after running on with the river only
+	static constexpr long kSettleFrames = 400;       // whole frames after running on with the river only
 	static constexpr long kAnchorFrames = 1024;      // anchor spacing
-	static constexpr long kCoverFrames = 1024;       // whole frames before a far line, for running back
+	static constexpr long kCoverFrames = 512;        // whole frames before a far line, for running back
 	static constexpr long kFirstScrollerFrame = 11, kFirstRiverFrame = 38;
 
 	// Everything that runs: the game, POKEY's random counter, the scrolling line. Copied whole
@@ -369,7 +378,7 @@ private:
 
 	// Brings the replay to the moment line `target` entered the screen, from the nearest saved
 	// state: where the replay is, a snapshot, or (far away) an anchor.
-	void replayTo(long target) {
+	void replayTo(long target, long cover = kCoverFrames) {
 		auto it = snapshots_.end();   // the nearest snapshot before the line
 		while (it != snapshots_.begin() && std::prev(it)->second.machine.lines - 1 >= target) --it;
 		const Snapshot *snap = it == snapshots_.begin() ? nullptr : &std::prev(it)->second;
@@ -377,11 +386,11 @@ private:
 		if (!replayUsable) {
 			const Anchor *anchor = nullptr;   // the nearest anchor at least kSettleFrames lines before
 			for (auto a = anchors_.rbegin(); a != anchors_.rend(); ++a)
-				if (a->lines - 1 < target - kSettleFrames - kCoverFrames && a->frame >= kFirstRiverFrame) {
+				if (a->lines - 1 < target - kSettleFrames - cover && a->frame >= kFirstRiverFrame) {
 					anchor = &*a;
 					break;
 				}
-			if (snap && (!anchor || target - snap->machine.lines < 2 * kSettleFrames + kCoverFrames || anchor->frame <= snap->machine.frame)) {
+			if (snap && (!anchor || target - snap->machine.lines <= kSettleFrames + cover || anchor->frame <= snap->machine.frame)) {
 				replay_.emplace(snap->machine);
 			} else if (anchor) {
 				replay_.emplace(head_);   // any machine in the attract mode: its objects settle
@@ -392,9 +401,9 @@ private:
 		}
 		while (replay_->lines - 1 < target) {
 			const long before = replay_->lines;
-			// the river only while far; settled kCoverFrames before the line, so snapshots are kept
+			// the river only while far; settled `cover` frames before the line, so snapshots are kept
 			// behind it too and running back from there is smooth
-			if (target - (replay_->lines - 1) > kSettleFrames + kCoverFrames) {
+			if (target - (replay_->lines - 1) > kSettleFrames + cover) {
 				replay_->skip(pal_, nullptr);
 			} else {   // draw only the frames that may reach the line
 				replay_->step(pal_, replay_->lines >= target ? replayLive_ : nullptr, nullptr);
@@ -600,6 +609,7 @@ int main(int argc, char **argv) {
 					const long shown = attract.lines() - 1 - back - kMargin;
 					if (e.shift) {
 						back = attract.lines() - 1 - (attract.bridgeBefore(shown - 64) + kMargin);
+						attract.jumpTo(back);
 					} else {
 						const long next = attract.nextBridge(shown);
 						if (next < 0) break;
