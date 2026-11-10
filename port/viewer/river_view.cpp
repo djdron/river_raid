@@ -47,6 +47,8 @@
 #include <cstring>
 #include <ctime>
 #include <functional>
+#include <iterator>
+#include <map>
 #include <new>
 #include <optional>
 #include <string>
@@ -78,9 +80,12 @@ constexpr int kSampleRate = 48000;
 // The attract mode: the game running without a player, from power-on, plus the status bar.
 //
 // The present is run once (head_); every line it generates is recorded with its level and
-// bridge. Looking back runs the past again: snapshots of the whole machine are kept every
-// kSnapshotFrames frames, and a second copy (replay_) is started from the nearest one and run
-// to the line asked for, so any earlier moment is shown as it was, objects moving.
+// bridge. Looking back runs the past again: snapshots of the whole machine are kept, and a
+// second copy (replay_) is started from the nearest one and run to the line asked for, so any
+// earlier moment is shown as it was, objects moving. Snapshots (about 16 KB each) are kept
+// every kSnapshotFrames frames near the present and around where the replay is, and only every
+// kCoarseFrames frames elsewhere, so a long flight takes little memory (about 8 MB per
+// 1000 bridges); going far back costs one run of up to kCoarseFrames frames.
 class Attract {
 public:
 	Attract(const rr::Rom &rom, const uint8_t osFont[rr::kOsFontBytes], bool pal, uint32_t seed)
@@ -95,6 +100,7 @@ public:
 		level_.clear();
 		bridge_.clear();
 		snapshots_.clear();
+		cachedCount_ = 0;
 		replay_.reset();
 		std::memset(live_, 0, sizeof live_);
 		liveStale_ = false;
@@ -105,8 +111,12 @@ public:
 	// One frame of the original, in the present. fast: skip what is only seen or heard (the
 	// picture and the sound), for flying ahead.
 	void frame(bool fast = false) {
-		if (head_.frame % kSnapshotFrames == 0 && head_.frame / kSnapshotFrames == long(snapshots_.size()))
-			snapshots_.push_back(head_);
+		if (head_.frame % kSnapshotFrames == 0 && !snapshots_.count(head_.frame)) {
+			snapshots_.emplace(head_.frame, Snapshot{head_, false});
+			// the one that has just left the recent stretch goes, unless it is a coarse one
+			const auto old = snapshots_.find(head_.frame - kRecentFrames);
+			if (old != snapshots_.end() && old->first % kCoarseFrames != 0 && !old->second.cached) snapshots_.erase(old);
+		}
 		liveStale_ = fast;
 		head_.step(pal_, fast ? nullptr : live_, [this](const rr::RiverState &s) {
 			// a new level starts with each bridge: count them as the game's BRIDGE counter would
@@ -160,14 +170,16 @@ public:
 		const uint8_t (*live)[rr::kRowWidth] = live_;
 		const long target = lines() - 1 - back;
 		if ((back > 0 || liveStale_) && target >= 0) {   // (the present not drawn: run it again too)
-			// run on from where the replay is, or start again from the nearest snapshot before
-			if (!replay_ || replay_->lines - 1 > target || target - (replay_->lines - 1) > kSnapshotFrames) {
-				size_t i = snapshots_.size();
-				while (i > 1 && snapshots_[i - 1].lines - 1 >= target) i--;   // at least one frame to run
-				replay_.emplace(snapshots_[i - 1]);
-			}
-			while (replay_->lines - 1 < target)   // draw only the frames that may reach the line
+			// the nearest snapshot before the line (at least one frame to run from it)
+			auto it = snapshots_.end();
+			while (it != snapshots_.begin() && std::prev(it)->second.machine.lines - 1 >= target) --it;
+			if (it != snapshots_.begin()) --it;
+			// run on from where the replay is, or start again from that snapshot if it is nearer
+			if (!replay_ || replay_->lines - 1 > target || it->first > replay_->frame) replay_.emplace(it->second.machine);
+			while (replay_->lines - 1 < target) {   // draw only the frames that may reach the line
 				replay_->step(pal_, replay_->lines >= target ? replayLive_ : nullptr, nullptr);
+				if (replay_->frame % kSnapshotFrames == 0 && !snapshots_.count(replay_->frame)) keepReplay();
+			}
 			m = &*replay_;
 			live = replayLive_;
 		}
@@ -186,7 +198,10 @@ public:
 	}
 
 private:
-	static constexpr long kSnapshotFrames = 128;
+	static constexpr long kSnapshotFrames = 128;     // snapshot spacing near the present and the replay
+	static constexpr long kCoarseFrames = 2048;      // elsewhere
+	static constexpr long kRecentFrames = 8192;      // the stretch before the present kept fine
+	static constexpr size_t kReplaySnapshots = 64;   // fine snapshots kept around the replay
 	static constexpr long kFirstScrollerFrame = 11, kFirstRiverFrame = 38;
 
 	// Everything that runs: the game, POKEY's random counter, the scrolling line. Copied whole
@@ -245,7 +260,30 @@ private:
 	rr::Charsets charsets_;
 	uint8_t panel_[rr::kPanelBytes];
 	Machine head_;                       // the present
-	std::vector<Machine> snapshots_;     // head_ at frames 0, kSnapshotFrames, 2 * kSnapshotFrames...
+	struct Snapshot {
+		Machine machine;
+		bool cached;   // made by the replay
+	};
+	std::map<long, Snapshot> snapshots_;   // by frame
+	size_t cachedCount_ = 0;
+
+	// Keeps the replay's state as a snapshot, so running back through this stretch is quick;
+	// of those, the ones farthest from the replay go first.
+	void keepReplay() {
+		snapshots_.emplace(replay_->frame, Snapshot{*replay_, true});
+		if (++cachedCount_ <= kReplaySnapshots) return;
+		auto farthest = snapshots_.end();
+		long distance = -1;
+		for (auto i = snapshots_.begin(); i != snapshots_.end(); ++i) {
+			if (!i->second.cached) continue;
+			const long d = std::labs(i->first - replay_->frame);
+			if (d > distance) distance = d, farthest = i;
+		}
+		const bool keep = farthest->first % kCoarseFrames == 0 || head_.frame - farthest->first < kRecentFrames;
+		if (keep) farthest->second.cached = false;   // it belongs anyway
+		else snapshots_.erase(farthest);
+		cachedCount_--;
+	}
 	std::optional<Machine> replay_;      // the past, run again from a snapshot
 	uint8_t live_[rr::kScreenHeight][rr::kRowWidth] = {};        // the present's river area
 	uint8_t replayLive_[rr::kScreenHeight][rr::kRowWidth] = {};  // the replay's
