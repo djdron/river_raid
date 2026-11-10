@@ -2,6 +2,7 @@
 #include "game.h"
 
 #include <cstring>
+#include <type_traits>
 
 namespace rr {
 namespace {
@@ -100,28 +101,86 @@ void Game::startAttract(bool pal) {
 	pushLine();
 }
 
-Game::ScreenSource Game::compact() {
-	ScreenSource source;
-	source.lines = uint16_t(screen.size());
-	if (!screen.empty()) source.oldest = lineStates.back();   // needs keepLineStates
-	screen.clear();
-	screen.shrink_to_fit();
-	lineStates.clear();
-	lineStates.shrink_to_fit();
-	return source;
+namespace {
+
+// Raw bytes in, zero runs packed: a zero byte is followed by the length of its run (1-255).
+void pack(const uint8_t *data, size_t size, std::vector<uint8_t> &out) {
+	for (size_t i = 0; i < size;) {
+		if (data[i]) {
+			out.push_back(data[i++]);
+			continue;
+		}
+		size_t run = 0;
+		while (i + run < size && data[i + run] == 0 && run < 255) run++;
+		out.push_back(0);
+		out.push_back(uint8_t(run));
+		i += run;
+	}
 }
 
-void Game::expand(const ScreenSource &source) {
+std::vector<uint8_t> unpack(const std::vector<uint8_t> &in) {
+	std::vector<uint8_t> out;
+	for (size_t i = 0; i < in.size(); i++) {
+		if (in[i]) out.push_back(in[i]);
+		else if (i + 1 < in.size()) out.insert(out.end(), in[++i], 0);
+	}
+	return out;
+}
+
+template <typename T> void put(std::vector<uint8_t> &raw, const T &value) {
+	const auto *p = reinterpret_cast<const uint8_t *>(&value);
+	raw.insert(raw.end(), p, p + sizeof value);
+}
+
+template <typename T> void get(const std::vector<uint8_t> &raw, size_t &at, T &value) {
+	std::memcpy(&value, raw.data() + at, sizeof value);
+	at += sizeof value;
+}
+
+}  // namespace
+
+static_assert(std::is_trivially_copyable_v<GameState> && std::is_trivially_copyable_v<RiverState>, "saved as bytes");
+
+std::vector<uint8_t> Game::save() const {
+	std::vector<uint8_t> raw;
+	put(raw, g);
+	put(raw, gen.s);
+	put(raw, screen.empty() ? RiverState() : lineStates.back());   // the generator before the oldest line
+	put(raw, uint16_t(screen.size()));
+	put(raw, resume_);
+	put(raw, busy_);
+	put(raw, gameOverText_);
+	put(raw, pal_);
+	std::vector<uint8_t> out;
+	pack(raw.data(), raw.size(), out);
+	return out;
+}
+
+void Game::load(const std::vector<uint8_t> &data) {
+	const std::vector<uint8_t> raw = unpack(data);
+	size_t at = 0;
+	RiverState oldest;
+	uint16_t lines = 0;
+	get(raw, at, g);
+	get(raw, at, gen.s);
+	get(raw, at, oldest);
+	get(raw, at, lines);
+	get(raw, at, resume_);
+	get(raw, at, busy_);
+	get(raw, at, gameOverText_);
+	get(raw, at, pal_);
+	// screen memory again, from the generator's state before its oldest line
 	RiverGen run = gen;
-	run.s = source.oldest;
+	run.s = oldest;
 	screen.clear();
 	lineStates.clear();
 	std::array<uint8_t, kLineBytes> line;
-	for (int i = 0; i < source.lines; i++) {
+	for (int i = 0; i < lines; i++) {
 		if (keepLineStates) lineStates.insert(lineStates.begin(), run.s);
 		run.nextLine(line.data());
 		screen.insert(screen.begin(), line);
 	}
+	scan = {};
 }
 
 // A new river line goes above the others. Screen memory is a ring of two 80-line blocks,

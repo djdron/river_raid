@@ -156,15 +156,14 @@ public:
 	// memory can be made again from the oldest one (a small saved state, see compact()).
 	bool keepLineStates = false;
 	std::vector<RiverState> lineStates;
-	// Saved states: drops screen memory (and lineStates) keeping only what makes it again, the
-	// generator's state before its oldest line; expand() makes it again. The river's lines
-	// depend only on the generator, never on the objects, so they come out the same.
-	struct ScreenSource {
-		RiverState oldest;   // the generator before the oldest line in screen memory
-		uint16_t lines = 0;  // how many lines screen memory held
-	};
-	ScreenSource compact();
-	void expand(const ScreenSource &source);
+	// A saved state (needs keepLineStates): only what the game cannot make again. The variables
+	// (GameState, with player-missile memory) and the generator's state are kept; screen memory
+	// is kept as the generator's state before its oldest line and the number of lines, and made
+	// again on loading (the river's lines depend only on the generator); the per-scanline data
+	// (scan) is made again by the next frame's display(). Runs of zero bytes are packed, so a
+	// saved state is well under 1 KB. load() needs the same starting points (gen.setRiver).
+	std::vector<uint8_t> save() const;
+	void load(const std::vector<uint8_t> &data);
 	// Called after each new river line (gen.s is the state right after it), if set.
 	std::function<void(const uint8_t *line)> afterLine;
 

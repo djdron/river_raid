@@ -92,15 +92,14 @@ constexpr int kSampleRate = 48000;
 class Atari {
 public:
 	Atari(const rr::Rom &rom, const uint8_t osFont[rr::kOsFontBytes], bool pal, uint32_t seed)
-		: rom_(rom), pal_(pal), random_(seed), pokey_(kSampleRate),
+		: rom_(rom), game_(rom), pal_(pal), random_(seed), pokey_(kSampleRate),
 		charsets_(rr::buildCharsets(rom, osFont)) {
-		game_.emplace(rom);
-		game_->keepLineStates = true;   // for small saved states
+		game_.keepLineStates = true;   // for small saved states
 		rr::initialPanel(rom, powerOnPanel_);
 		std::memset(screen_, 0, sizeof screen_);
-		game_->afterDisplay = [this] {
+		game_.afterDisplay = [this] {
 			std::memset(screen_, 0, size_t(rr::kRiverTop + rr::kRiverRows) * rr::kRowWidth);
-			game_->drawRiver(screen_);
+			game_.drawRiver(screen_);
 		};
 	}
 
@@ -115,13 +114,13 @@ public:
 			rr::drawStatusBar(rom_, charsets_, powerOnPanel_, 0xFF, powerOnScroller_, powerOnLogo_, screen_);
 		} else {
 			if (frame_ == kGameStartFrame) {
-				game_->startAttract(pal_);
+				game_.startAttract(pal_);
 			} else {
 				// RANDOM is read in the main loop around scanline 192 (A205) and in the VBI (249)
 				int reads = 0;
-				game_->frame(input, [this, &reads] { return random_.read(reads++ ? 249 : 192, 13); });
+				game_.frame(input, [this, &reads] { return random_.read(reads++ ? 249 : 192, 13); });
 			}
-			const rr::GameState &g = game_->g;
+			const rr::GameState &g = game_.g;
 			if (g.idleTime & 0x80) {
 				std::memset(screen_, 0, sizeof screen_);   // screen off after a long time unused
 			} else {
@@ -132,26 +131,26 @@ public:
 		// sound: the registers the VBI set at the end of the previous frame play for one frame
 		pokey_.run(rr::PokeyRandom::kCyclesPerLine * rr::PokeyRandom::kLinesPerFrame, audio_);
 		for (int c = 0; c < 4; c++) {
-			pokey_.write(2 * c, game_->g.pokey.audf[c]);
-			pokey_.write(2 * c + 1, game_->g.pokey.audc[c]);
+			pokey_.write(2 * c, game_.g.pokey.audf[c]);
+			pokey_.write(2 * c + 1, game_.g.pokey.audc[c]);
 		}
 	}
 
 	const uint8_t (*screen() const)[rr::kScreenWidth] { return screen_; }
 	std::vector<int16_t> &audio() { return audio_; }
 	void setSoundRate(double rate) { pokey_.setSampleRate(rate); }
-	const rr::GameState &state() const { return game_->g; }
+	const rr::GameState &state() const { return game_.g; }
 
-	void setRiver(uint32_t seed, int bridge) { game_->gen.setRiver(seed, bridge); }
+	void setRiver(uint32_t seed, int bridge) { game_.gen.setRiver(seed, bridge); }
 
-	// Saved state (F7 / F8): the whole machine, in memory, about 3 KB: screen memory is kept as
-	// the generator's state it was made from (Game::compact), and the picture is drawn again by
-	// the next frame.
+	// Saved state (F7 / F8): the whole machine, in memory: the game's own (Game::save, only what
+	// it cannot make again), POKEY's random counter and sound, the power-on screen's scrolling
+	// line. The picture is drawn again by the next frame.
 	void saveState() { saved_.emplace(*this); }
+	size_t savedBytes() const { return saved_ ? sizeof(Saved) - sizeof(std::vector<uint8_t>) + saved_->game.size() : 0; }
 	bool loadState() {
 		if (!saved_) return false;
-		game_.emplace(saved_->game);
-		game_->expand(saved_->screenSource);
+		game_.load(saved_->game);
 		random_ = saved_->random;
 		pokey_ = saved_->pokey;
 		powerOnScroller_ = saved_->powerOnScroller;
@@ -163,7 +162,7 @@ public:
 private:
 	static constexpr long kGameStartFrame = 38;   // the attract mode's river starts
 	const rr::Rom &rom_;
-	std::optional<rr::Game> game_;   // optional: a Game cannot be assigned (it refers to the ROM), only rebuilt
+	rr::Game game_;
 	bool pal_;
 	rr::PokeyRandom random_;
 	rr::PokeySound pokey_;
@@ -175,18 +174,15 @@ private:
 	uint8_t screen_[rr::kScreenHeight][rr::kScreenWidth];
 	std::vector<int16_t> audio_;
 	struct Saved {
-		rr::Game game;
-		rr::Game::ScreenSource screenSource;
+		std::vector<uint8_t> game;
 		rr::PokeyRandom random;
 		rr::PokeySound pokey;
 		rr::Scroller powerOnScroller;
 		uint8_t powerOnLogo;
 		long frame;
 		explicit Saved(const Atari &a)
-			: game(*a.game_), random(a.random_), pokey(a.pokey_), powerOnScroller(a.powerOnScroller_),
-			  powerOnLogo(a.powerOnLogo_), frame(a.frame_) {
-			screenSource = game.compact();
-		}
+			: game(a.game_.save()), random(a.random_), pokey(a.pokey_), powerOnScroller(a.powerOnScroller_),
+			  powerOnLogo(a.powerOnLogo_), frame(a.frame_) {}
 	};
 	std::optional<Saved> saved_;
 };
