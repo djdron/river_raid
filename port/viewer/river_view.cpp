@@ -413,12 +413,26 @@ int main(int argc, char **argv) {
 						back = attract.lines() - 1 - (attract.bridgeBefore(shown - 64) + kMargin);
 					} else {
 						long next = attract.bridgeAfter(shown);
-						// not generated yet: fly on, drawing only the last frame
-						while (next < 0) {
+						// not generated yet: fly on, drawing only the last frame (and give up if the river
+						// stops coming, so the window never stops answering)
+						long stalled = 0;
+						while (next < 0 && stalled < 4096) {
+							const long before = attract.lines();
 							for (int i = 0; i < 64; i++) attract.frame(true);
+							stalled = attract.lines() == before ? stalled + 64 : 0;
 							next = attract.bridgeAfter(shown);
 						}
-						while (attract.lines() - 1 < next + kMargin) attract.frame(attract.lines() < next + kMargin);
+						if (next < 0) {
+							attract.frame();
+							back = 0;
+							break;
+						}
+						while (attract.lines() - 1 < next + kMargin && stalled < 4096) {
+							const long before = attract.lines();
+							attract.frame(attract.lines() < next + kMargin);
+							stalled = attract.lines() == before ? stalled + 1 : 0;
+						}
+						if (stalled >= 4096) attract.frame();   // draw the present
 						back = attract.lines() - 1 - (next + kMargin);
 					}
 					break;
