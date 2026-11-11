@@ -5,7 +5,7 @@
 Questa è una spiegazione per i curiosi, senza bisogno di saper programmare: come River Raid per gli
 Atari a 8 bit (Activision, 1983) costruisce il suo fiume senza fine, piazza nemici e ponti e scopre
 cosa ha colpito cosa. Tutto qui è stato letto dal programma originale e confrontato con esso
-fotogramma per fotogramma (vedi `port/README.it.md`). I numeri sono dati come li usa il gioco; dove
+fotogramma per fotogramma (vedi [port/README.it.md](../port/README.it.md)). I numeri sono dati come li usa il gioco; dove
 aiuta, tra parentesi c'è il nome della funzione corrispondente nel codice del port. Le immagini sono
 disegnate con il generatore del fiume del port, con colori semplici propri (`tools/doc_figures.py`).
 

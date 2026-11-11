@@ -35,7 +35,7 @@ Alle werden über benannte Zugriffsfunktionen in `port/src/rom.h` gelesen.
 - $BAAF: nächste Panzerart; $BAC5: Granatenfarben; $BB24: nächste Objektart (Animation); $BB40: Versätze der Objektformen ab $B900.
 
 ## Referenzlauf (erledigt)
-`oracle/rr_oracle` lässt das Original auf libatari800 laufen und schreibt das RAM jedes Bilds, jeden POKEY-Schreibzugriff und jeden RANDOM-Lesezugriff (siehe `oracle/README.de.md`).
+`oracle/rr_oracle` lässt das Original auf libatari800 laufen und schreibt das RAM jedes Bilds, jeden POKEY-Schreibzugriff und jeden RANDOM-Lesezugriff (siehe [oracle/README.de.md](../oracle/README.de.md)).
 - Das Spiel startet mit der START-Taste; Feuer auf dem Titelbildschirm startet es nicht.
 - atari800 startet den POKEY-Generator von der Uhr; mit `-seed` sind Läufe Byte für Byte gleich.
 - RANDOM-Lesezugriffe: Rasterzeile ~249 ist Sound aus dem VBI, Rasterzeilen 190–192 und 241 sind Spiellogik (A205). Für C++ heißt das, dass im Prüfmodus die Zufallswerte des Spiels aus `random.log` genommen und nicht emuliert werden.

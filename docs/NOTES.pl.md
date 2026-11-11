@@ -35,7 +35,7 @@ Wszystkie są czytane przez nazwane funkcje w `port/src/rom.h`.
 - $BAAF: następny rodzaj czołgu; $BAC5: kolory pocisku; $BB24: następny rodzaj obiektu (animacja); $BB40: przesunięcia kształtów obiektów od $B900.
 
 ## Przebieg wzorcowy (zrobione)
-`oracle/rr_oracle` uruchamia oryginał na libatari800 i zapisuje RAM każdej klatki, każdy zapis do POKEY i każdy odczyt RANDOM (zob. `oracle/README.pl.md`).
+`oracle/rr_oracle` uruchamia oryginał na libatari800 i zapisuje RAM każdej klatki, każdy zapis do POKEY i każdy odczyt RANDOM (zob. [oracle/README.pl.md](../oracle/README.pl.md)).
 - Gra zaczyna się klawiszem START; ogień na ekranie tytułowym jej nie uruchamia.
 - atari800 uruchamia generator POKEY od zegara; z `-seed` przebiegi są identyczne co do bajtu.
 - Odczyty RANDOM: linia ~249 to dźwięk z VBI, linie 190–192 i 241 to logika gry (A205). Dla C++ oznacza to, że w trybie weryfikacji losowe wartości gry bierze się z `random.log`, a nie emuluje.

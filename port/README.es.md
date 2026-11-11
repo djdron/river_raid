@@ -2,7 +2,7 @@
 
 [English](README.md) | [Русский](README.ru.md) | [Українська](README.uk.md) | [Deutsch](README.de.md) | [Polski](README.pl.md) | [Italiano](README.it.md) | Español | [中文](README.zh.md) | [日本語](README.ja.md)
 
-Un proyecto no oficial de aficionados con fines educativos, sin relación con Activision ni Microsoft; no incluye ninguna parte del juego (vea el aviso en `../README.es.md`).
+Un proyecto no oficial de aficionados con fines educativos, sin relación con Activision ni Microsoft; no incluye ninguna parte del juego (vea el aviso en [../README.es.md](../README.es.md)).
 
 El juego completo: `river_raid` juega a River Raid como el original — modo de demostración, selección de partida, uno y dos jugadores, el avión, el combustible, los enemigos, los puentes, los puntos, las vidas, los récords, la pausa y el sonido. El generador del río y la lógica del juego producen fotograma a fotograma el mismo estado de la RAM que el original, y el dibujo, la misma pantalla (vea Verificación).
 
@@ -113,7 +113,7 @@ Qué objeto despierta y cuándo lo decide el registro RANDOM de POKEY, un contad
 | `viewer/river_view.cpp` | el visor del río (SDL3), vea arriba |
 | `sdl/host.h`, `host_sdl3.cpp`, `host_sdl2.cpp` | ventana, imagen, sonido, teclado y mandos para el juego y el visor, sobre SDL3 o SDL2; ocultación del puntero del ratón |
 | `tools/river_map.cpp` | genera el río y guarda un PNG tal como lo muestra el juego: `river_map <rom> <partida 1..8> <líneas> out.png [-pal] [-flat]` (`-flat`: solo el mapa de bits, colores fijos) |
-| `tools/river_dump.cpp` | escribe el río generado como texto (color de cada punto, objetos colocados) para `tools/doc_figures.py`, que dibuja las imágenes de `docs/HOW_IT_WORKS.es.md`: `python tools/doc_figures.py rom/River_Raid.rom` (necesita matplotlib) |
+| `tools/river_dump.cpp` | escribe el río generado como texto (color de cada punto, objetos colocados) para `tools/doc_figures.py`, que dibuja las imágenes de [docs/HOW_IT_WORKS.es.md](../docs/HOW_IT_WORKS.es.md): `python tools/doc_figures.py rom/River_Raid.rom` (necesita matplotlib) |
 | `tools/sound_check.cpp` | compara el controlador de sonido con las escrituras del original en POKEY (`rr_oracle -vbi`) |
 | `tools/sound_render.cpp` | convierte un registro de escrituras en POKEY a WAV con el POKEY del port, para compararlo con el sonido del emulador (`rr_oracle -wav`) |
 | `tools/game_check.cpp` | compara el juego con una traza de RAM del original fotograma a fotograma, con la entrada y los valores RANDOM del original (y la zona del río con sus pantallas) |

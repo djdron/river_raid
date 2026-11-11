@@ -5,7 +5,7 @@
 Esta es una explicación para cualquier curioso, sin necesidad de saber programar: cómo River Raid para
 los Atari de 8 bits (Activision, 1983) construye su río sin fin, coloca enemigos y puentes y averigua
 qué chocó con qué. Todo lo de aquí se leyó del programa original y se comparó con él fotograma a
-fotograma (vea `port/README.es.md`). Los números se dan tal como los usa el juego; donde ayuda, entre
+fotograma (vea [port/README.es.md](../port/README.es.md)). Los números se dan tal como los usa el juego; donde ayuda, entre
 paréntesis va el nombre de la función correspondiente en el código del port. Las imágenes están
 dibujadas con el generador del río del port, en colores sencillos propios (`tools/doc_figures.py`).
 

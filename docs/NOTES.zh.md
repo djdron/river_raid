@@ -35,7 +35,7 @@
 - $BAAF：下一种坦克；$BAC5：炮弹颜色；$BB24：下一种物体（动画）；$BB40：从 $B900 起的物体形状偏移。
 
 ## 基准运行（已完成）
-`oracle/rr_oracle` 在 libatari800 上运行原版，记录每一帧的 RAM、每次 POKEY 写入和每次 RANDOM 读取（见 `oracle/README.zh.md`）。
+`oracle/rr_oracle` 在 libatari800 上运行原版，记录每一帧的 RAM、每次 POKEY 写入和每次 RANDOM 读取（见 [oracle/README.zh.md](../oracle/README.zh.md)）。
 - 游戏用 START 键开始；在标题画面按开火不会开始。
 - atari800 从时钟启动 POKEY 生成器；加 `-seed` 时各次运行逐字节相同。
 - RANDOM 读取：扫描线约 249 是 VBI 中的声音，扫描线 190–192 和 241 是游戏逻辑（A205）。对 C++ 来说，这意味着在校验模式下游戏的随机值取自 `random.log`，而不是模拟出来。

@@ -2,7 +2,7 @@
 
 [English](README.md) | [Русский](README.ru.md) | [Українська](README.uk.md) | Deutsch | [Polski](README.pl.md) | [Italiano](README.it.md) | [Español](README.es.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
-Ein inoffizielles Fanprojekt zu Lernzwecken, ohne Verbindung zu Activision oder Microsoft; kein Teil des Spiels ist enthalten (siehe den Hinweis in `../README.de.md`).
+Ein inoffizielles Fanprojekt zu Lernzwecken, ohne Verbindung zu Activision oder Microsoft; kein Teil des Spiels ist enthalten (siehe den Hinweis in [../README.de.md](../README.de.md)).
 
 Das ganze Spiel: `river_raid` spielt River Raid wie das Original — Demo-Modus, Spielauswahl, ein und zwei Spieler, das Flugzeug, Treibstoff, Gegner, Brücken, Punkte, Leben, Highscores, Pause und Sound. Der Flussgenerator und die Spiellogik erzeugen Bild für Bild denselben RAM-Zustand wie das Original, das Zeichnen denselben Bildschirm (siehe Überprüfung).
 
@@ -113,7 +113,7 @@ Welches Objekt wann erwacht, entscheidet POKEYs RANDOM-Register, ein Hardwarezä
 | `viewer/river_view.cpp` | der Fluss-Betrachter (SDL3), siehe oben |
 | `sdl/host.h`, `host_sdl3.cpp`, `host_sdl2.cpp` | Fenster, Bild, Sound, Tastatur und Gamepads für Spiel und Betrachter, über SDL3 oder SDL2; Ausblenden des Mauszeigers |
 | `tools/river_map.cpp` | erzeugt den Fluss und speichert ein PNG so, wie das Spiel ihn zeigt: `river_map <rom> <Spiel 1..8> <Zeilen> out.png [-pal] [-flat]` (`-flat`: nur die Bitmap, feste Farben) |
-| `tools/river_dump.cpp` | schreibt den erzeugten Fluss als Text (Farbe jedes Punkts, platzierte Objekte) für `tools/doc_figures.py`, das die Bilder in `docs/HOW_IT_WORKS.de.md` zeichnet: `python tools/doc_figures.py rom/River_Raid.rom` (braucht matplotlib) |
+| `tools/river_dump.cpp` | schreibt den erzeugten Fluss als Text (Farbe jedes Punkts, platzierte Objekte) für `tools/doc_figures.py`, das die Bilder in [docs/HOW_IT_WORKS.de.md](../docs/HOW_IT_WORKS.de.md) zeichnet: `python tools/doc_figures.py rom/River_Raid.rom` (braucht matplotlib) |
 | `tools/sound_check.cpp` | vergleicht den Soundtreiber mit den POKEY-Schreibzugriffen des Originals (`rr_oracle -vbi`) |
 | `tools/sound_render.cpp` | rendert ein Protokoll der POKEY-Schreibzugriffe mit dem POKEY der Portierung zu WAV, zum Vergleich mit dem Sound des Emulators (`rr_oracle -wav`) |
 | `tools/game_check.cpp` | vergleicht das Spiel Bild für Bild mit einem RAM-Trace des Originals, mit dessen Eingaben und RANDOM-Werten (und den Flussbereich mit seinen Bildschirmen) |

@@ -2,7 +2,7 @@
 
 [English](HOW_IT_WORKS.md) | [Русский](HOW_IT_WORKS.ru.md) | [Українська](HOW_IT_WORKS.uk.md) | [Deutsch](HOW_IT_WORKS.de.md) | [Polski](HOW_IT_WORKS.pl.md) | [Italiano](HOW_IT_WORKS.it.md) | [Español](HOW_IT_WORKS.es.md) | 中文 | [日本語](HOW_IT_WORKS.ja.md)
 
-这是一篇写给所有好奇者的说明，不需要编程知识：8 位 Atari 版 River Raid（Activision，1983）如何构造无尽的河，如何摆放敌人和桥，又如何知道什么撞上了什么。这里的一切都读自原版程序，并与它逐帧对照过（见 `port/README.zh.md`）。数字按游戏实际使用的样子给出；在有帮助的地方，括号里写的是移植代码中对应函数的名字。图片用移植版的河流生成器绘制，配色是自己的简单颜色（`tools/doc_figures.py`）。
+这是一篇写给所有好奇者的说明，不需要编程知识：8 位 Atari 版 River Raid（Activision，1983）如何构造无尽的河，如何摆放敌人和桥，又如何知道什么撞上了什么。这里的一切都读自原版程序，并与它逐帧对照过（见 [port/README.zh.md](../port/README.zh.md)）。数字按游戏实际使用的样子给出；在有帮助的地方，括号里写的是移植代码中对应函数的名字。图片用移植版的河流生成器绘制，配色是自己的简单颜色（`tools/doc_figures.py`）。
 
 ## 屏幕
 

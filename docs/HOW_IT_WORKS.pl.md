@@ -5,7 +5,7 @@
 To wyjaśnienie dla wszystkich ciekawych, bez znajomości programowania: jak River Raid na 8-bitowe
 Atari (Activision, 1983) buduje nieskończoną rzekę, rozmieszcza wrogów i mosty i dowiaduje się, co
 w co trafiło. Wszystko tutaj odczytano z oryginalnego programu i porównano z nim klatka po klatce
-(zob. `port/README.pl.md`). Liczby podano tak, jak używa ich gra; tam, gdzie to pomaga, w nawiasach
+(zob. [port/README.pl.md](../port/README.pl.md)). Liczby podano tak, jak używa ich gra; tam, gdzie to pomaga, w nawiasach
 podano nazwę odpowiedniej funkcji w kodzie portu. Rysunki wykonano generatorem rzeki z portu,
 we własnych, prostych kolorach (`tools/doc_figures.py`).
 

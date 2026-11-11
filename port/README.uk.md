@@ -2,7 +2,7 @@
 
 [English](README.md) | [Русский](README.ru.md) | Українська | [Deutsch](README.de.md) | [Polski](README.pl.md) | [Italiano](README.it.md) | [Español](README.es.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
-Неофіційний аматорський проєкт з освітньою метою, не пов'язаний з Activision і Microsoft; частин гри в ньому немає (див. застереження в `../README.uk.md`).
+Неофіційний аматорський проєкт з освітньою метою, не пов'язаний з Activision і Microsoft; частин гри в ньому немає (див. застереження в [../README.uk.md](../README.uk.md)).
 
 Уся гра: `river_raid` грає в River Raid так, як оригінал, — демонстраційний режим, вибір гри, один і два гравці, літак, пальне, вороги, мости, очки, життя, рекорди, пауза і звук. Генератор річки й логіка гри дають той самий стан RAM, що й оригінал, кадр за кадром, а малювання — той самий екран (див. «Перевірка»).
 
@@ -113,7 +113,7 @@ river_view [rom] [параметри]
 | `viewer/river_view.cpp` | переглядач річки (SDL3), див. вище |
 | `sdl/host.h`, `host_sdl3.cpp`, `host_sdl2.cpp` | вікно, картинка, звук, клавіатура й геймпади для гри й переглядача, поверх SDL3 або SDL2; приховування вказівника миші |
 | `tools/river_map.cpp` | генерує річку й зберігає PNG так, як її показує гра: `river_map <rom> <гра 1..8> <рядків> out.png [-pal] [-flat]` (`-flat`: лише растр, фіксовані кольори) |
-| `tools/river_dump.cpp` | записує згенеровану річку текстом (колір кожної точки, поставлені об'єкти) для `tools/doc_figures.py`, який малює картинки в `docs/HOW_IT_WORKS.uk.md`: `python tools/doc_figures.py rom/River_Raid.rom` (потрібен matplotlib) |
+| `tools/river_dump.cpp` | записує згенеровану річку текстом (колір кожної точки, поставлені об'єкти) для `tools/doc_figures.py`, який малює картинки в [docs/HOW_IT_WORKS.uk.md](../docs/HOW_IT_WORKS.uk.md): `python tools/doc_figures.py rom/River_Raid.rom` (потрібен matplotlib) |
 | `tools/sound_check.cpp` | порівнює звуковий драйвер із записами оригіналу в POKEY (`rr_oracle -vbi`) |
 | `tools/sound_render.cpp` | перетворює журнал записів у POKEY на WAV за допомогою POKEY порту, щоб порівняти зі звуком емулятора (`rr_oracle -wav`) |
 | `tools/game_check.cpp` | порівнює гру з трасою RAM оригіналу кадр за кадром, з натисканнями й значеннями RANDOM оригіналу (і ділянку річки з його екранами) |

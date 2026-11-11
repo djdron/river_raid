@@ -35,7 +35,7 @@ Todas se leen mediante funciones con nombre en `port/src/rom.h`.
 - $BAAF: siguiente tipo de tanque; $BAC5: colores del proyectil; $BB24: siguiente tipo de objeto (animación); $BB40: desplazamientos de las formas de los objetos desde $B900.
 
 ## Ejecución de referencia (hecho)
-`oracle/rr_oracle` ejecuta el original sobre libatari800 y escribe la RAM de cada fotograma, cada escritura en POKEY y cada lectura de RANDOM (véase `oracle/README.es.md`).
+`oracle/rr_oracle` ejecuta el original sobre libatari800 y escribe la RAM de cada fotograma, cada escritura en POKEY y cada lectura de RANDOM (véase [oracle/README.es.md](../oracle/README.es.md)).
 - El juego empieza con la tecla START; disparar en la pantalla de título no lo inicia.
 - atari800 arranca el generador de POKEY desde el reloj; con `-seed` las ejecuciones son idénticas byte a byte.
 - Lecturas de RANDOM: la línea de barrido ~249 es el sonido desde el VBI, las líneas 190–192 y 241 son la lógica del juego (A205). Para C++ esto significa que en modo de verificación los valores aleatorios del juego se toman de `random.log` y no se emulan.

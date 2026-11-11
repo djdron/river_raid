@@ -2,7 +2,7 @@
 
 [English](README.md) | Русский | [Українська](README.uk.md) | [Deutsch](README.de.md) | [Polski](README.pl.md) | [Italiano](README.it.md) | [Español](README.es.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
-Неофициальный любительский проект в образовательных целях, не связан с Activision и Microsoft; частей игры в нём нет (см. оговорку в `../README.ru.md`).
+Неофициальный любительский проект в образовательных целях, не связан с Activision и Microsoft; частей игры в нём нет (см. оговорку в [../README.ru.md](../README.ru.md)).
 
 Вся игра: `river_raid` играет в River Raid так же, как оригинал, — демо-режим, выбор игры, один и два игрока, самолёт, топливо, враги, мосты, очки, жизни, рекорды, пауза и звук. Генератор реки и логика игры дают покадрово то же состояние RAM, что оригинал, отрисовка — тот же экран (см. «Проверка»).
 
@@ -113,7 +113,7 @@ river_view [rom] [параметры]
 | `sdl/host.h`, `host_sdl3.cpp`, `host_sdl2.cpp` | окно, картинка, звук, клавиатура и геймпады игры и просмотрщика поверх SDL3 или SDL2; скрытие указателя мыши |
 | `viewer/river_view.cpp` | просмотрщик реки (SDL3), см. ниже |
 | `tools/river_map.cpp` | генерирует реку и сохраняет PNG так, как её показывает игра: `river_map <rom> <игра 1..8> <строк> out.png [-pal] [-flat]` (`-flat`: только растр, фиксированные цвета) |
-| `tools/river_dump.cpp` | записывает сгенерированную реку текстом (цвет каждой точки, поставленные объекты) для `tools/doc_figures.py`, который рисует картинки в `docs/HOW_IT_WORKS.ru.md`: `python tools/doc_figures.py rom/River_Raid.rom` (нужен matplotlib) |
+| `tools/river_dump.cpp` | записывает сгенерированную реку текстом (цвет каждой точки, поставленные объекты) для `tools/doc_figures.py`, который рисует картинки в [docs/HOW_IT_WORKS.ru.md](../docs/HOW_IT_WORKS.ru.md): `python tools/doc_figures.py rom/River_Raid.rom` (нужен matplotlib) |
 | `tools/sound_check.cpp` | сверка звукового драйвера с записями оригинала в POKEY (`rr_oracle -vbi`) |
 | `tools/sound_render.cpp` | рендер журнала записей POKEY в WAV звуком порта, для сравнения со звуком эмулятора (`rr_oracle -wav`) |
 | `tools/game_check.cpp` | покадровая сверка игры с трассой RAM оригинала, с вводом и значениями RANDOM оригинала (и области реки с его экранами) |

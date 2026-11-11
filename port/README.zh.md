@@ -2,7 +2,7 @@
 
 [English](README.md) | [Русский](README.ru.md) | [Українська](README.uk.md) | [Deutsch](README.de.md) | [Polski](README.pl.md) | [Italiano](README.it.md) | [Español](README.es.md) | 中文 | [日本語](README.ja.md)
 
-一个出于学习目的的非官方爱好者项目，与 Activision 和 Microsoft 无关；不包含游戏的任何部分（见 `../README.zh.md` 中的声明）。
+一个出于学习目的的非官方爱好者项目，与 Activision 和 Microsoft 无关；不包含游戏的任何部分（见 [../README.zh.md](../README.zh.md) 中的声明）。
 
 完整的游戏：`river_raid` 像原版一样运行 River Raid——演示模式、选择游戏、单人和双人、飞机、燃料、敌人、桥、分数、生命、最高分、暂停和声音。河流生成器和游戏逻辑逐帧产生与原版相同的 RAM 状态，绘制出相同的屏幕（见“验证”）。
 
@@ -113,7 +113,7 @@ river_view [rom] [选项]
 | `viewer/river_view.cpp` | 河流查看器（SDL3），见上文 |
 | `sdl/host.h`、`host_sdl3.cpp`、`host_sdl2.cpp` | 游戏和查看器的窗口、画面、声音、键盘和手柄，基于 SDL3 或 SDL2；隐藏鼠标指针 |
 | `tools/river_map.cpp` | 生成河并保存为 PNG，样子和游戏中一样：`river_map <rom> <游戏 1..8> <行数> out.png [-pal] [-flat]`（`-flat`：只有位图，固定颜色） |
-| `tools/river_dump.cpp` | 把生成的河以文本写出（每个点的颜色、放置的物体），供 `tools/doc_figures.py` 使用，后者绘制 `docs/HOW_IT_WORKS.zh.md` 中的图：`python tools/doc_figures.py rom/River_Raid.rom`（需要 matplotlib） |
+| `tools/river_dump.cpp` | 把生成的河以文本写出（每个点的颜色、放置的物体），供 `tools/doc_figures.py` 使用，后者绘制 [docs/HOW_IT_WORKS.zh.md](../docs/HOW_IT_WORKS.zh.md) 中的图：`python tools/doc_figures.py rom/River_Raid.rom`（需要 matplotlib） |
 | `tools/sound_check.cpp` | 把声音驱动与原版写入 POKEY 的值比较（`rr_oracle -vbi`） |
 | `tools/sound_render.cpp` | 用移植版的 POKEY 把 POKEY 写入记录渲染成 WAV，以便与模拟器的声音比较（`rr_oracle -wav`） |
 | `tools/game_check.cpp` | 用原版的输入和 RANDOM 值，把游戏与原版的 RAM 记录逐帧比较（并把河的区域与其屏幕比较） |

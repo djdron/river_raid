@@ -2,7 +2,7 @@
 
 [English](README.md) | [Русский](README.ru.md) | [Українська](README.uk.md) | [Deutsch](README.de.md) | [Polski](README.pl.md) | [Italiano](README.it.md) | [Español](README.es.md) | [中文](README.zh.md) | 日本語
 
-教育目的の非公式なファンプロジェクトで、Activision や Microsoft とは無関係です。ゲームのいかなる部分も含まれていません（`../README.ja.md` の免責事項を参照）。
+教育目的の非公式なファンプロジェクトで、Activision や Microsoft とは無関係です。ゲームのいかなる部分も含まれていません（[../README.ja.md](../README.ja.md) の免責事項を参照）。
 
 ゲーム全体：`river_raid` はオリジナルと同じように River Raid を動かします。デモモード、ゲームの選択、1 人と 2 人プレイ、飛行機、燃料、敵、橋、得点、残機、ハイスコア、一時停止、サウンドです。川の生成器とゲームロジックはオリジナルと同じ RAM の状態をフレームごとに作り、描画は同じ画面を作ります（「検証」を参照）。
 
@@ -113,7 +113,7 @@ river_view [rom] [オプション]
 | `viewer/river_view.cpp` | 川のビューア（SDL3）、上記を参照 |
 | `sdl/host.h`、`host_sdl3.cpp`、`host_sdl2.cpp` | ゲームとビューアのウィンドウ、画面、サウンド、キーボード、ゲームパッド。SDL3 または SDL2 の上で。マウスポインターを隠す処理 |
 | `tools/river_map.cpp` | 川を生成し、ゲームで見えるとおりに PNG で保存：`river_map <rom> <ゲーム 1..8> <ライン数> out.png [-pal] [-flat]`（`-flat`：ビットマップだけ、固定色） |
-| `tools/river_dump.cpp` | 生成した川をテキストで書き出す（各ドットの色、置かれた物体）。`tools/doc_figures.py` がこれを使って `docs/HOW_IT_WORKS.ja.md` の図を描きます：`python tools/doc_figures.py rom/River_Raid.rom`（matplotlib が必要） |
+| `tools/river_dump.cpp` | 生成した川をテキストで書き出す（各ドットの色、置かれた物体）。`tools/doc_figures.py` がこれを使って [docs/HOW_IT_WORKS.ja.md](../docs/HOW_IT_WORKS.ja.md) の図を描きます：`python tools/doc_figures.py rom/River_Raid.rom`（matplotlib が必要） |
 | `tools/sound_check.cpp` | サウンドドライバーを、オリジナルの POKEY への書き込みと比較（`rr_oracle -vbi`） |
 | `tools/sound_render.cpp` | POKEY への書き込みログを移植版の POKEY で WAV にし、エミュレータの音と比較できるようにする（`rr_oracle -wav`） |
 | `tools/game_check.cpp` | オリジナルの入力と RANDOM の値を使い、ゲームをオリジナルの RAM の記録とフレームごとに比較（川の領域も画面と比較） |

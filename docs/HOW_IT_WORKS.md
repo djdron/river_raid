@@ -5,7 +5,7 @@ English | [Русский](HOW_IT_WORKS.ru.md) | [Українська](HOW_IT_W
 This is an explanation for anyone curious, no programming knowledge needed: how the Atari 8-bit
 River Raid (Activision, 1983) builds its endless river, places enemies and bridges, and finds
 out what hit what. Everything here was read out of the original program and checked against
-it frame by frame (see `port/README.md`). Numbers are given as the game uses them; where it
+it frame by frame (see [port/README.md](../port/README.md)). Numbers are given as the game uses them; where it
 helps, the name of the matching function in the port's code is in brackets. The pictures are
 drawn from the port's river generator in plain colours of their own (`tools/doc_figures.py`).
 

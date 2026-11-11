@@ -35,7 +35,7 @@ All of them are read through named accessors in `port/src/rom.h`.
 - $BAAF: next tank kind; $BAC5: shell colours; $BB24: next object kind (animation); $BB40: object shape offsets from $B900.
 
 ## Reference runner (done)
-`oracle/rr_oracle` runs the original on libatari800 and writes the RAM of every frame, every POKEY write and every RANDOM read (see `oracle/README.md`).
+`oracle/rr_oracle` runs the original on libatari800 and writes the RAM of every frame, every POKEY write and every RANDOM read (see [oracle/README.md](../oracle/README.md)).
 - The game starts with the START key; fire on the title screen does not start it.
 - atari800 seeds the POKEY generator from the clock; with `-seed` runs are byte-identical.
 - RANDOM reads: scanline ~249 is sound from the VBI, scanlines 190–192 and 241 are game logic (A205). For C++ this means that in verification mode gameplay random values are taken from `random.log`, not emulated.

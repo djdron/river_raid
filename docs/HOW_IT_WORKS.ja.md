@@ -2,7 +2,7 @@
 
 [English](HOW_IT_WORKS.md) | [Русский](HOW_IT_WORKS.ru.md) | [Українська](HOW_IT_WORKS.uk.md) | [Deutsch](HOW_IT_WORKS.de.md) | [Polski](HOW_IT_WORKS.pl.md) | [Italiano](HOW_IT_WORKS.it.md) | [Español](HOW_IT_WORKS.es.md) | [中文](HOW_IT_WORKS.zh.md) | 日本語
 
-これは興味のある人のための解説で、プログラミングの知識は必要ありません。8 ビット Atari 版 River Raid（Activision、1983）が、終わりのない川をどう作り、敵と橋をどう配置し、何が何に当たったかをどう知るのかを説明します。ここに書いたことはすべてオリジナルのプログラムから読み取り、1 フレームずつ照合したものです（`port/README.ja.md` を参照）。数値はゲームが使っている形のまま書いています。役に立つ箇所では、移植版のコードで対応する関数の名前を括弧内に示しました。図は移植版の川の生成器から、独自のシンプルな色で描いています（`tools/doc_figures.py`）。
+これは興味のある人のための解説で、プログラミングの知識は必要ありません。8 ビット Atari 版 River Raid（Activision、1983）が、終わりのない川をどう作り、敵と橋をどう配置し、何が何に当たったかをどう知るのかを説明します。ここに書いたことはすべてオリジナルのプログラムから読み取り、1 フレームずつ照合したものです（[port/README.ja.md](../port/README.ja.md) を参照）。数値はゲームが使っている形のまま書いています。役に立つ箇所では、移植版のコードで対応する関数の名前を括弧内に示しました。図は移植版の川の生成器から、独自のシンプルな色で描いています（`tools/doc_figures.py`）。
 
 ## 画面
 

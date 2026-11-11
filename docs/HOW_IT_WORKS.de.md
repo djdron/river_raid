@@ -5,7 +5,7 @@
 Diese Erklärung ist für alle Neugierigen, Programmierkenntnisse sind nicht nötig: wie River Raid für
 die 8-Bit-Ataris (Activision, 1983) seinen endlosen Fluss baut, Gegner und Brücken platziert und
 herausfindet, was was getroffen hat. Alles hier wurde aus dem Originalprogramm gelesen und Bild für
-Bild damit verglichen (siehe `port/README.de.md`). Zahlen stehen so, wie das Spiel sie verwendet; wo
+Bild damit verglichen (siehe [port/README.de.md](../port/README.de.md)). Zahlen stehen so, wie das Spiel sie verwendet; wo
 es hilft, steht in Klammern der Name der passenden Funktion im Code der Portierung. Die Bilder
 wurden mit dem Flussgenerator der Portierung in eigenen, schlichten Farben gezeichnet
 (`tools/doc_figures.py`).
