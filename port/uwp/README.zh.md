@@ -33,7 +33,7 @@ cmake -S port -B build-uwp -G "Visual Studio 17 2022" -A x64 -DCMAKE_SYSTEM_NAME
 | X | 暂停键（Xbox 没有键盘） |
 | Menu | START |
 | View | SELECT |
-| LB / RB | 保存状态 / 回到该状态 |
+| RB / LB | 保存状态 / 回到该状态 |
 
 颜色、调色板、边框和缩放均为默认（PAL 颜色、Altirra、只显示游戏画面、清晰）。B 同时也是系统的返回键；游戏会接管它，所以它不会关闭应用。Xbox 键退出游戏。
 

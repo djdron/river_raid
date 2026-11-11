@@ -61,7 +61,7 @@ Dopo l'accensione la modalità dimostrativa sorvola il fiume. START inizia una p
 | Esc | esce dallo schermo intero |
 | clic del mouse | nasconde il puntatore finché il mouse non si muove (lo stesso passando a schermo intero) |
 
-La tastiera comanda entrambi i joystick, così anche una persona sola può fare una partita a due. Gamepad: il primo è il joystick 1 (e il 2 finché non c'è un secondo), il secondo è il joystick 2; croce direzionale o levetta sinistra, A/B/Y o il grilletto destro per sparare, X = pausa, Start = START, Back = SELECT, LB / RB = F7 / F8 (salvare lo stato / tornarci).
+La tastiera comanda entrambi i joystick, così anche una persona sola può fare una partita a due. Gamepad: il primo è il joystick 1 (e il 2 finché non c'è un secondo), il secondo è il joystick 2; croce direzionale o levetta sinistra, A/B/Y o il grilletto destro per sparare, X = pausa, Start = START, Back = SELECT, RB / LB = F7 / F8 (salvare lo stato / tornarci).
 
 ## Visualizzatore del fiume
 ```

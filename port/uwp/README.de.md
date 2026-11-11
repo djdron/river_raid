@@ -33,7 +33,7 @@ Danach in Dev Home die App auswählen, View details, und App type auf **Game** s
 | X | die Taste für die Pause (die Xbox hat keine Tastatur) |
 | Menu | START |
 | View | SELECT |
-| LB / RB | Zustand speichern / zu ihm zurück |
+| RB / LB | Zustand speichern / zu ihm zurück |
 
 Farben, Palette, Rahmen und Skalierung sind die Voreinstellungen (PAL-Farben, Altirra, nur das Spielbild, scharf). B ist auch die Zurück-Taste des Systems; das Spiel fängt sie ab, damit sie die App nicht schließt. Die Xbox-Taste verlässt das Spiel.
 

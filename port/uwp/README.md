@@ -33,7 +33,7 @@ Then in Dev Home select the app, View details, and set App type to **Game**: an 
 | X | the key that pauses (the Xbox has no keyboard) |
 | Menu | START |
 | View | SELECT |
-| LB / RB | save the state / go back to it |
+| RB / LB | save the state / go back to it |
 
 Colours, palette, border and scaling are the defaults (PAL colours, Altirra, the game's picture only, sharp). B is also the system's Back button; the game takes it, so it does not close the app. The Xbox button leaves the game.
 

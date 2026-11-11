@@ -33,7 +33,7 @@ Después, en Dev Home, seleccione la app, View details, y ponga App type en **Ga
 | X | la tecla de pausa (la Xbox no tiene teclado) |
 | Menu | START |
 | View | SELECT |
-| LB / RB | guardar el estado / volver a él |
+| RB / LB | guardar el estado / volver a él |
 
 Colores, paleta, borde y escalado son los predeterminados (colores PAL, Altirra, solo la imagen del juego, nítido). B es también el botón Atrás del sistema; el juego lo intercepta, así que no cierra la app. El botón Xbox sale del juego.
 

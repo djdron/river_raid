@@ -33,7 +33,7 @@ cmake -S port -B build-uwp -G "Visual Studio 17 2022" -A x64 -DCMAKE_SYSTEM_NAME
 | X | ポーズのキー（Xbox にはキーボードがない） |
 | Menu | START |
 | View | SELECT |
-| LB / RB | 状態を保存 / そこへ戻る |
+| RB / LB | 状態を保存 / そこへ戻る |
 
 色、パレット、枠、拡大は既定のまま（PAL の色、Altirra、ゲーム画面のみ、くっきり）。B はシステムの戻るボタンでもあります。ゲームがこれを受け取るので、アプリは閉じません。Xbox ボタンでゲームを離れます。
 

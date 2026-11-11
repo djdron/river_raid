@@ -33,7 +33,7 @@ Potem w Dev Home wybierz aplikację, View details i ustaw App type na **Game**: 
 | X | klawisz pauzy (Xbox nie ma klawiatury) |
 | Menu | START |
 | View | SELECT |
-| LB / RB | zapisz stan / wróć do niego |
+| RB / LB | zapisz stan / wróć do niego |
 
 Kolory, paleta, ramka i skalowanie są domyślne (kolory PAL, Altirra, tylko obraz gry, ostre). B to także systemowy przycisk Wstecz; gra go przechwytuje, więc nie zamyka aplikacji. Przycisk Xbox wychodzi z gry.
 

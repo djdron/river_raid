@@ -37,7 +37,7 @@
 // Cmd+Q) quits.
 // Gamepads: the first one is joystick 1 (and 2 while there is no second), the second one
 // joystick 2. D-pad or left stick: joystick; A, B, Y or the right trigger: fire; X: the key
-// that pauses; Start: START; Back: SELECT; LB / RB: save the state / go back to it (as F7 / F8).
+// that pauses; Start: START; Back: SELECT; RB / LB: save the state / go back to it (as F7 / F8).
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -381,16 +381,16 @@ int main(int argc, char **argv) {
 		stateNote = atari.loadState() ? " - state loaded" : " - no state saved (F7)";
 		showColours();
 	};
-	bool shoulderHeld[2] = {};   // LB, RB on any gamepad, last pass
+	bool shoulderHeld[2] = {};   // RB, LB on any gamepad, last pass
 
 	for (bool running = true; running;) {
 		{
-			// gamepad: LB saves the state, RB goes back to it (on pressing)
+			// gamepad: RB saves the state, LB goes back to it (on pressing)
 			bool held[2] = {};
 			for (int i = 0; i < window.gamepadCount(); i++) {
 				const host::Gamepad pad = window.gamepad(i);
-				held[0] = held[0] || pad.leftShoulder;
-				held[1] = held[1] || pad.rightShoulder;
+				held[0] = held[0] || pad.rightShoulder;
+				held[1] = held[1] || pad.leftShoulder;
 			}
 			if (held[0] && !shoulderHeld[0]) saveState();
 			if (held[1] && !shoulderHeld[1]) loadState();

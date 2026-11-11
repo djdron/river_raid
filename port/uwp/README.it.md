@@ -33,7 +33,7 @@ Poi in Dev Home selezionate l'app, View details, e impostate App type su **Game*
 | X | il tasto della pausa (la Xbox non ha tastiera) |
 | Menu | START |
 | View | SELECT |
-| LB / RB | salva lo stato / tornaci |
+| RB / LB | salva lo stato / tornaci |
 
 Colori, tavolozza, bordo e scala sono quelli predefiniti (colori PAL, Altirra, solo l'immagine del gioco, nitida). B è anche il tasto Indietro del sistema; il gioco lo intercetta, così non chiude l'app. Il tasto Xbox esce dal gioco.
 
