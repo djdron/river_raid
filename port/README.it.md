@@ -13,7 +13,7 @@ cmake --build build
 ```
 Il nucleo e gli strumenti richiedono solo un compilatore C++17. Il gioco `river_raid` e il visualizzatore `river_view` richiedono SDL3: CMake usa un SDL3 installato (3.4 o successivo) se lo trova, altrimenti durante la configurazione scarica SDL 3.4.20 da GitHub (servono git e internet) e lo collega staticamente. Su Linux, compilare SDL dai sorgenti richiede i pacchetti di sviluppo X11/Wayland (vedi `docs/README-linux.md` di SDL). SDL 3.4 si ferma con un errore quando manca un pacchetto del genere e indica l'opzione che compila senza (per esempio `-DSDL_X11_XCURSOR=OFF`). Del tutto senza SDL: `cmake -S . -B build -DRR_VIEWER=OFF`.
 
-Con SDL2 al posto di SDL3 (per piattaforme che SDL3 non supporta più, come UWP su Xbox): `cmake -S . -B build -DRR_SDL2=ON`. CMake usa allora un SDL2 installato (2.0.18 o successivo) o scarica SDL 2.32.10. I programmi parlano con SDL solo tramite `sdl/host.h`, implementato una volta per ogni versione; entrambe danno la stessa immagine. Il gioco come app UWP per Windows e Xbox: `uwp/README.it.md`.
+Con SDL2 al posto di SDL3 (per piattaforme che SDL3 non supporta più, come UWP su Xbox): `cmake -S . -B build -DRR_SDL2=ON`. CMake usa allora un SDL2 installato (2.0.18 o successivo) o scarica SDL 2.32.10. I programmi parlano con SDL solo tramite `sdl/host.h`, implementato una volta per ogni versione; entrambe danno la stessa immagine. Il gioco come app UWP per Windows e Xbox: [uwp/README.it.md](uwp/README.it.md).
 
 Su Windows con Visual Studio: `cmake --build build --config Release`, i programmi finiscono in `build\Release\`. Compilato e provato su Windows (MSVC), macOS (Xcode, Apple M2) e Linux (gcc).
 

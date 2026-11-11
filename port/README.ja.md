@@ -13,7 +13,7 @@ cmake --build build
 ```
 コアとツールに必要なのは C++17 コンパイラだけです。ゲーム `river_raid` とビューア `river_view` には SDL3 が必要です。CMake はインストール済みの SDL3（3.4 以降）が見つかればそれを使い、なければ構成時に GitHub から SDL 3.4.20 をダウンロードして（git とインターネットが必要）静的にリンクします。Linux で SDL をソースからビルドするには X11/Wayland の開発パッケージが必要です（SDL の `docs/README-linux.md` を参照）。そうしたパッケージがないと SDL 3.4 はエラーで止まり、それなしでビルドするオプション（たとえば `-DSDL_X11_XCURSOR=OFF`）を示します。SDL をまったく使わない場合：`cmake -S . -B build -DRR_VIEWER=OFF`。
 
-SDL3 の代わりに SDL2 を使う場合（Xbox の UWP など、SDL3 がもうサポートしないプラットフォーム向け）：`cmake -S . -B build -DRR_SDL2=ON`。このとき CMake はインストール済みの SDL2（2.0.18 以降）を使うか、SDL 2.32.10 をダウンロードします。プログラムは `sdl/host.h` を通してだけ SDL とやりとりし、これはバージョンごとに 1 回ずつ実装されています。どちらでも同じ画面になります。Windows と Xbox 向けの UWP アプリとしてのゲーム：`uwp/README.ja.md`。
+SDL3 の代わりに SDL2 を使う場合（Xbox の UWP など、SDL3 がもうサポートしないプラットフォーム向け）：`cmake -S . -B build -DRR_SDL2=ON`。このとき CMake はインストール済みの SDL2（2.0.18 以降）を使うか、SDL 2.32.10 をダウンロードします。プログラムは `sdl/host.h` を通してだけ SDL とやりとりし、これはバージョンごとに 1 回ずつ実装されています。どちらでも同じ画面になります。Windows と Xbox 向けの UWP アプリとしてのゲーム：[uwp/README.ja.md](uwp/README.ja.md)。
 
 Windows の Visual Studio では：`cmake --build build --config Release`。プログラムは `build\Release\` にできます。Windows（MSVC）、macOS（Xcode、Apple M2）、Linux（gcc）でビルドして遊べることを確認済みです。
 

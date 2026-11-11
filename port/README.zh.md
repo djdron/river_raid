@@ -13,7 +13,7 @@ cmake --build build
 ```
 核心和工具只需要 C++17 编译器。游戏 `river_raid` 和查看器 `river_view` 需要 SDL3：如果 CMake 找到已安装的 SDL3（3.4 或更新），就使用它，否则在配置时从 GitHub 下载 SDL 3.4.20（需要 git 和网络）并静态链接。在 Linux 上从源码构建 SDL 需要 X11/Wayland 开发包（见 SDL 的 `docs/README-linux.md`）。缺少这类包时 SDL 3.4 会报错停止，并给出不带它构建的选项（例如 `-DSDL_X11_XCURSOR=OFF`）。完全不用 SDL：`cmake -S . -B build -DRR_VIEWER=OFF`。
 
-用 SDL2 代替 SDL3（用于 SDL3 不再支持的平台，例如 Xbox 上的 UWP）：`cmake -S . -B build -DRR_SDL2=ON`。这时 CMake 使用已安装的 SDL2（2.0.18 或更新）或下载 SDL 2.32.10。程序只通过 `sdl/host.h` 与 SDL 打交道，它为每个版本各实现一次；两者给出相同的画面。游戏作为适用于 Windows 和 Xbox 的 UWP 应用：`uwp/README.zh.md`。
+用 SDL2 代替 SDL3（用于 SDL3 不再支持的平台，例如 Xbox 上的 UWP）：`cmake -S . -B build -DRR_SDL2=ON`。这时 CMake 使用已安装的 SDL2（2.0.18 或更新）或下载 SDL 2.32.10。程序只通过 `sdl/host.h` 与 SDL 打交道，它为每个版本各实现一次；两者给出相同的画面。游戏作为适用于 Windows 和 Xbox 的 UWP 应用：[uwp/README.zh.md](uwp/README.zh.md)。
 
 在 Windows 上用 Visual Studio：`cmake --build build --config Release`，程序位于 `build\Release\`。已在 Windows（MSVC）、macOS（Xcode，Apple M2）和 Linux（gcc）上构建并试玩。
 
