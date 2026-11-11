@@ -2,6 +2,13 @@ cmake_minimum_required(VERSION 3.16)
 project(river_raid_port C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
+# UWP (Windows 10 apps, the Xbox in Dev Mode): -DCMAKE_SYSTEM_NAME=WindowsStore
+# -DCMAKE_SYSTEM_VERSION=10.0 with a Visual Studio generator. Only the game is built, on SDL2
+# (SDL3 has dropped UWP); see uwp/README.md.
+if(CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
+	set(RR_UWP ON)
+	set(RR_SDL2 ON CACHE BOOL "Use SDL2 instead of SDL3" FORCE)
+endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(MSVC)
 	set(RR_WARNINGS /W4)
@@ -34,6 +41,7 @@ add_library(rrcore
 target_include_directories(rrcore PUBLIC src)
 target_compile_options(rrcore PRIVATE ${RR_WARNINGS})
 
+if(NOT RR_UWP)   # the checks and tools: command line programs, not for UWP
 # Byte-exact comparison with traces of the original (oracle/rr_oracle -ram A:B).
 add_executable(terrain_check tools/terrain_check.cpp)
 target_link_libraries(terrain_check rrcore)
@@ -71,6 +79,7 @@ target_compile_options(sound_render PRIVATE ${RR_WARNINGS})
 add_executable(status_check tools/status_check.cpp)
 target_link_libraries(status_check rrcore)
 target_compile_options(status_check PRIVATE ${RR_WARNINGS})
+endif()
 
 # The game (river_raid) and the river viewer (river_view): window, sound and input through
 # SDL (sdl/host.h). SDL3 by default; RR_SDL2=ON uses SDL2 instead (for platforms SDL3 has
@@ -81,7 +90,9 @@ option(RR_SDL2 "Use SDL2 instead of SDL3" OFF)
 if(RR_VIEWER)
 	include(FetchContent)
 	if(RR_SDL2)
-		find_package(SDL2 2.0.18 CONFIG QUIET)
+		if(NOT RR_UWP)   # UWP: built here, as its WinRT entry point comes from SDL's sources
+			find_package(SDL2 2.0.18 CONFIG QUIET)
+		endif()
 		if(NOT SDL2_FOUND)
 			set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 			set(SDL_STATIC ON CACHE BOOL "" FORCE)
@@ -126,10 +137,14 @@ if(RR_VIEWER)
 	if(RR_SDL2)
 		target_compile_definitions(rrhost PUBLIC RR_SDL2)
 	endif()
-	add_executable(river_raid WIN32 game/river_raid.cpp)
-	target_link_libraries(river_raid rrcore rrhost)
-	target_compile_options(river_raid PRIVATE ${RR_WARNINGS})
-	add_executable(river_view WIN32 viewer/river_view.cpp)
-	target_link_libraries(river_view rrcore rrhost)
-	target_compile_options(river_view PRIVATE ${RR_WARNINGS})
+	if(RR_UWP)
+		include(uwp/uwp.cmake)
+	else()
+		add_executable(river_raid WIN32 game/river_raid.cpp)
+		target_link_libraries(river_raid rrcore rrhost)
+		target_compile_options(river_raid PRIVATE ${RR_WARNINGS})
+		add_executable(river_view WIN32 viewer/river_view.cpp)
+		target_link_libraries(river_view rrcore rrhost)
+		target_compile_options(river_view PRIVATE ${RR_WARNINGS})
+	endif()
 endif()

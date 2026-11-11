@@ -67,5 +67,4 @@ Una regola si legge dal listato e poi si verifica su una traccia di riferimento 
 
 ## Prossimi passi
 1. Facoltativo: temporizzazione PAL (50 Hz, display list PAL) per chi ricorda il gioco da un televisore europeo.
-2. Facoltativo: salvataggio e caricamento dello stato (tutto lo stato è in `GameState` + `RiverState`, dati semplici).
-3. Facoltativo: una build UWP/Xbox su SDL2 (`-DRR_SDL2=ON`).
+2. Compilare e provare la versione UWP (`port/uwp/`, vedi `port/uwp/README.it.md`) su Windows e su una Xbox in Dev Mode: è scritta ma non è ancora mai stata compilata.

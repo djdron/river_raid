@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The game as a UWP app (Windows 10 and the Xbox in Dev Mode); filled in by uwp/uwp.cmake. -->
+<Package
+	xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+	xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+	IgnorableNamespaces="uap">
+	<Identity Name="RiverRaidPort" Publisher="@RR_UWP_PUBLISHER@" Version="@RR_UWP_VERSION@" />
+	<Properties>
+		<DisplayName>River Raid (port)</DisplayName>
+		<PublisherDisplayName>river_raid port</PublisherDisplayName>
+		<Logo>Assets\StoreLogo.png</Logo>
+	</Properties>
+	<Dependencies>
+		<TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.0.0" MaxVersionTested="10.0.0.0" />
+	</Dependencies>
+	<Resources>
+		<Resource Language="x-generate" />
+	</Resources>
+	<Applications>
+		<Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="RiverRaid.App">
+			<uap:VisualElements
+				DisplayName="River Raid (port)"
+				Description="River Raid (Atari 800) in C++"
+				BackgroundColor="#000000"
+				Square150x150Logo="Assets\Square150x150Logo.png"
+				Square44x44Logo="Assets\Square44x44Logo.png">
+				<uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
+				<uap:SplashScreen Image="Assets\SplashScreen.png" BackgroundColor="#000000" />
+			</uap:VisualElements>
+		</Application>
+	</Applications>
+</Package>

@@ -67,5 +67,4 @@ Una regla se lee del listado y luego se comprueba con una traza de referencia (`
 
 ## Próximos pasos
 1. Opcional: temporización PAL (50 Hz, lista de visualización PAL) para quienes conocieron el juego en un televisor europeo.
-2. Opcional: guardar y cargar el estado (todo el estado está en `GameState` + `RiverState`, datos simples).
-3. Opcional: una versión UWP/Xbox sobre SDL2 (`-DRR_SDL2=ON`).
+2. Compilar y probar la versión UWP (`port/uwp/`, ver `port/uwp/README.es.md`) en Windows y en una Xbox en Dev Mode: está escrita, pero aún no se ha compilado nunca.

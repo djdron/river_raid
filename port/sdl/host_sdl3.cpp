@@ -317,8 +317,8 @@ Gamepad Host::gamepad(int index) const {
 	if (SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_DPAD_LEFT) || ax < -kDead) g.stick &= ~4;
 	if (SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_DPAD_RIGHT) || ax > kDead) g.stick &= ~8;
 	g.fire = SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_SOUTH) || SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_EAST) ||
-		SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_WEST) || SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_NORTH) ||
-		SDL_GetGamepadAxis(p, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) > 16000;
+		SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_NORTH) || SDL_GetGamepadAxis(p, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER) > 16000;
+	g.x = SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_WEST);
 	g.start = SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_START);
 	g.select = SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_BACK);
 	g.leftShoulder = SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER);
@@ -385,6 +385,11 @@ size_t Host::queuedSound() const {
 uint64_t Host::ticksNs() { return SDL_GetTicksNS(); }
 
 void Host::delayNs(uint64_t ns) { SDL_DelayNS(ns); }
+
+std::string Host::basePath() {
+	const char *path = SDL_GetBasePath();   // owned by SDL
+	return path ? path : "";
+}
 
 void Host::showError(const char *title, const std::string &message) {
 	std::fprintf(stderr, "%s\n", message.c_str());

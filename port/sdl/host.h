@@ -49,7 +49,8 @@ inline const char *filterName(Filter f) {
 // A gamepad as an Atari joystick.
 struct Gamepad {
 	uint8_t stick = 0x0F;     // bit 0 up, 1 down, 2 left, 3 right; 0 = pressed
-	bool fire = false;        // A, B, X, Y or the right trigger
+	bool fire = false;        // A, B, Y or the right trigger
+	bool x = false;           // X: the key that pauses
 	bool start = false;       // Start
 	bool select = false;      // Back
 	bool leftShoulder = false, rightShoulder = false;   // LB, RB
@@ -97,6 +98,9 @@ public:
 	static uint64_t ticksNs();
 	static void delayNs(uint64_t ns);
 	static void showError(const char *title, const std::string &message);
+	// The folder of the program (on UWP: the app's installed package), ending in a separator;
+	// empty if unknown.
+	static std::string basePath();
 
 private:
 	struct Impl;

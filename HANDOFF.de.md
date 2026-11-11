@@ -67,5 +67,4 @@ Eine Regel wird aus dem Listing gelesen und dann an einem Referenz-Trace geprüf
 
 ## Nächste Schritte
 1. Optional: PAL-Timing (50 Hz, PAL-Display-List) für alle, die das Spiel von einem europäischen Fernseher kennen.
-2. Optional: Speichern und Laden des Zustands (der ganze Zustand steckt in `GameState` + `RiverState`, einfache Daten).
-3. Optional: ein UWP/Xbox-Build auf SDL2 (`-DRR_SDL2=ON`).
+2. Die UWP-Version (`port/uwp/`, siehe `port/uwp/README.de.md`) unter Windows und auf einer Xbox im Dev Mode bauen und ausprobieren: Sie ist geschrieben, wurde aber noch nie gebaut.

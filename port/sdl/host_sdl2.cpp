@@ -191,6 +191,10 @@ bool Host::open(const char *title, int width, int height, double pixelAspect, in
 	}
 	h.pixelAspect = pixelAspect;
 	h.pixels.assign(size_t(width) * size_t(height), 0);
+#ifdef __WINRT__
+	// UWP (the Xbox): the B button is also the system's Back, which would close the app; take it
+	SDL_SetHint(SDL_HINT_WINRT_HANDLE_BACK_BUTTON, "1");
+#endif
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) != 0 && SDL_Init(SDL_INIT_VIDEO) != 0) {
 		h.error = std::string("SDL_Init: ") + SDL_GetError();
 		return false;
@@ -324,8 +328,8 @@ Gamepad Host::gamepad(int index) const {
 	if (SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_DPAD_LEFT) || ax < -kDead) g.stick &= ~4;
 	if (SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_DPAD_RIGHT) || ax > kDead) g.stick &= ~8;
 	g.fire = SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_A) || SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_B) ||
-		SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_X) || SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_Y) ||
-		SDL_GameControllerGetAxis(p, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 16000;
+		SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_Y) || SDL_GameControllerGetAxis(p, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 16000;
+	g.x = SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_X);
 	g.start = SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_START);
 	g.select = SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_BACK);
 	g.leftShoulder = SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
@@ -402,6 +406,14 @@ uint64_t Host::ticksNs() {
 }
 
 void Host::delayNs(uint64_t ns) { SDL_Delay(Uint32(ns / 1000000)); }
+
+std::string Host::basePath() {
+	char *path = SDL_GetBasePath();
+	if (!path) return "";
+	std::string s = path;
+	SDL_free(path);
+	return s;
+}
 
 void Host::showError(const char *title, const std::string &message) {
 	std::fprintf(stderr, "%s\n", message.c_str());

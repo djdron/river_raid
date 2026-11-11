@@ -67,5 +67,4 @@ A rule is read from the listing, then checked against a reference trace (`tools/
 
 ## Next steps
 1. Optional: PAL timing (50 Hz, PAL display list) for players who knew the game from a European TV.
-2. Optional: save/load state (the whole state is in `GameState` + `RiverState`, plain data).
-3. Optional: a UWP/Xbox build on SDL2 (`-DRR_SDL2=ON`).
+2. Build and try the UWP version (`port/uwp/`, see `port/uwp/README.md`) on Windows and on an Xbox in Dev Mode: it is written but has not been built yet.

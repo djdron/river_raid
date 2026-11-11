@@ -36,8 +36,8 @@
 // A mouse click or going full screen hides the mouse pointer until the mouse moves. Closing the window (or Alt+F4,
 // Cmd+Q) quits.
 // Gamepads: the first one is joystick 1 (and 2 while there is no second), the second one
-// joystick 2. D-pad or left stick: joystick; A, B, X, Y or the right trigger: fire;
-// Start: START; Back: SELECT; LB / RB: save the state / go back to it (as F7 / F8).
+// joystick 2. D-pad or left stick: joystick; A, B, Y or the right trigger: fire; X: the key
+// that pauses; Start: START; Back: SELECT; LB / RB: save the state / go back to it (as F7 / F8).
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -213,6 +213,7 @@ rr::Input readControls(const host::Host &h) {
 			in.stick[j] &= pad.stick;
 			in.trigger[j] = in.trigger[j] || pad.fire;
 		}
+		in.key = in.key || pad.x;   // X: the key that pauses (the Xbox has no keyboard)
 		in.start = in.start || pad.start;
 		in.select = in.select || pad.select;
 	}
@@ -232,9 +233,13 @@ std::string findRom(int argc, char **argv) {
 		}
 		return argv[i];
 	}
+	// next to the program (on UWP: in the app's package), then the current folder and up to 3
+	// above it
+	std::vector<std::string> places = {host::Host::basePath()};
 	std::string up;
-	for (int d = 0; d < 4; d++, up += "../") {
-		const std::string p = up + "rom/River_Raid.rom";
+	for (int d = 0; d < 4; d++, up += "../") places.push_back(up);
+	for (const std::string &place : places) {
+		const std::string p = place + "rom/River_Raid.rom";
 		if (FILE *f = std::fopen(p.c_str(), "rb")) { std::fclose(f); return p; }
 	}
 	return "rom/River_Raid.rom";

@@ -13,7 +13,7 @@ cmake --build build
 ```
 El núcleo y las herramientas solo necesitan un compilador de C++17. El juego `river_raid` y el visor `river_view` necesitan SDL3: CMake usa un SDL3 instalado (3.4 o posterior) si lo encuentra; si no, durante la configuración descarga SDL 3.4.20 de GitHub (necesita git e internet) y lo enlaza estáticamente. En Linux, compilar SDL desde el código fuente necesita los paquetes de desarrollo de X11/Wayland (vea `docs/README-linux.md` de SDL). SDL 3.4 se detiene con un error cuando falta uno de esos paquetes y nombra la opción que compila sin él (por ejemplo `-DSDL_X11_XCURSOR=OFF`). Sin SDL en absoluto: `cmake -S . -B build -DRR_VIEWER=OFF`.
 
-Con SDL2 en lugar de SDL3 (para plataformas que SDL3 ya no admite, como UWP en la Xbox): `cmake -S . -B build -DRR_SDL2=ON`. CMake usa entonces un SDL2 instalado (2.0.18 o posterior) o descarga SDL 2.32.10. Los programas hablan con SDL solo a través de `sdl/host.h`, implementado una vez para cada versión; ambas dan la misma imagen.
+Con SDL2 en lugar de SDL3 (para plataformas que SDL3 ya no admite, como UWP en la Xbox): `cmake -S . -B build -DRR_SDL2=ON`. CMake usa entonces un SDL2 instalado (2.0.18 o posterior) o descarga SDL 2.32.10. Los programas hablan con SDL solo a través de `sdl/host.h`, implementado una vez para cada versión; ambas dan la misma imagen. El juego como app UWP para Windows y la Xbox: `uwp/README.es.md`.
 
 En Windows con Visual Studio: `cmake --build build --config Release`, los programas quedan en `build\Release\`. Compilado y probado en Windows (MSVC), macOS (Xcode, Apple M2) y Linux (gcc).
 
@@ -61,7 +61,7 @@ Tras encender, el modo de demostración sobrevuela el río. START comienza una p
 | Esc | salir de pantalla completa |
 | clic del ratón | oculta el puntero hasta que se mueva el ratón (también al pasar a pantalla completa) |
 
-El teclado maneja ambos joysticks, así que una sola persona también puede jugar una partida a dos. Mandos: el primero es el joystick 1 (y el 2 mientras no haya un segundo), el segundo es el joystick 2; cruceta o stick izquierdo, A/B/X/Y o el gatillo derecho para disparar, Start = START, Back = SELECT, LB / RB = F7 / F8 (guardar el estado / volver a él).
+El teclado maneja ambos joysticks, así que una sola persona también puede jugar una partida a dos. Mandos: el primero es el joystick 1 (y el 2 mientras no haya un segundo), el segundo es el joystick 2; cruceta o stick izquierdo, A/B/Y o el gatillo derecho para disparar, X = pausa, Start = START, Back = SELECT, LB / RB = F7 / F8 (guardar el estado / volver a él).
 
 ## Visor del río
 ```

@@ -67,5 +67,4 @@ Regułę odczytuje się z listingu, a potem sprawdza na śladzie wzorcowym (`too
 
 ## Następne kroki
 1. Opcjonalnie: taktowanie PAL (50 Hz, lista wyświetlania PAL) dla tych, którzy pamiętają grę z europejskiego telewizora.
-2. Opcjonalnie: zapis i odczyt stanu (cały stan jest w `GameState` + `RiverState`, proste dane).
-3. Opcjonalnie: wersja UWP/Xbox na SDL2 (`-DRR_SDL2=ON`).
+2. Zbudować i wypróbować wersję UWP (`port/uwp/`, zob. `port/uwp/README.pl.md`) na Windows i na Xboksie w Dev Mode: jest napisana, ale jeszcze nie była budowana.
