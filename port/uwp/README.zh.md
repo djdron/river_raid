@@ -25,17 +25,7 @@ cmake -S port -B build-uwp -G "Visual Studio 17 2022" -A x64 -DCMAKE_SYSTEM_NAME
 
 然后在 Dev Home 中选中该应用，View details，把 App type 设为 **Game**：否则应用得到的主机资源更少。
 
-## Xbox 上的操作
-| 手柄 | |
-|---|---|
-| 方向键或左摇杆 | 摇杆 |
-| A、B、Y 或右扳机 | 开火 |
-| X | 暂停键（Xbox 没有键盘） |
-| Menu | START |
-| View | SELECT |
-| RB / LB | 保存状态 / 回到该状态 |
-
-颜色、调色板、边框和缩放均为默认（PAL 颜色、Altirra、只显示游戏画面、清晰）。B 同时也是系统的返回键；游戏会接管它，所以它不会关闭应用。Xbox 键退出游戏。
+手柄的用法与 PC 上相同（见 [../README.zh.md](../README.zh.md)），X 暂停。没有键盘，其他设置保持默认：PAL 颜色、Altirra、只显示游戏画面、清晰缩放。B 同时也是系统的返回键；游戏会接管它，所以它不会关闭应用。Xbox 键退出游戏。
 
 ## 可能还需要做的
 - 电视的安全区域：Xbox 上的 UWP 应用可能会与屏幕边缘留出边距绘制。画面本来就被黑色包围；如果边距碍事，应用可以请求整个屏幕（`ApplicationView::SetDesiredBoundsMode`）。

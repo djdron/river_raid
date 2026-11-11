@@ -25,17 +25,7 @@ Either way works:
 
 Then in Dev Home select the app, View details, and set App type to **Game**: an app gets less of the console otherwise.
 
-## Controls on the Xbox
-| Gamepad | |
-|---|---|
-| D-pad or left stick | joystick |
-| A, B, Y or the right trigger | fire |
-| X | the key that pauses (the Xbox has no keyboard) |
-| Menu | START |
-| View | SELECT |
-| RB / LB | save the state / go back to it |
-
-Colours, palette, border and scaling are the defaults (PAL colours, Altirra, the game's picture only, sharp). B is also the system's Back button; the game takes it, so it does not close the app. The Xbox button leaves the game.
+The gamepad works as on a PC (see [../README.md](../README.md)), X pauses. With no keyboard the other settings stay at their defaults: PAL colours, Altirra, the game's picture only, sharp. B is also the system's Back button; the game takes it, so it does not close the app. The Xbox button leaves the game.
 
 ## What may need doing
 - The TV's safe area: UWP apps on the Xbox may be drawn with a margin from the edges of the screen. The picture is surrounded by black anyway; if the margin is a nuisance, the app can ask for the whole screen (`ApplicationView::SetDesiredBoundsMode`).
