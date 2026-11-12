@@ -67,4 +67,3 @@ Eine Regel wird aus dem Listing gelesen und dann an einem Referenz-Trace geprüf
 
 ## Nächste Schritte
 1. Optional: PAL-Timing (50 Hz, PAL-Display-List) für alle, die das Spiel von einem europäischen Fernseher kennen.
-2. Die UWP-Version (`port/uwp/`, siehe [port/uwp/README.de.md](port/uwp/README.de.md)) unter Windows und auf einer Xbox im Dev Mode bauen und ausprobieren: Sie ist geschrieben, wurde aber noch nie gebaut.

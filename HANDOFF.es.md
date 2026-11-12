@@ -67,4 +67,3 @@ Una regla se lee del listado y luego se comprueba con una traza de referencia (`
 
 ## Próximos pasos
 1. Opcional: temporización PAL (50 Hz, lista de visualización PAL) para quienes conocieron el juego en un televisor europeo.
-2. Compilar y probar la versión UWP (`port/uwp/`, ver [port/uwp/README.es.md](port/uwp/README.es.md)) en Windows y en una Xbox en Dev Mode: está escrita, pero aún no se ha compilado nunca.

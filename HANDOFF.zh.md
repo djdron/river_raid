@@ -67,4 +67,3 @@
 
 ## 下一步
 1. 可选：PAL 时序（50 Hz、PAL 显示列表），给那些在欧洲电视上玩过这款游戏的人。
-2. 在 Windows 和处于 Dev Mode 的 Xbox 上构建并试用 UWP 版本（`port/uwp/`，见 [port/uwp/README.zh.md](port/uwp/README.zh.md)）：代码已写好，但还从未构建过。

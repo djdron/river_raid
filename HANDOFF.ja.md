@@ -67,4 +67,3 @@ River Raid（Activision、Atari 800、1983、作者 Carol Shaw）の C++ 移植�
 
 ## 次の作業
 1. 任意：PAL のタイミング（50 Hz、PAL のディスプレイリスト）。ヨーロッパのテレビでこのゲームを遊んだ人のために。
-2. UWP 版（`port/uwp/`、[port/uwp/README.ja.md](port/uwp/README.ja.md) を参照）を Windows と Dev Mode の Xbox でビルドして試す：書いてはあるが、まだ一度もビルドしていない。
