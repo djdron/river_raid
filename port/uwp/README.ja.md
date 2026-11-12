@@ -28,6 +28,3 @@ Visual Studio 2026 ではジェネレーターは `-G "Visual Studio 18 2026"`�
 その後 Dev Home でアプリを選び、View details で App type を **Game** にします：そうしないとアプリが使える本体の資源が少なくなります。 Xbox で誰かがサインインしている必要があります：そうでないとアプリが起動しません（Visual Studio：「Unable to activate Windows Store app … 0x8004090a」）。
 
 ゲームパッドは PC と同じように使えます（[../README.ja.md](../README.ja.md) を参照）。X はポーズです。キーボードがないので、ほかの設定は既定のままです：PAL の色、Altirra、ゲーム画面のみ、くっきり。B はシステムの戻るボタンでもあります。ゲームがこれを受け取るので、アプリは閉じません。Xbox ボタンでゲームを離れます。
-
-## まだ必要かもしれないこと
-- テレビのセーフエリア：Xbox の UWP アプリは画面の端から余白をとって描かれることがあります。画面はもともと黒に囲まれていますが、余白が邪魔なら、アプリは画面全体を要求できます（`ApplicationView::SetDesiredBoundsMode`）。

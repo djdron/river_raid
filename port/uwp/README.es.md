@@ -28,6 +28,3 @@ Sirve cualquiera de las dos formas:
 Después, en Dev Home, seleccione la app, View details, y ponga App type en **Game**: si no, una app recibe menos de la consola. En la Xbox tiene que haber alguien con la sesión iniciada; si no, la app no arranca (Visual Studio: «Unable to activate Windows Store app … 0x8004090a»).
 
 El mando funciona como en el PC (ver [../README.es.md](../README.es.md)), X pausa. Sin teclado, los demás ajustes quedan en sus valores predeterminados: colores PAL, Altirra, solo la imagen del juego, nítido. B es también el botón Atrás del sistema; el juego lo intercepta, así que no cierra la app. El botón Xbox sale del juego.
-
-## Qué puede quedar por hacer
-- La zona segura del televisor: las apps UWP en la Xbox pueden dibujarse con un margen respecto a los bordes de la pantalla. La imagen ya está rodeada de negro; si el margen molesta, la app puede pedir toda la pantalla (`ApplicationView::SetDesiredBoundsMode`).

@@ -28,6 +28,3 @@ Either way works:
 Then in Dev Home select the app, View details, and set App type to **Game**: an app gets less of the console otherwise. Someone has to be signed in on the Xbox: otherwise the app does not start (Visual Studio: "Unable to activate Windows Store app … 0x8004090a").
 
 The gamepad works as on a PC (see [../README.md](../README.md)), X pauses. With no keyboard the other settings stay at their defaults: PAL colours, Altirra, the game's picture only, sharp. B is also the system's Back button; the game takes it, so it does not close the app. The Xbox button leaves the game.
-
-## What may need doing
-- The TV's safe area: UWP apps on the Xbox may be drawn with a margin from the edges of the screen. The picture is surrounded by black anyway; if the margin is a nuisance, the app can ask for the whole screen (`ApplicationView::SetDesiredBoundsMode`).

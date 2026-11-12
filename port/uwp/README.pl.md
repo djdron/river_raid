@@ -28,6 +28,3 @@ Działa każdy sposób:
 Potem w Dev Home wybierz aplikację, View details i ustaw App type na **Game**: inaczej aplikacja dostaje mniej zasobów konsoli. Na Xboksie ktoś musi być zalogowany: inaczej aplikacja się nie uruchamia (Visual Studio: „Unable to activate Windows Store app … 0x8004090a”).
 
 Gamepad działa tak samo jak na PC (zob. [../README.pl.md](../README.pl.md)), X to pauza. Bez klawiatury pozostałe ustawienia są domyślne: kolory PAL, Altirra, tylko obraz gry, ostre skalowanie. B to także systemowy przycisk Wstecz; gra go przechwytuje, więc nie zamyka aplikacji. Przycisk Xbox wychodzi z gry.
-
-## Co może wymagać dopracowania
-- Bezpieczny obszar telewizora: aplikacje UWP na Xboksie mogą być rysowane z marginesem od krawędzi ekranu. Obraz i tak otacza czerń; jeśli margines przeszkadza, aplikacja może poprosić o cały ekran (`ApplicationView::SetDesiredBoundsMode`).

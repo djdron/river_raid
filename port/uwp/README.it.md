@@ -28,6 +28,3 @@ Va bene l'uno o l'altro modo:
 Poi in Dev Home selezionate l'app, View details, e impostate App type su **Game**: altrimenti un'app riceve meno risorse della console. Sulla Xbox qualcuno deve aver effettuato l'accesso, altrimenti l'app non parte (Visual Studio: «Unable to activate Windows Store app … 0x8004090a»).
 
 Il gamepad funziona come su PC (vedi [../README.it.md](../README.it.md)), X mette in pausa. Senza tastiera le altre impostazioni restano quelle predefinite: colori PAL, Altirra, solo l'immagine del gioco, nitida. B è anche il tasto Indietro del sistema; il gioco lo intercetta, così non chiude l'app. Il tasto Xbox esce dal gioco.
-
-## Cosa potrebbe restare da fare
-- L'area sicura del televisore: le app UWP sulla Xbox possono essere disegnate con un margine dai bordi dello schermo. L'immagine è comunque circondata dal nero; se il margine dà fastidio, l'app può chiedere tutto lo schermo (`ApplicationView::SetDesiredBoundsMode`).
