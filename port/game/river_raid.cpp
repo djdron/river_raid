@@ -8,7 +8,8 @@
 //   without it the AltirraOS font is used (os_font.h).
 //   -seed N: another river (and objects): game 1's river starts from generator state N
 //            (1..16777215); games 3-8 start at its bridges 5, 20, 50; difficulty grows as usual
-//   -bridge N: every game starts at bridge N (1..9999) of the river, at that bridge's level
+//   -bridge N: every game starts at bridge N (1..99999) of the river, at that bridge's level;
+//            past 9999 the bridge counter shows its last 4 digits, as the original's goes round
 //   -random N: start of POKEY's random counter (otherwise taken from the clock, as on the real
 //   machine, where it depends on the moment of power-on).
 //   -border: show the whole frame with its black border, not just the game's picture

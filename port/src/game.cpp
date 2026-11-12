@@ -466,9 +466,11 @@ void Game::setUpGame() {
 	const RiverGen::Start &start = gen.start(g.gameNumber >> 1);
 	for (int i = 0; i < 4; i++) g.other.checkpoint[i] = gen.s.checkpoint[i] = start.checkpoint[i];
 	gen.s.level = g.other.level = start.level;
-	// the bridge counter, 4 BCD digits
-	g.bridges[1] = g.other.bridges[1] = uint8_t((start.bridge / 10 % 10) << 4 | start.bridge % 10);
-	g.bridges[0] = g.other.bridges[0] = uint8_t((start.bridge / 1000) << 4 | start.bridge / 100 % 10);
+	// the bridge counter, 4 BCD digits: past 9999 its last 4, as the counter of a game flown that
+	// far would show (it goes round; and like it, the tanks fire only from 5 on again)
+	const int b = start.bridge % 10000;
+	g.bridges[1] = g.other.bridges[1] = uint8_t((b / 10 % 10) << 4 | b % 10);
+	g.bridges[0] = g.other.bridges[0] = uint8_t((b / 1000) << 4 | b / 100 % 10);
 }
 
 // A699-A6DC: SELECT or OPTION: the next game number, everything back to the start.

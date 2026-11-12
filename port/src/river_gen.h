@@ -140,12 +140,12 @@ public:
 	struct Start {
 		uint8_t checkpoint[4];   // LFSR A, B, C and bank
 		uint8_t level;
-		int bridge;              // the bridge counter, 1..9999
+		int bridge;              // the bridge, 1..99999 (the counter shows its last 4 digits)
 	};
 	// Another river and/or another starting bridge, worked out by running the generator.
 	// seed: game 1's river starts from this state of the LFSR (1..$FFFFFF: A low byte, B, C
 	// high byte) instead of the cartridge's; the other games at its bridges 5, 20 and 50.
-	// bridge: every game starts at this bridge (1..9999) instead.
+	// bridge: every game starts at this bridge (1..99999) instead.
 	// 0 for both: the cartridge's table.
 	void setRiver(uint32_t seed, int bridge);
 	const Start &start(int n) const { return starts_[n]; }

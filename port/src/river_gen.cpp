@@ -655,7 +655,7 @@ void RiverGen::setRiver(uint32_t seed, int bridge) {
 		if (bridge == 1) starts_[1] = starts_[2] = starts_[3] = starts_[0];
 		return;
 	}
-	if (bridge > 9999) bridge = 9999;
+	if (bridge > 99999) bridge = 99999;
 	// game 1's river (from the seed, with the cartridge's first bank position), run up to the
 	// starting bridges: its checkpoint there is that game's start
 	RiverGen run(rom_);
