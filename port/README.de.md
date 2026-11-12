@@ -61,7 +61,7 @@ Nach dem Einschalten fliegt der Demo-Modus über den Fluss. START beginnt ein Sp
 | Esc | Vollbild verlassen |
 | Mausklick | blendet den Mauszeiger aus, bis die Maus bewegt wird (ebenso der Wechsel ins Vollbild) |
 
-Die Tastatur steuert beide Joysticks, sodass auch eine Person ein Spiel für zwei spielen kann. Gamepads: das erste ist Joystick 1 (und 2, solange es kein zweites gibt), das zweite ist Joystick 2; Steuerkreuz oder linker Stick, A/B/Y oder der rechte Trigger zum Feuern, X = Pause, Start = START, Back = SELECT, RB / LB = F7 / F8 (Stand speichern / zu ihm zurückkehren). Der linke Stick geht nach seinem Winkel: Zieht man ihn etwas schräg zurück, bremst das Flugzeug nur; zum Lenken muss er weiter ausgelenkt werden (55 %) als zum Beschleunigen oder Bremsen (30 %).
+Die Tastatur steuert beide Joysticks, sodass auch eine Person ein Spiel für zwei spielen kann. Gamepads: das erste ist Joystick 1 (und 2, solange es kein zweites gibt), das zweite ist Joystick 2; Steuerkreuz oder linker Stick, A/B/Y oder der rechte Trigger zum Feuern, X = Pause, Start = START, Back = SELECT, RB / LB = F7 / F8 (Stand speichern / zu ihm zurückkehren), LT = L (Skalierung). Der linke Stick geht nach seinem Winkel: Zieht man ihn etwas schräg zurück, bremst das Flugzeug nur; zum Lenken muss er weiter ausgelenkt werden (55 %) als zum Beschleunigen oder Bremsen (30 %).
 
 ## Fluss-Betrachter
 ```

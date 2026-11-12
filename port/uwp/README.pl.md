@@ -27,4 +27,4 @@ Działa każdy sposób:
 
 Potem w Dev Home wybierz aplikację, View details i ustaw App type na **Game**: inaczej aplikacja dostaje mniej zasobów konsoli. Na Xboksie ktoś musi być zalogowany: inaczej aplikacja się nie uruchamia (Visual Studio: „Unable to activate Windows Store app … 0x8004090a”).
 
-Gamepad działa tak samo jak na PC (zob. [../README.pl.md](../README.pl.md)), X to pauza. Bez klawiatury pozostałe ustawienia są domyślne: kolory PAL, Altirra, tylko obraz gry, ostre skalowanie. B to także systemowy przycisk Wstecz; gra go przechwytuje, więc nie zamyka aplikacji. Przycisk Xbox wychodzi z gry.
+Gamepad działa tak samo jak na PC (zob. [../README.pl.md](../README.pl.md)), X to pauza. Bez klawiatury pozostałe ustawienia są domyślne: kolory PAL, Altirra, tylko obraz gry, ostre skalowanie (przełącza je LT). B to także systemowy przycisk Wstecz; gra go przechwytuje, więc nie zamyka aplikacji. Przycisk Xbox wychodzi z gry.

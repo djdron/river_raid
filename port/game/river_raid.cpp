@@ -38,7 +38,8 @@
 // Cmd+Q) quits.
 // Gamepads: the first one is joystick 1 (and 2 while there is no second), the second one
 // joystick 2. D-pad or left stick: joystick; A, B, Y or the right trigger: fire; X: the key
-// that pauses; Start: START; Back: SELECT; RB / LB: save the state / go back to it (as F7 / F8).
+// that pauses; Start: START; Back: SELECT; RB / LB: save the state / go back to it (as F7 / F8);
+// LT: the next scaling (as L).
 // The left stick goes by its angle (see AnalogStick).
 #include <algorithm>
 #include <cmath>
@@ -415,26 +416,32 @@ int main(int argc, char **argv) {
 		stateNote = " - state saved";
 		showColours();
 	};
+	auto nextFilter = [&]() {
+		filter = host::Filter((int(filter) + 1) % 3);
+		window.setFilter(filter);
+		showColours();
+	};
 	auto loadState = [&]() {
 		stateNote = atari.loadState() ? " - state loaded" : " - no state saved (F7)";
 		showColours();
 	};
-	bool shoulderHeld[2] = {};   // RB, LB on any gamepad, last pass
+	bool padHeld[3] = {};        // RB, LB, LT on any gamepad, last pass
 	AnalogStick sticks[2];       // the gamepads' left sticks
 
 	for (bool running = true; running;) {
 		{
-			// gamepad: RB saves the state, LB goes back to it (on pressing)
-			bool held[2] = {};
+			// gamepad: RB saves the state, LB goes back to it, LT the next scaling (on pressing)
+			bool held[3] = {};
 			for (int i = 0; i < window.gamepadCount(); i++) {
 				const host::Gamepad pad = window.gamepad(i);
 				held[0] = held[0] || pad.rightShoulder;
 				held[1] = held[1] || pad.leftShoulder;
+				held[2] = held[2] || pad.leftTrigger;
 			}
-			if (held[0] && !shoulderHeld[0]) saveState();
-			if (held[1] && !shoulderHeld[1]) loadState();
-			shoulderHeld[0] = held[0];
-			shoulderHeld[1] = held[1];
+			if (held[0] && !padHeld[0]) saveState();
+			if (held[1] && !padHeld[1]) loadState();
+			if (held[2] && !padHeld[2]) nextFilter();
+			for (int i = 0; i < 3; i++) padHeld[i] = held[i];
 		}
 		host::Event e;
 		while (window.poll(e)) {
@@ -450,9 +457,7 @@ int main(int argc, char **argv) {
 				makePalette();
 				showColours();
 			} else if (e.key == Key::L) {
-				filter = host::Filter((int(filter) + 1) % 3);
-				window.setFilter(filter);
-				showColours();
+				nextFilter();
 			} else if (e.key == Key::O) {
 				border = !border;
 				showBorder();

@@ -55,6 +55,7 @@ struct Gamepad {
 	bool start = false;       // Start
 	bool select = false;      // Back
 	bool leftShoulder = false, rightShoulder = false;   // LB, RB
+	bool leftTrigger = false;   // LT (pressed past halfway)
 };
 
 class Host {

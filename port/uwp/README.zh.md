@@ -27,4 +27,4 @@ cmake -S port -B build-uwp -G "Visual Studio 17 2022" -A x64 -DCMAKE_SYSTEM_NAME
 
 然后在 Dev Home 中选中该应用，View details，把 App type 设为 **Game**：否则应用得到的主机资源更少。 Xbox 上必须有人登录帐户，否则应用无法启动（Visual Studio：“Unable to activate Windows Store app … 0x8004090a”）。
 
-手柄的用法与 PC 上相同（见 [../README.zh.md](../README.zh.md)），X 暂停。没有键盘，其他设置保持默认：PAL 颜色、Altirra、只显示游戏画面、清晰缩放。B 同时也是系统的返回键；游戏会接管它，所以它不会关闭应用。Xbox 键退出游戏。
+手柄的用法与 PC 上相同（见 [../README.zh.md](../README.zh.md)），X 暂停。没有键盘，其他设置保持默认：PAL 颜色、Altirra、只显示游戏画面、清晰缩放（LT 可切换）。B 同时也是系统的返回键；游戏会接管它，所以它不会关闭应用。Xbox 键退出游戏。

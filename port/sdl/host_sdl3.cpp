@@ -323,6 +323,7 @@ Gamepad Host::gamepad(int index) const {
 	g.select = SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_BACK);
 	g.leftShoulder = SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER);
 	g.rightShoulder = SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER);
+	g.leftTrigger = SDL_GetGamepadAxis(p, SDL_GAMEPAD_AXIS_LEFT_TRIGGER) > 16000;
 	return g;
 }
 
