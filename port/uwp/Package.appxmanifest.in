@@ -2,9 +2,12 @@
 <!-- The game as a UWP app (Windows 10 and the Xbox in Dev Mode); filled in by uwp/uwp.cmake. -->
 <Package
 	xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+	xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
 	xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
-	IgnorableNamespaces="uap">
+	IgnorableNamespaces="uap mp">
 	<Identity Name="RiverRaidPort" Publisher="@RR_UWP_PUBLISHER@" Version="@RR_UWP_VERSION@" />
+	<!-- required by Visual Studio's packaging, as in CMake's own UWP template; unused -->
+	<mp:PhoneIdentity PhoneProductId="6b0e3c55-2f4e-4d2a-9b8a-5f1d3c7e9a21" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
 	<Properties>
 		<DisplayName>River Raid (port)</DisplayName>
 		<PublisherDisplayName>river_raid port</PublisherDisplayName>
