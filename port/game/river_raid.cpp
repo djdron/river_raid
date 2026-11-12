@@ -39,6 +39,7 @@
 // Gamepads: the first one is joystick 1 (and 2 while there is no second), the second one
 // joystick 2. D-pad or left stick: joystick; A, B, Y or the right trigger: fire; X: the key
 // that pauses; Start: START; Back: SELECT; RB / LB: save the state / go back to it (as F7 / F8).
+// The left stick goes by its angle (see AnalogStick).
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -188,8 +189,43 @@ private:
 	std::optional<Saved> saved_;
 };
 
+// A gamepad's left stick as the Atari's digital joystick. The direction comes from the stick's
+// angle: up, down, left and right get 60 degrees each, the diagonals 30, so pulling back to slow
+// down with the stick a little to one side stays straight back. Up and down count once the stick
+// is out past kOn, left and right (which turn the plane at once) only further out, past kOnSide;
+// each until the stick is back inside kOff / kOffSide.
+class AnalogStick {
+public:
+	static constexpr float kOn = 0.30f, kOff = 0.22f, kOnSide = 0.55f, kOffSide = 0.45f;
+	// The joystick (PORTA bits, 0 = pressed) for the stick at x, y (-1..1, y down).
+	uint8_t read(float x, float y) {
+		const float r = std::sqrt(x * x + y * y);
+		uint8_t bits = 0x0F;
+		if (r >= ((last_ & 0x03) != 0x03 ? kOff : kOn) || r >= ((last_ & 0x0C) != 0x0C ? kOffSide : kOnSide)) {
+			// the angle from the right, counter-clockwise (y points down), 0..360
+			float a = std::atan2(-y, x) * 57.29578f;
+			if (a < 0) a += 360;
+			// 8 sectors: right at 0, up-right at 45 ... a cardinal is +-30, a diagonal +-15
+			static const uint8_t kDirs[8] = {0x07, 0x06, 0x0E, 0x0A, 0x0B, 0x09, 0x0D, 0x05};
+			for (int k = 0; k < 8; k++) {
+				float d = std::fabs(a - k * 45.0f);
+				if (d > 180) d = 360 - d;
+				if (d <= ((k & 1) ? 15.0f : 30.0f)) { bits = kDirs[k]; break; }
+			}
+			// each part only past its own threshold
+			if (r < ((last_ & 0x03) != 0x03 ? kOff : kOn)) bits |= 0x03;
+			if (r < ((last_ & 0x0C) != 0x0C ? kOffSide : kOnSide)) bits |= 0x0C;
+		}
+		last_ = bits;
+		return bits;
+	}
+
+private:
+	uint8_t last_ = 0x0F;   // the last result: which parts are on, for the hysteresis
+};
+
 // Joystick and console keys from the keyboard and up to two gamepads.
-rr::Input readControls(const host::Host &h) {
+rr::Input readControls(const host::Host &h, AnalogStick sticks[2]) {
 	using host::Key;
 	rr::Input in;
 	uint8_t keys = 0x0F;   // PORTA bits: 0 up, 1 down, 2 left, 3 right; 0 = pressed
@@ -210,8 +246,9 @@ rr::Input readControls(const host::Host &h) {
 	for (int i = 0; i < pads; i++) {
 		const host::Gamepad pad = h.gamepad(i);
 		const int last = pads == 1 ? 1 : i;   // one pad: both joysticks
+		const uint8_t stick = pad.stick & sticks[i].read(pad.stickX, pad.stickY);
 		for (int j = i; j <= last; j++) {
-			in.stick[j] &= pad.stick;
+			in.stick[j] &= stick;
 			in.trigger[j] = in.trigger[j] || pad.fire;
 		}
 		in.key = in.key || pad.x;   // X: the key that pauses (the Xbox has no keyboard)
@@ -383,6 +420,7 @@ int main(int argc, char **argv) {
 		showColours();
 	};
 	bool shoulderHeld[2] = {};   // RB, LB on any gamepad, last pass
+	AnalogStick sticks[2];       // the gamepads' left sticks
 
 	for (bool running = true; running;) {
 		{
@@ -453,7 +491,7 @@ int main(int argc, char **argv) {
 			}
 			if (pending >= 1) {
 				const uint64_t t0 = host::Host::ticksNs();
-				const rr::Input input = readControls(window);
+				const rr::Input input = readControls(window, sticks);
 				for (; pending >= 1; pending--) {
 					atari.frame(input);
 					stats.frames++;

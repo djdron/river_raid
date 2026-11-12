@@ -61,7 +61,7 @@ Po włączeniu tryb demonstracyjny przelatuje nad rzeką. START rozpoczyna grę;
 | Esc | wyjście z pełnego ekranu |
 | kliknięcie myszą | ukrywa wskaźnik myszy, dopóki mysz się nie ruszy (przejście na pełny ekran też) |
 
-Klawiatura steruje oboma joystickami, więc także jedna osoba może grać w grę dla dwóch. Gamepady: pierwszy to joystick 1 (i 2, dopóki nie ma drugiego), drugi to joystick 2; krzyżak lub lewy drążek, A/B/Y lub prawy spust do strzału, X = pauza, Start = START, Back = SELECT, RB / LB = F7 / F8 (zapisać stan / wrócić do niego).
+Klawiatura steruje oboma joystickami, więc także jedna osoba może grać w grę dla dwóch. Gamepady: pierwszy to joystick 1 (i 2, dopóki nie ma drugiego), drugi to joystick 2; krzyżak lub lewy drążek, A/B/Y lub prawy spust do strzału, X = pauza, Start = START, Back = SELECT, RB / LB = F7 / F8 (zapisać stan / wrócić do niego). Lewa gałka działa według kąta wychylenia, więc pociągnięcie jej do tyłu lekko w bok tylko hamuje; do skrętu trzeba ją wychylić mocniej (55%) niż do przyspieszania czy hamowania (30%).
 
 ## Przeglądarka rzeki
 ```

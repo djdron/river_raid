@@ -48,7 +48,8 @@ inline const char *filterName(Filter f) {
 
 // A gamepad as an Atari joystick.
 struct Gamepad {
-	uint8_t stick = 0x0F;     // bit 0 up, 1 down, 2 left, 3 right; 0 = pressed
+	uint8_t stick = 0x0F;     // the D-pad: bit 0 up, 1 down, 2 left, 3 right; 0 = pressed
+	float stickX = 0, stickY = 0;   // the left stick, -1..1 (y down)
 	bool fire = false;        // A, B, Y or the right trigger
 	bool x = false;           // X: the key that pauses
 	bool start = false;       // Start

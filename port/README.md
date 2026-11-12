@@ -61,7 +61,7 @@ After power-on the attract mode flies over the river. START begins a game; SELEC
 | Esc | leave full screen |
 | mouse click | hides the mouse pointer until the mouse moves (so does going full screen) |
 
-The keyboard drives both joysticks, so one person can play a two-player game too. Gamepads: the first is joystick 1 (and 2 while there is no second), the second is joystick 2; D-pad or left stick, A/B/Y or the right trigger to fire, X = pause, Start = START, Back = SELECT, RB / LB = F7 / F8 (save the state / go back to it).
+The keyboard drives both joysticks, so one person can play a two-player game too. Gamepads: the first is joystick 1 (and 2 while there is no second), the second is joystick 2; D-pad or left stick, A/B/Y or the right trigger to fire, X = pause, Start = START, Back = SELECT, RB / LB = F7 / F8 (save the state / go back to it). The left stick goes by its angle, so pulling back with it a little to one side only slows down; to turn, it has to go further out (55%) than to speed up or slow down (30%).
 
 ## River viewer
 ```

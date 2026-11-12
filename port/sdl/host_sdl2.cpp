@@ -320,13 +320,12 @@ int Host::gamepadCount() const { return int(impl_->pads.size()); }
 Gamepad Host::gamepad(int index) const {
 	Gamepad g;
 	SDL_GameController *p = impl_->pads[size_t(index)];
-	constexpr int kDead = 12000;
-	const int ax = SDL_GameControllerGetAxis(p, SDL_CONTROLLER_AXIS_LEFTX);
-	const int ay = SDL_GameControllerGetAxis(p, SDL_CONTROLLER_AXIS_LEFTY);
-	if (SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_DPAD_UP) || ay < -kDead) g.stick &= ~1;
-	if (SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_DPAD_DOWN) || ay > kDead) g.stick &= ~2;
-	if (SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_DPAD_LEFT) || ax < -kDead) g.stick &= ~4;
-	if (SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_DPAD_RIGHT) || ax > kDead) g.stick &= ~8;
+	g.stickX = std::max(SDL_GameControllerGetAxis(p, SDL_CONTROLLER_AXIS_LEFTX) / 32767.0f, -1.0f);
+	g.stickY = std::max(SDL_GameControllerGetAxis(p, SDL_CONTROLLER_AXIS_LEFTY) / 32767.0f, -1.0f);
+	if (SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_DPAD_UP)) g.stick &= ~1;
+	if (SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_DPAD_DOWN)) g.stick &= ~2;
+	if (SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_DPAD_LEFT)) g.stick &= ~4;
+	if (SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_DPAD_RIGHT)) g.stick &= ~8;
 	g.fire = SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_A) || SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_B) ||
 		SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_Y) || SDL_GameControllerGetAxis(p, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > 16000;
 	g.x = SDL_GameControllerGetButton(p, SDL_CONTROLLER_BUTTON_X);
