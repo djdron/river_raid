@@ -12,6 +12,8 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(MSVC)
 	set(RR_WARNINGS /W4)
+	# fopen and the like are fine here; UWP projects turn on /sdl, which makes their warning an error
+	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 else()
 	set(RR_WARNINGS -Wall -Wextra)
 endif()
