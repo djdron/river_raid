@@ -30,6 +30,14 @@
 				<uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
 				<uap:SplashScreen Image="Assets\SplashScreen.png" BackgroundColor="#000000" />
 			</uap:VisualElements>
+			<!-- riverraid:-pal -bridge 500 ... starts the game with these options (see uwp/README.md) -->
+			<Extensions>
+				<uap:Extension Category="windows.protocol">
+					<uap:Protocol Name="riverraid">
+						<uap:DisplayName>River Raid</uap:DisplayName>
+					</uap:Protocol>
+				</uap:Extension>
+			</Extensions>
 		</Application>
 	</Applications>
 </Package>

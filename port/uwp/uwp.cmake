@@ -34,13 +34,13 @@ else()
 	message(WARNING "No ROM at ${RR_UWP_ROM} (RR_UWP_ROM): the package will not run without it")
 endif()
 
-# SDL2's entry point for WinRT apps, and the TV's display mode (50 Hz for PAL): C++/CX
+# SDL2's entry point for WinRT apps, and what the game takes from UWP (uwp/app.h): C++/CX
 set(RR_UWP_MAIN "${sdl2_SOURCE_DIR}/src/main/winrt/SDL_winrt_main_NonXAML.cpp")
-set_property(SOURCE "${RR_UWP_MAIN}" uwp/display_mode.cpp PROPERTY COMPILE_OPTIONS /ZW /EHsc)
+set_property(SOURCE "${RR_UWP_MAIN}" uwp/app.cpp PROPERTY COMPILE_OPTIONS /ZW /EHsc)
 
 add_executable(river_raid WIN32
 	game/river_raid.cpp
-	uwp/display_mode.cpp
+	uwp/app.cpp
 	"${RR_UWP_MAIN}"
 	"${CMAKE_CURRENT_BINARY_DIR}/Package.appxmanifest"
 	"${CMAKE_CURRENT_BINARY_DIR}/river_raid.pfx"
@@ -48,7 +48,7 @@ add_executable(river_raid WIN32
 )
 target_link_libraries(river_raid rrcore rrhost)
 target_compile_options(river_raid PRIVATE ${RR_WARNINGS})
-target_compile_definitions(river_raid PRIVATE RR_UWP)   # river_raid.cpp: LT at start = PAL
+target_compile_definitions(river_raid PRIVATE RR_UWP)   # river_raid.cpp: launch options, PAL
 target_include_directories(river_raid PRIVATE uwp)
 # as SDL is built for UWP: its headers then see a WinRT app (__WINRT__, SDL_main)
 target_compile_definitions(rrhost PUBLIC WINAPI_FAMILY=WINAPI_FAMILY_APP)

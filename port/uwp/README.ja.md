@@ -30,3 +30,5 @@ Visual Studio 2026 ではジェネレーターは `-G "Visual Studio 18 2026"`�
 ゲームパッドは PC と同じように使えます（[../README.ja.md](../README.ja.md) を参照）。X はポーズです。キーボードがないので、ほかの設定は既定のままです：PAL の色、Altirra、ゲーム画面のみ、くっきりした拡大（LT で切り替え）。B はシステムの戻るボタンでもあります。ゲームがこれを受け取るので、アプリは閉じません。Xbox ボタンでゲームを離れます。
 
 ゲームの起動中に LT を押し続けると PAL 機として動き（`-pal` と同じ：1 秒 50 フレーム、約 17% 遅い）、本体が許可していればテレビを 50 Hz に切り替え（Settings → TV & display options → Video modes → Allow 50 Hz）、終了時に元に戻します。50 Hz がなくても PAL として動きますが、テレビとは同期しません。
+
+PC と同じオプション（[../README.ja.md](../README.ja.md) を参照）は起動時にも指定できます：Dev Home でゲームを選び、Launch with parameters で Use custom protocol にチェックを入れて、例えば `riverraid:-pal -bridge 500` と入力します。アプリはプロトコル `riverraid` を宣言しており、その後に続く部分がコマンドラインになります。

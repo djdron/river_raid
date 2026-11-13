@@ -62,7 +62,7 @@
 #include "host.h"
 #include "host_main.h"
 #ifdef RR_UWP
-#include "display_mode.h"
+#include "app.h"
 #endif
 
 namespace {
@@ -297,6 +297,15 @@ void fail(const std::string &msg) { host::Host::showError("River Raid", msg); }
 }  // namespace
 
 int main(int argc, char **argv) {
+#ifdef RR_UWP
+	// no command line on the Xbox: the options come with the link that started the app
+	std::vector<std::string> launchArgs = uwp::launchArguments();
+	std::vector<char *> args(argv, argv + argc);
+	for (std::string &a : launchArgs) args.push_back(a.data());
+	args.push_back(nullptr);
+	argc = int(args.size()) - 1;
+	argv = args.data();
+#endif
 	bool pal = false;
 	host::Filter filter = host::Filter::Sharp;   // -filter (L switches)
 	bool border = false;       // -border: the whole frame with its black border (O switches)
@@ -389,8 +398,8 @@ int main(int argc, char **argv) {
 			host::Host::delayNs(10000000);
 		}
 	}
-	if (startLt && !pal) {
-		pal = true;
+	if (startLt) pal = palColours = true;
+	if (pal) {   // LT, or -pal in the link that started the app
 		tv = rr::kPal;
 		window.setPixelAspect(tv.pixelAspect());
 		showBorder();

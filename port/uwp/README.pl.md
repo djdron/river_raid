@@ -30,3 +30,5 @@ Potem w Dev Home wybierz aplikację, View details i ustaw App type na **Game**: 
 Gamepad działa tak samo jak na PC (zob. [../README.pl.md](../README.pl.md)), X to pauza. Bez klawiatury pozostałe ustawienia są domyślne: kolory PAL, Altirra, tylko obraz gry, ostre skalowanie (przełącza je LT). B to także systemowy przycisk Wstecz; gra go przechwytuje, więc nie zamyka aplikacji. Przycisk Xbox wychodzi z gry.
 
 Jeśli przy starcie gry trzymasz LT, uruchomi się jako komputer PAL (jak `-pal`: 50 klatek na sekundę, około 17% wolniej) i przełączy telewizor na 50 Hz, jeśli konsola na to pozwala (Settings → TV & display options → Video modes → Allow 50 Hz), a na końcu przywróci poprzedni tryb. Bez 50 Hz gra i tak działa jako PAL, tylko nie w takt telewizora.
+
+Opcje jak na PC (zob. [../README.pl.md](../README.pl.md)) można też podać przy starcie: w Dev Home wybierz grę, Launch with parameters, zaznacz Use custom protocol i wpisz na przykład `riverraid:-pal -bridge 500`. Aplikacja deklaruje protokół `riverraid`; wszystko, co po nim następuje, to wiersz poleceń.
