@@ -38,7 +38,7 @@ Ohne Argumente findet es das ROM selbst (siehe `rom`) und startet wie das Modul:
 | `-stats` | gibt den Renderer und die Bildwiederholrate aus, dann jede Sekunde die Bildrate, die Zeit pro Bild und die Sound-Warteschlange |
 | `-nosound` | kein Sound |
 
-Der Fenstertitel zeigt die aktuellen Farben und die Skalierung. Auf einem Bildschirm mit 60 Hz (oder 120 Hz ...) läuft das Spiel genau mit dessen Rate (60 statt der 59,92 Bilder pro Sekunde des Atari), damit jedes Bild gleich lang zu sehen ist; auf anderen Bildschirmen mit der Rate des Atari.
+Der Fenstertitel zeigt das Gerät (PAL oder NTSC), die aktuellen Farben und die Skalierung. Auf einem Bildschirm mit 60 Hz (oder 120 Hz ...) läuft das Spiel genau mit dessen Rate (60 statt der 59,92 Bilder pro Sekunde des Atari), damit jedes Bild gleich lang zu sehen ist; auf anderen Bildschirmen mit der Rate des Atari.
 
 Beispiele: `river_raid -bridge 30` startet an Brücke 30; `river_raid -seed 12345` ist ein anderer Fluss; `river_raid -seed 12345 -bridge 80` ist dieser Fluss in seiner schwersten Form.
 

@@ -441,7 +441,8 @@ int main(int argc, char **argv) {
 	// the window title shows the colours in use
 	std::string stateNote;   // shown in the title after F7 / F8
 	auto showColours = [&]() {
-		const std::string title = std::string("River Raid - ") + (palColours ? "PAL" : "NTSC") + " colours, " +
+		const std::string title = std::string("River Raid - ") + (pal ? "PAL machine (50 Hz)" : "NTSC machine (60 Hz)") + ", " +
+			(palColours ? "PAL" : "NTSC") + " colours, " +
 			rr::paletteName(paletteModel) + ", " + host::filterName(filter) + " scaling" + stateNote;
 		window.setTitle(title);
 	};

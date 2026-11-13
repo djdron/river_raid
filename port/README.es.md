@@ -38,7 +38,7 @@ Sin argumentos encuentra la ROM por sí mismo (vea `rom`) y arranca como el cart
 | `-stats` | muestra el renderizador y la frecuencia de la pantalla, y luego cada segundo los fotogramas por segundo, el tiempo por fotograma y la cola de sonido |
 | `-nosound` | sin sonido |
 
-El título de la ventana muestra los colores y el escalado en uso. En una pantalla de 60 Hz (o 120 Hz...) el juego va exactamente a la frecuencia de la pantalla (60 en lugar de los 59,92 fotogramas por segundo del Atari), para que cada fotograma se vea el mismo tiempo; en otras pantallas, a la frecuencia del Atari.
+El título de la ventana muestra la máquina (PAL o NTSC), los colores y el escalado en uso. En una pantalla de 60 Hz (o 120 Hz...) el juego va exactamente a la frecuencia de la pantalla (60 en lugar de los 59,92 fotogramas por segundo del Atari), para que cada fotograma se vea el mismo tiempo; en otras pantallas, a la frecuencia del Atari.
 
 Ejemplos: `river_raid -bridge 30` empieza en el puente 30; `river_raid -seed 12345` es otro río; `river_raid -seed 12345 -bridge 80` es ese río en su punto más difícil.
 

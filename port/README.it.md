@@ -38,7 +38,7 @@ Senza argomenti trova la ROM da solo (vedi `rom`) e parte come la cartuccia: mod
 | `-stats` | stampa il renderer e la frequenza dello schermo, poi ogni secondo la frequenza dei fotogrammi, il tempo per fotogramma e la coda del suono |
 | `-nosound` | niente suono |
 
-Il titolo della finestra mostra i colori e la scalatura in uso. Su uno schermo a 60 Hz (o 120 Hz...) il gioco va esattamente alla frequenza dello schermo (60 invece dei 59,92 fotogrammi al secondo dell'Atari), così ogni fotogramma resta a schermo per lo stesso tempo; su altri schermi alla frequenza dell'Atari.
+Il titolo della finestra mostra la macchina (PAL o NTSC), i colori e la scalatura in uso. Su uno schermo a 60 Hz (o 120 Hz...) il gioco va esattamente alla frequenza dello schermo (60 invece dei 59,92 fotogrammi al secondo dell'Atari), così ogni fotogramma resta a schermo per lo stesso tempo; su altri schermi alla frequenza dell'Atari.
 
 Esempi: `river_raid -bridge 30` parte dal ponte 30; `river_raid -seed 12345` è un fiume diverso; `river_raid -seed 12345 -bridge 80` è quel fiume al massimo della difficoltà.
 

@@ -38,7 +38,7 @@ Without arguments it finds the ROM by itself (see `rom`) and starts like the car
 | `-stats` | prints the renderer and display rate, then once a second the frame rate, time per frame and the sound queue |
 | `-nosound` | no sound |
 
-The window title shows the colours and the scaling in use. On a display at 60 Hz (or 120 Hz...) the game runs at exactly the display's rate (60 instead of the Atari's 59.92 frames per second), so every frame stays on screen equally long; on other displays at the Atari's rate.
+The window title shows the machine (PAL or NTSC), the colours and the scaling in use. On a display at 60 Hz (or 120 Hz...) the game runs at exactly the display's rate (60 instead of the Atari's 59.92 frames per second), so every frame stays on screen equally long; on other displays at the Atari's rate.
 
 Examples: `river_raid -bridge 30` starts at bridge 30; `river_raid -seed 12345` is a different river; `river_raid -seed 12345 -bridge 80` is that river at its hardest.
 

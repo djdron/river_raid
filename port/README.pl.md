@@ -38,7 +38,7 @@ Bez argumentów sama znajduje ROM (zob. `rom`) i startuje jak kartridż: tryb de
 | `-stats` | wypisuje renderer i częstotliwość ekranu, potem co sekundę liczbę klatek, czas na klatkę i kolejkę dźwięku |
 | `-nosound` | bez dźwięku |
 
-Tytuł okna pokazuje bieżące kolory i skalowanie. Na ekranie 60 Hz (lub 120 Hz...) gra działa dokładnie z jego częstotliwością (60 zamiast 59,92 klatek na sekundę Atari), więc każda klatka jest widoczna równie długo; na innych ekranach z częstotliwością Atari.
+Tytuł okna pokazuje komputer (PAL lub NTSC), bieżące kolory i skalowanie. Na ekranie 60 Hz (lub 120 Hz...) gra działa dokładnie z jego częstotliwością (60 zamiast 59,92 klatek na sekundę Atari), więc każda klatka jest widoczna równie długo; na innych ekranach z częstotliwością Atari.
 
 Przykłady: `river_raid -bridge 30` startuje przy moście 30; `river_raid -seed 12345` to inna rzeka; `river_raid -seed 12345 -bridge 80` to ta rzeka w najtrudniejszej postaci.
 
