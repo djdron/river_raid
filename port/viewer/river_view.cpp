@@ -633,7 +633,7 @@ int main(int argc, char **argv) {
 		}
 	};
 	makePalette();
-	// the window title shows where the river is, then the colours and the scaling in use
+	// the window title shows where the river is, then the machine, the colours and the scaling in use
 	std::string colours;
 	auto showColours = [&]() {
 		colours = std::string(palColours ? "PAL" : "NTSC") + " colours, " + rr::paletteName(paletteModel) + ", " +
@@ -771,9 +771,9 @@ int main(int argc, char **argv) {
 		const long shown = attract.lines() - 1 - back;
 		// the newest bridge at the top of the screen or below it: the one on screen, or the one
 		// last passed (sections are much longer than the screen, so at most one is on it)
-		std::snprintf(buf, sizeof buf, "River Raid - bridge %d (level %d) - line %ld - speed x%g%s%s%s - %s",
+		std::snprintf(buf, sizeof buf, "River Raid - bridge %d (level %d) - line %ld - speed x%g%s%s%s - %s machine, %s",
 			attract.bridge(shown), attract.level(shown), shown, kSpeeds[speedIndex], back ? " - looking back" : "", paused ? " - paused" : "", attract.sounds() ? " - sound" : "",
-			colours.c_str());
+			pal ? "PAL" : "NTSC", colours.c_str());
 		if (title != buf) {
 			title = buf;
 			window.setTitle(buf);
