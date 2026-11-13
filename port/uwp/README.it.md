@@ -28,3 +28,5 @@ Va bene l'uno o l'altro modo:
 Poi in Dev Home selezionate l'app, View details, e impostate App type su **Game**: altrimenti un'app riceve meno risorse della console. Sulla Xbox qualcuno deve aver effettuato l'accesso, altrimenti l'app non parte (Visual Studio: «Unable to activate Windows Store app … 0x8004090a»).
 
 Il gamepad funziona come su PC (vedi [../README.it.md](../README.it.md)), X mette in pausa. Senza tastiera le altre impostazioni restano quelle predefinite: colori PAL, Altirra, solo l'immagine del gioco, scala nitida (LT la cambia). B è anche il tasto Indietro del sistema; il gioco lo intercetta, così non chiude l'app. Il tasto Xbox esce dal gioco.
+
+Tenendo premuto LT mentre il gioco parte, gira come una macchina PAL (come `-pal`: 50 fotogrammi al secondo, circa il 17% più lento) e porta il televisore a 50 Hz, se la console lo consente (Settings → TV & display options → Video modes → Allow 50 Hz), poi lo riporta com'era all'uscita. Senza 50 Hz gira comunque come PAL, solo non al ritmo del televisore.

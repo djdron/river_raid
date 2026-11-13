@@ -28,3 +28,5 @@ Sirve cualquiera de las dos formas:
 Después, en Dev Home, seleccione la app, View details, y ponga App type en **Game**: si no, una app recibe menos de la consola. En la Xbox tiene que haber alguien con la sesión iniciada; si no, la app no arranca (Visual Studio: «Unable to activate Windows Store app … 0x8004090a»).
 
 El mando funciona como en el PC (ver [../README.es.md](../README.es.md)), X pausa. Sin teclado, los demás ajustes quedan en sus valores predeterminados: colores PAL, Altirra, solo la imagen del juego, escalado nítido (LT lo cambia). B es también el botón Atrás del sistema; el juego lo intercepta, así que no cierra la app. El botón Xbox sale del juego.
+
+Si mantiene LT pulsado mientras arranca el juego, este funciona como una máquina PAL (como `-pal`: 50 fotogramas por segundo, un 17 % más lento) y pone el televisor a 50 Hz, si la consola lo permite (Settings → TV & display options → Video modes → Allow 50 Hz), y lo devuelve como estaba al salir. Sin 50 Hz funciona igualmente como PAL, solo que sin ir al ritmo del televisor.

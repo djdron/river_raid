@@ -28,3 +28,5 @@ Either way works:
 Then in Dev Home select the app, View details, and set App type to **Game**: an app gets less of the console otherwise. Someone has to be signed in on the Xbox: otherwise the app does not start (Visual Studio: "Unable to activate Windows Store app … 0x8004090a").
 
 The gamepad works as on a PC (see [../README.md](../README.md)), X pauses. With no keyboard the other settings stay at their defaults: PAL colours, Altirra, the game's picture only, sharp scaling (LT switches it). B is also the system's Back button; the game takes it, so it does not close the app. The Xbox button leaves the game.
+
+Hold LT while the game starts to play as a PAL machine (as `-pal`: 50 frames per second, about 17% slower): the game then switches the TV to 50 Hz, if the console allows it (Settings → TV & display options → Video modes → Allow 50 Hz), and back when it ends. Without 50 Hz it still runs as PAL, not locked to the TV.

@@ -83,6 +83,8 @@ public:
 	// full screen) the window keeps its width and takes the height of the new proportions;
 	// also on leaving full screen. Called before open(), it sets the window's first size.
 	void setView(int x, int y, int width, int height);
+	// Changes the pixelAspect given to open() (the window keeps its size: for full screen).
+	void setPixelAspect(double pixelAspect);
 	void setFilter(Filter filter);        // Filter::Sharp by default
 	bool fullscreen() const;
 	void setFullscreen(bool on);

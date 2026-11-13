@@ -345,6 +345,8 @@ void Host::setFullscreen(bool on) {
 	if (!on) h.fitHeight(h.windowedW);   // the view may have changed while in full screen
 }
 
+void Host::setPixelAspect(double pixelAspect) { impl_->pixelAspect = pixelAspect; }
+
 void Host::setView(int x, int y, int width, int height) {
 	Impl &h = *impl_;
 	h.viewX = x;

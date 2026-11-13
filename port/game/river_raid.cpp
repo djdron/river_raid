@@ -61,6 +61,9 @@
 
 #include "host.h"
 #include "host_main.h"
+#ifdef RR_UWP
+#include "display_mode.h"
+#endif
 
 namespace {
 
@@ -355,7 +358,7 @@ int main(int argc, char **argv) {
 		rr::builtinOsFont(osFont);
 	}
 
-	const rr::TvSystem &tv = rr::tvSystem(pal);
+	rr::TvSystem tv = rr::tvSystem(pal);
 	host::Host window;
 	// the game's picture only, or the whole frame
 	auto showBorder = [&]() {
@@ -367,9 +370,53 @@ int main(int argc, char **argv) {
 		fail(window.error());
 		return 1;
 	}
+	bool startLt = false;   // LT held at the start (UWP: PAL)
+#ifdef RR_UWP
+	// The Xbox has no command line: LT held while the game starts is -pal, with the TV switched
+	// to 50 Hz if the console allows it (Settings - TV & display options - Video modes - Allow
+	// 50 Hz). The gamepads show up a moment after the start: wait for one (up to 1.5 s), then
+	// let its state come in.
+	{
+		const uint64_t start = host::Host::ticksNs();
+		uint64_t seen = 0;
+		for (;;) {
+			host::Event e;
+			while (window.poll(e)) {}
+			const uint64_t now = host::Host::ticksNs();
+			if (window.gamepadCount() > 0 && !seen) seen = now;
+			for (int i = 0; i < window.gamepadCount(); i++) startLt = startLt || window.gamepad(i).leftTrigger;
+			if (startLt || (seen && now - seen > 200000000) || now - start > 1500000000) break;
+			host::Host::delayNs(10000000);
+		}
+	}
+	if (startLt && !pal) {
+		pal = true;
+		tv = rr::kPal;
+		window.setPixelAspect(tv.pixelAspect());
+		showBorder();
+		uwp::requestRefreshRate(50);
+	}
+#endif
+	// the display's refresh rate (on the Xbox the TV's mode, which SDL does not know; asked
+	// for twice a second, as it changes a moment after requestRefreshRate())
+#ifdef RR_UWP
+	double tvRate = 0;
+	uint64_t tvRateAt = 0;
+#endif
+	auto displayRate = [&]() {
+#ifdef RR_UWP
+		const uint64_t now = host::Host::ticksNs();
+		if (!tvRateAt || now - tvRateAt > 500000000) {
+			tvRate = uwp::displayRefreshRate();
+			tvRateAt = now;
+		}
+		if (tvRate > 0) return tvRate;
+#endif
+		return window.refreshRate();
+	};
 	if (showStats) {
-		const Pace pace = paceFor(window.refreshRate(), tv.frameRate());
-		std::fprintf(stderr, "%s, display %.2f Hz, game %.3f frames/s%s\n", window.info().c_str(), window.refreshRate(),
+		const Pace pace = paceFor(displayRate(), tv.frameRate());
+		std::fprintf(stderr, "%s, display %.2f Hz, game %.3f frames/s%s\n", window.info().c_str(), displayRate(),
 			pace.rate, pace.refreshesPerFrame ? " (locked to the display)" : "");
 	}
 
@@ -431,7 +478,7 @@ int main(int argc, char **argv) {
 		stateNote = atari.loadState() ? " - state loaded" : " - no state saved (F7)";
 		showColours();
 	};
-	bool padHeld[3] = {};        // RB, LB, LT on any gamepad, last pass
+	bool padHeld[3] = {false, false, startLt};   // RB, LB, LT on any gamepad, last pass
 	AnalogStick sticks[2];       // the gamepads' left sticks
 
 	for (bool running = true; running;) {
@@ -482,7 +529,7 @@ int main(int argc, char **argv) {
 		const double dt = std::min(double(now - last) / 1e9, 0.1);
 		last = now;
 		if (!shotPath) {
-			const Pace pace = paceFor(window.refreshRate(), tv.frameRate());
+			const Pace pace = paceFor(displayRate(), tv.frameRate());
 			pending += dt * pace.rate;
 			const bool vsyncPaced = pace.refreshesPerFrame && presentWaited;
 			if (vsyncPaced) {
@@ -521,7 +568,7 @@ int main(int argc, char **argv) {
 			const double target = kSampleRate * 0.05;
 			const double queued = double(window.queuedSound());
 			const double correction = 1 + 0.005 * std::clamp((target - queued) / target, -1.0, 1.0);
-			atari.setSoundRate(kSampleRate * tv.frameRate() / paceFor(window.refreshRate(), tv.frameRate()).rate * correction);
+			atari.setSoundRate(kSampleRate * tv.frameRate() / paceFor(displayRate(), tv.frameRate()).rate * correction);
 		}
 		samples.clear();
 
@@ -540,7 +587,7 @@ int main(int argc, char **argv) {
 		const uint64_t t1 = host::Host::ticksNs();
 		window.present();
 		const uint64_t presentNs = host::Host::ticksNs() - t1;
-		const double refresh = window.refreshRate();
+		const double refresh = displayRate();
 		presentWaited = refresh > 0 && double(presentNs) > 0.25e9 / refresh;
 		stats.present += presentNs;
 		stats.pictures++;
@@ -554,5 +601,8 @@ int main(int argc, char **argv) {
 		}
 	}
 
+#ifdef RR_UWP
+	uwp::restoreDisplayMode();
+#endif
 	return 0;
 }

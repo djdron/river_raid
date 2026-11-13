@@ -28,3 +28,5 @@ Visual Studio 2026 ではジェネレーターは `-G "Visual Studio 18 2026"`�
 その後 Dev Home でアプリを選び、View details で App type を **Game** にします：そうしないとアプリが使える本体の資源が少なくなります。 Xbox で誰かがサインインしている必要があります：そうでないとアプリが起動しません（Visual Studio：「Unable to activate Windows Store app … 0x8004090a」）。
 
 ゲームパッドは PC と同じように使えます（[../README.ja.md](../README.ja.md) を参照）。X はポーズです。キーボードがないので、ほかの設定は既定のままです：PAL の色、Altirra、ゲーム画面のみ、くっきりした拡大（LT で切り替え）。B はシステムの戻るボタンでもあります。ゲームがこれを受け取るので、アプリは閉じません。Xbox ボタンでゲームを離れます。
+
+ゲームの起動中に LT を押し続けると PAL 機として動き（`-pal` と同じ：1 秒 50 フレーム、約 17% 遅い）、本体が許可していればテレビを 50 Hz に切り替え（Settings → TV & display options → Video modes → Allow 50 Hz）、終了時に元に戻します。50 Hz がなくても PAL として動きますが、テレビとは同期しません。
