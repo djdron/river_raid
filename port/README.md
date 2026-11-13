@@ -30,10 +30,10 @@ Without arguments it finds the ROM by itself (see `rom`) and starts like the car
 | `-seed N` | another river, with other enemies and depots. N is the state the river generator starts from, 1 to 16777215. Game 1 starts at the beginning of that river, games 3-8 at its bridges 5, 20 and 50; each game keeps its usual level, so the difficulty grows as usual. The cartridge's own river is `-seed 16241891` |
 | `-bridge N` | every game (1-8) starts at bridge N, 1 to 99999: with N on the bridge counter (past 9999 its last 4 digits, as the original's counter goes round) and that bridge's level (after 80 the level alternates 79/80, as in the original). Works with `-seed` too. The start is found by running the river generator up to it (under a second for 9999, about 8 for 99999) |
 | `-random N` | the starting value of POKEY's RANDOM counter, which decides which enemy wakes up when and the noise of explosions. By default it is taken from the clock, as the real machine's depends on the moment of power-on, so every run differs; with the same N and the same input a run repeats exactly |
-| `-pal` | play as a PAL machine: as on a real PAL Atari, fuel depots keep getting rarer up to level 47 instead of 46; PAL colours. The display timing stays NTSC (see Not done yet) |
+| `-pal` | play as a PAL machine (Europe): 49.86 frames per second instead of 59.92, so the whole game runs about 17% slower, as on a European TV; the panel laid out as a PAL machine shows it (taller); sounds a little lower; fuel depots keep getting rarer up to level 47 instead of 46; PAL colours. On a 50 or 100 Hz display the game locks to it |
 | `-colours ntsc\|pal` | the colours of an NTSC or a PAL machine; PAL by default. C switches while playing |
 | `-palette altirra\|atari800` | the colour model: `altirra` (default) or `atari800` (darker middle tones). V switches while playing |
-| `-border` | shows the whole frame with its black border (384×240 less 10 columns at each side), as emulators do. By default the window shows only the game's picture with the whole scrolling line, 364×200, so in full screen it is about 20% larger, and a window is that much lower. O switches while playing |
+| `-border` | shows the whole frame with its black border (384×240 less 10 columns at each side), as emulators do. By default the window shows only the game's picture with the whole scrolling line, 364×200 (`-pal`: 364×213), so in full screen it is about 20% larger, and a window is that much lower. O switches while playing |
 | `-filter sharp\|nearest\|linear` | how the picture is scaled to the window or screen: `sharp` (default) scales by whole numbers with sharp pixels and then smoothly to the final size, so it stays sharp and every pixel is the same size; `nearest` is plain blocks, but at a scale that is not a whole number (always so across, as Atari pixels are not square) some columns come out one screen pixel wider; `linear` is smooth and blurred. L switches while playing |
 | `-stats` | prints the renderer and display rate, then once a second the frame rate, time per frame and the sound queue |
 | `-nosound` | no sound |
@@ -186,6 +186,13 @@ The game with a player (`game_check` on runs with input). From the attract mode'
 - two-player game with SELECT and the pause key (`two_players.txt`, up to the game over at frame 3 007): identical up to the game over (one frame, see below);
 - the river area drawn by the port (plane, bullet, enemies, explosions, tank, shells) equals the original's screens in all 1 565 compared frames of a bot game.
 
+The PAL machine (`rr_oracle -pal`, `game_check -pal`): the same checks on runs of the original as a PAL Atari: the attract mode (2 974 frames), a bot game with game over (5 974), a two-player game (7 774), the river area on screens (2 546 frames), the sound driver (2 991) and the panel and scrolling line (1 299): no differences. What a PAL frame changes beyond the display list was found this way: with 312 lines a frame leaves the CPU more time, so power-on reaches the attract mode at frame 25 instead of 38 and sub $B0F1 clears memory in 8 frames instead of 13; and since the panel's display interrupt ends 12 lines later, at a game over the VBI comes before sub $B21A.
+
+```
+oracle/rr_oracle rom/River_Raid.rom oracle/scripts/start_only.txt 6000 out -pal -bot
+port/build/game_check rom/River_Raid.rom out/ram.bin out/random.log 25 5974 -attract -pal
+```
+
 Where the original's result depends on CPU cycles:
 - The DLI (`display.cpp`) runs with cycle counts, as the reference emulator times a scanline: player/missile and display list fetches at the start, the CPU up to cycle 28, then the whole line is drawn (collisions included), then screen data fetches, WSYNC at cycle 106. So it is known whether a collision register read already sees the current scanline: a bullet touching an object only on the scanline of the read counts on a bridge (that path reads after cycle 28) and not elsewhere, as in the original.
 - The RAM snapshot is taken at the end of the frame; normally the original's main loop is then waiting for the next frame (AE99–AE9E). Right after the start of a game, while the river is refilled at 2 lines per frame, it is sometimes still drawing the second line (1 frame per refill). `game_check` reports such frames separately and does not compare them; the next frame is identical again.
@@ -206,5 +213,4 @@ port/build/sound_render out/pokey.log port.wav
 
 ## Not done yet
 - Power-on itself (A000–A17C: the first 38 frames before the attract mode) is drawn as an empty screen; `Game::powerOn` is not exact yet.
-- The PAL machine (`-pal`): the generator knows it, the display list and timing do not.
 - The colours follow the emulators' models of the GTIA output (Altirra by default, atari800 on V; both checked byte for byte against the emulators' own palette code with their default settings, atari800 stretched from its video levels 16–235 to 0–255), not a palette measured on a real TV; how bright it looks depends on the TV's settings as much as on the machine.

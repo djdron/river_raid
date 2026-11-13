@@ -1,7 +1,7 @@
 // Compare Game::frame() with a RAM trace of the original, frame by frame.
 //
 // usage: game_check <rom> <ram.bin> <random.log> <first frame> <frames> [-ram-base F] [-resync]
-//                   [-attract | -poweron] [-screens screens.bin first]
+//                   [-attract | -poweron] [-screens screens.bin first] [-pal]
 //   ram.bin from `rr_oracle ... -ram A:B` (frame A at offset 0, give A as -ram-base),
 //   random.log from the same run (values the original read from RANDOM, replayed in order).
 //   The state is loaded from the RAM of <first frame>; then every frame is run and compared:
@@ -9,7 +9,9 @@
 //   the river lines on screen. -resync reloads the state from RAM after every frame, so each
 //   frame is checked on its own. -attract: start from Game::startAttract() instead of RAM
 //   (give 38 as the first frame) and never reload: the whole attract mode from power-on.
-//   -poweron: start from Game::powerOn() (give 0 as the first frame), never reload. -screens (rr_oracle -screens first:last, same run): the river
+//   -poweron: start from Game::powerOn() (give 0 as the first frame), never reload. -pal: a
+//   trace of rr_oracle -pal (for -attract give 25 as the first frame; from RAM the game takes
+//   it from $BF). -screens (rr_oracle -screens first:last, same run): the river
 //   area drawn by Game::drawRiver() is compared with the original's screen of each frame.
 #include <cstdio>
 #include <cstdlib>
@@ -38,12 +40,13 @@ int main(int argc, char **argv) {
 	if (!ram || !rnd) { std::fprintf(stderr, "cannot read the trace\n"); return 2; }
 	const long first = std::atol(argv[4]), count = std::atol(argv[5]);
 	long base = 0;
-	bool resync = false, fromStart = false, powerOn = false;
+	bool resync = false, fromStart = false, powerOn = false, pal = false;
 	FILE *scr = nullptr;
 	long scrBase = 0, scrFrames = 0, scrBadFrames = 0, scrBadRows = 0, scrShown = 0;
 	for (int i = 6; i < argc; i++) {
 		if (!std::strcmp(argv[i], "-ram-base") && i + 1 < argc) base = std::atol(argv[++i]);
 		else if (!std::strcmp(argv[i], "-resync")) resync = true;
+		else if (!std::strcmp(argv[i], "-pal")) pal = true;
 		else if (!std::strcmp(argv[i], "-attract")) fromStart = true;
 		else if (!std::strcmp(argv[i], "-poweron")) powerOn = fromStart = true;
 		else if (!std::strcmp(argv[i], "-screens") && i + 2 < argc) {
@@ -100,8 +103,8 @@ int main(int argc, char **argv) {
 
 	rr::Game game(rom);
 	if (!readRam(first)) { std::fprintf(stderr, "frame %ld not in the trace\n", first); return 2; }
-	if (powerOn) game.powerOn();
-	else if (fromStart) game.startAttract();
+	if (powerOn) game.powerOn(pal);
+	else if (fromStart) game.startAttract(pal);
 	else game.loadFromRam(mem.data());
 	std::map<std::string, long> diffCount;
 	long framesBad = 0, randomBad = 0, shown = 0, busyFrames = 0, midFrames = 0;

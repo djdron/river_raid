@@ -58,16 +58,19 @@ uint8_t addBcd(uint8_t a, uint8_t b, int &carry) {
 Game::Game(const Rom &rom) : gen(rom), rom_(rom) {}
 
 // sub $B0F1 leaves the rainbow under the logo (players 2 and 3, rows $DB-$E1) and the fuel
-// gauge needle (missile 1, rows $CC-$D5) in player-missile memory; NTSC rows.
+// gauge needle (missile 1, rows $CC-$D5) in player-missile memory; on PAL (B133-B15C) 12 and 7
+// rows lower, as the panel is there (status_bar.h).
 void Game::drawLogoAndNeedle() {
+	const int logo = pal_ ? 0xE7 : 0xDB, needle = pal_ ? 0xD3 : 0xCC;
 	for (int i = 0; i < 7; i++) {
-		g.pm.at(uint16_t(0x0EDB + i)) = 0xFF;
-		g.pm.at(uint16_t(0x0FDB + i)) = 0xFC;
+		g.pm.at(uint16_t(0x0E00 + logo + i)) = 0xFF;
+		g.pm.at(uint16_t(0x0F00 + logo + i)) = 0xFC;
 	}
-	for (int i = 0; i < 10; i++) g.pm.at(uint16_t(kMissileMemory + 0xCC + i)) = 0x0C;
+	for (int i = 0; i < 10; i++) g.pm.at(uint16_t(kMissileMemory + needle + i)) = 0x0C;
 }
 
 void Game::startAttract(bool pal) {
+	pal_ = pal;
 	gen.s = RiverState();
 	gen.startGame(1, pal);
 	g = GameState();
@@ -92,9 +95,9 @@ void Game::startAttract(bool pal) {
 	g.fuelFrac = 0xFF;
 	g.planeX = 0x7C;
 	g.colourBank = bankColour(gen.s);
-	// the scrolling line has been moving since frame 11 (VBI steps up to frame 38)
+	// the scrolling line has been moving since frame 11 (VBI steps up to frame 38; 9 to 25 on PAL)
 	g.scroller = Scroller();
-	for (int f = 11; f <= 38; f++) {
+	for (int f = scrollerStartFrame(pal); f <= attractStartFrame(pal); f++) {
 		g.logoShown = g.scroller.logoX;
 		g.scroller.step(true);
 	}
@@ -448,7 +451,7 @@ void Game::reset(bool full) {
 	screen.clear();
 	lineStates.clear();
 	g.screenOn = 0;                               // B101: colours off while clearing
-	busy_ = kResetFrames;
+	busy_ = resetFrames();
 	drawLogoAndNeedle();
 }
 
@@ -517,7 +520,15 @@ bool Game::respawnOrGameOver() {
 	// (In the original the high score check makes this frame's work end close to the vertical
 	// blank: depending on the objects on screen, sub $B21A sets the frame counter to $FF just
 	// before or just after that frame's VBI counts it, or even in the next frame. The port
-	// does it before the VBI, and the "Game over" text (A3B4) after it, as seen most often.)
+	// does it before the VBI, and the "Game over" text (A3B4) after it, as seen most often.
+	// On PAL the panel's display interrupt keeps the CPU 12 lines longer, and the VBI comes
+	// first: it still sees the frame counter, the plane and the attract timer as they were.)
+	if (pal_) {
+		vbiSeesBeforeGameOver_ = true;
+		beforeGameOver_[0] = g.frameCount;
+		beforeGameOver_[1] = g.planeState;
+		beforeGameOver_[2] = g.attractTimer;
+	}
 	gameOverScreen();
 	gameOverText_ = true;                         // A3B4, after this frame's VBI (see vbi())
 	return false;
@@ -729,6 +740,11 @@ void Game::scrollRiver() {
 
 // B2A5-B3F0: the vertical blank: the sound driver, then the frame counter.
 void Game::vbi(const std::function<uint8_t()> &random) {
+	if (vbiSeesBeforeGameOver_) {                 // PAL: sub $B21A comes after this VBI
+		g.frameCount = beforeGameOver_[0];
+		g.planeState = beforeGameOver_[1];
+		g.attractTimer = beforeGameOver_[2];
+	}
 	soundDriver(random);
 	g.frameCount++;
 	if (g.frameCount == 0) {
@@ -751,6 +767,12 @@ void Game::vbi(const std::function<uint8_t()> &random) {
 	// B44B-B47F: the scrolling line moves while the game is not being played
 	g.logoShown = g.scroller.logoX;
 	g.scroller.step(g.attractTimer != 0);
+	if (vbiSeesBeforeGameOver_) {
+		vbiSeesBeforeGameOver_ = false;
+		g.frameCount = 0xFF;
+		g.planeState = kNoPlane;
+		g.attractTimer = 0xFF;
+	}
 	if (gameOverText_) {                          // A3B4: "Game over" scrolls past first
 		gameOverText_ = false;
 		g.scroller.textLo = 0x20;

@@ -78,10 +78,6 @@ namespace {
 constexpr int kViewLeft = 10, kViewWidth = 364;
 constexpr int kViewTop = 0, kViewHeight = rr::kScreenHeight;
 constexpr int kScale = 6;   // initial window scale (less if the screen is smaller)
-// Width of a column relative to the height of a line on an NTSC TV: a column is half a
-// colour clock, which is a little narrower than a scanline is high.
-constexpr double kPixelAspect = 0.86;
-constexpr double kFrameRate = 59.92;   // NTSC Atari
 constexpr int kSampleRate = 48000;
 
 // The attract mode: the game running without a player, from power-on, plus the status bar.
@@ -106,13 +102,13 @@ constexpr int kSampleRate = 48000;
 class Attract {
 public:
 	Attract(const rr::Rom &rom, const uint8_t osFont[rr::kOsFontBytes], bool pal, uint32_t seed)
-		: rom_(rom), pal_(pal), seed_(seed), charsets_(rr::buildCharsets(rom, osFont)), head_(rom, seed) {
+		: rom_(rom), pal_(pal), seed_(seed), charsets_(rr::buildCharsets(rom, osFont)), head_(rom, seed, pal) {
 		rr::initialPanel(rom, panel_);
 		restart();
 	}
 
 	void restart() {
-		head_ = Machine(rom_, seed_);
+		head_ = Machine(rom_, seed_, pal_);
 		head_.game.gen.setRiver(riverSeed_, 0);
 		sections_.clear();
 		anchors_.clear();
@@ -121,7 +117,7 @@ public:
 		replay_.reset();
 		std::memset(live_, 0, sizeof live_);
 		liveStale_ = false;
-		pokey_ = rr::PokeySound(kSampleRate);
+		pokey_ = rr::PokeySound(kSampleRate, rr::tvSystem(pal_).clock);
 		audio_.clear();
 		if (startBridge_ > 1) flyToBridge(startBridge_);
 	}
@@ -177,9 +173,9 @@ public:
 		engine_ = {pitch, stick};
 	}
 	// Sound for `seconds` of real time from the registers as they are (at speeds other than x1,
-	// where frames do not come one per 1/60 s).
+	// where frames do not come one per frame time of the Atari).
 	void playFor(double seconds) {
-		if (sounds_) pokey_.run(long(seconds * rr::PokeySound::kClock), audio_);
+		if (sounds_) pokey_.run(long(seconds * pokey_.clock()), audio_);
 	}
 
 	// Flies the present on until line `line` has come (the river only while it is far, whole
@@ -278,7 +274,7 @@ public:
 		uint8_t panel[rr::kPanelBytes];
 		std::memcpy(panel, panel_, sizeof panel);
 		if (lines() > 0) rr::showPanelBridge(panel, bridge(std::max(target, 0L)));
-		rr::drawStatusBar(rom_, charsets_, panel, 0xFF, m->scroller, m->logoShown, screen);   // full tank
+		rr::drawStatusBar(rom_, charsets_, panel, 0xFF, m->scroller, m->logoShown, screen, pal_);   // full tank
 	}
 
 	// Gets the moment `back` lines before the newest one ready for draw(), for a jump (B /
@@ -302,7 +298,6 @@ private:
 	static constexpr long kSettleFrames = 400;       // whole frames after running on with the river only
 	static constexpr long kAnchorFrames = 1024;      // anchor spacing
 	static constexpr long kCoverFrames = 512;        // whole frames before a far line, for running back
-	static constexpr long kFirstScrollerFrame = 11, kFirstRiverFrame = 38;
 
 	// Everything that runs: the game, POKEY's random counter, the scrolling line. Copied whole
 	// for a snapshot.
@@ -316,7 +311,7 @@ private:
 		bool running = false;
 		long exactFrom = 0;         // the objects are right from this frame on (after a skip)
 
-		Machine(const rr::Rom &rom, uint32_t seed) : game(rom), random(seed) {}
+		Machine(const rr::Rom &rom, uint32_t seed, bool pal) : game(rom), random(seed, rr::tvSystem(pal)) {}
 		Machine(const Machine &) = default;
 		Machine &operator=(Machine &&m) {   // Game holds a reference to the ROM: rebuild in place
 			this->~Machine();
@@ -326,7 +321,8 @@ private:
 		bool exact() const { return frame >= exactFrom; }
 
 		// One frame of the original. Timing after power-on as in the original: the scrolling
-		// line starts moving at frame 11, the game (and its river) at frame 38. live: if not null, the
+		// line starts moving at frame 11, the game (and its river) at frame 38 (9 and 25 on PAL,
+		// Game::attractStartFrame). live: if not null, the
 		// river area is drawn there. newLine: called with the generator state after each new line.
 		void step(bool pal, uint8_t (*live)[rr::kRowWidth], const std::function<void(const rr::RiverState &)> &newLine) {
 			frame++;
@@ -334,7 +330,7 @@ private:
 				lines++;
 				if (newLine) newLine(game.gen.s);
 			};
-			if (frame == kFirstRiverFrame) {
+			if (frame == rr::Game::attractStartFrame(pal)) {
 				game.startAttract(pal);
 				running = true;
 			} else if (running) {
@@ -344,18 +340,20 @@ private:
 				// The original turns the screen off and stops after 128 x 2048 frames (about 73 minutes)
 				// without input (A1F5, $78): the viewer keeps flying, as if a key had just been touched.
 				game.g.idleTime = 0;
-				game.logic(rr::Input(), [this] { return random.read(192, 13); });   // A205, after scanline 160
+				game.logic(rr::Input(), [this, pal] {   // A205, after scanline 160
+					return pal ? random.read(191, 24) : random.read(192, 13);
+				});
 				game.vbi([this] { return random.read(248, 30); });
 			}
 			game.afterLine = nullptr;
 			random.nextFrame();
 			logoShown = scroller.logoX;   // the display uses the position from before the step
-			if (frame >= kFirstScrollerFrame) scroller.step(true);
+			if (frame >= rr::Game::scrollerStartFrame(pal)) scroller.step(true);
 		}
 		// The same frame for the river only (Game::skipFrame): the objects stand still, so they
 		// are right again kSettleFrames whole frames later.
 		void skip(bool pal, const std::function<void(const rr::RiverState &)> &newLine) {
-			if (!running || frame + 1 == kFirstRiverFrame) {
+			if (!running || frame + 1 == rr::Game::attractStartFrame(pal)) {
 				step(pal, nullptr, newLine);
 				return;
 			}
@@ -440,7 +438,7 @@ private:
 
 	// Sound: the registers the VBI set at the end of the frame before play for one frame.
 	void play(const Machine &m, bool sound) {
-		if (sound) pokey_.run(rr::PokeyRandom::kCyclesPerLine * rr::PokeyRandom::kLinesPerFrame, audio_);
+		if (sound) pokey_.run(rr::tvSystem(pal_).cyclesPerFrame(), audio_);
 		for (int c = 0; c < 4; c++) {
 			pokey_.write(2 * c, m.game.g.pokey.audf[c]);
 			pokey_.write(2 * c + 1, m.game.g.pokey.audc[c]);
@@ -455,7 +453,7 @@ private:
 		const Snapshot *snap = it == snapshots_.begin() ? nullptr : &std::prev(it)->second;
 		const Anchor *anchor = nullptr;   // the nearest anchor far enough before to settle
 		for (auto a = anchors_.rbegin(); a != anchors_.rend(); ++a)
-			if (a->lines - 1 < target - kSettleFrames - cover && a->frame >= kFirstRiverFrame) {
+			if (a->lines - 1 < target - kSettleFrames - cover && a->frame >= rr::Game::attractStartFrame(pal_)) {
 				anchor = &*a;
 				break;
 			}
@@ -613,14 +611,15 @@ int main(int argc, char **argv) {
 		rr::builtinOsFont(osFont);
 	}
 
+	const rr::TvSystem &tv = rr::tvSystem(pal);
 	host::Host window;
 	// the game's picture only, or the whole frame
 	auto showBorder = [&]() {
 		if (border) window.setView(0, 0, kViewWidth, kViewHeight);
-		else window.setView(rr::kPictureLeft - kViewLeft, rr::kPictureTop - kViewTop, rr::kPictureWidth, rr::kPictureHeight);
+		else window.setView(rr::kPictureLeft - kViewLeft, rr::kPictureTop - kViewTop, rr::kPictureWidth, rr::pictureHeight(pal));
 	};
 	showBorder();   // before open(): the window is made in the size of the part shown
-	if (!window.open("River Raid", kViewWidth, kViewHeight, kPixelAspect, kScale, shotPath ? 0 : kSampleRate)) {
+	if (!window.open("River Raid", kViewWidth, kViewHeight, tv.pixelAspect(), kScale, shotPath ? 0 : kSampleRate)) {
 		fail(window.error());
 		return 1;
 	}
@@ -722,7 +721,7 @@ int main(int argc, char **argv) {
 		const double dt = std::min(double(now - last) / 1e9, 0.1);
 		last = now;
 		if (!paused && !shotPath) {
-			pending += kSpeeds[speedIndex] * dt * kFrameRate;
+			pending += kSpeeds[speedIndex] * dt * tv.frameRate();
 			// sound: at x1 frame by frame; faster or slower, for the real time from the registers of
 			// the frame shown (the engine follows the speed). Backwards the same, after draw(),
 			// which sets the registers of the frame shown: the frames come in reverse order, so it

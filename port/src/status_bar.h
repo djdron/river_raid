@@ -8,6 +8,10 @@
 //   210..218  the scrolling line (mode 6, fine scrolled), and the rainbow Activision logo
 //             made of two sprites; in the attract mode it scrolls the credits and
 //             "Press START key", during play it shows the logo
+// On a PAL machine the game takes the second variant of the display list's end ($B77A) and
+// moves the sprites below the river down (A06A, B135, B14F): 12 more blank lines spread over
+// the panel, which then reaches row 219, its rows at 186, 198 and 206 instead of 182, 191 and
+// 199, the fuel needle 7 rows lower, the scrolling line and the logo at 223-230.
 //
 // Character sets: the game builds two 512-byte sets in RAM at power-on (A0FB-A143) from the
 // OS font and its own characters: $0800 for the panel (CHBASE 8), $0600 for the scrolling
@@ -30,7 +34,8 @@ constexpr int kRiverRows = 160;
 // with narrow black strips beside the river and panel; the rest of the frame is the black
 // border above and below.
 constexpr int kPictureLeft = 10, kPictureWidth = 364;
-constexpr int kPictureTop = 19, kPictureHeight = 200;
+constexpr int kPictureTop = 19;
+inline int pictureHeight(bool pal) { return pal ? 213 : 200; }
 
 struct Charsets {
 	uint8_t scroller[512];   // $0600
@@ -58,9 +63,9 @@ struct Scroller {
 	void step(bool attract);
 };
 
-// Draws rows 180..218. fuel is $5B (the gauge needle); logoX is the logo position the display
-// uses this frame (the value before the frame's step()).
+// Draws rows 180..239. fuel is $5B (the gauge needle); logoX is the logo position the display
+// uses this frame (the value before the frame's step()); pal: the PAL machine's layout.
 void drawStatusBar(const Rom &rom, const Charsets &cs, const uint8_t panel[kPanelBytes], uint8_t fuel,
-		const Scroller &scroller, uint8_t logoX, uint8_t screen[kScreenHeight][kScreenWidth]);
+		const Scroller &scroller, uint8_t logoX, uint8_t screen[kScreenHeight][kScreenWidth], bool pal = false);
 
 }  // namespace rr

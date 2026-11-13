@@ -39,7 +39,7 @@ The game is complete and playable: `port/game/river_raid.cpp` (attract mode, gam
 4. **Difficulty.** The level (= the bridge you fly towards, up to 80, then 79/80 alternating) moves the thresholds the random numbers are compared with: enemies in mid-block, fewer depots up to level 46 (47 on PAL), balloons from 3, jets from 5, bank tanks from 7, missile helicopters from 13, wider bends. Table in [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md).
 5. **RANDOM ($D20A).** Game logic reads it only at A205: every 16 frames a random slot (0–10) wakes up (bit $40 of `$42,X`). B362/B3D0: noise for sound. The value depends on the CPU cycle of the read; the port models the counter (`src/pokey_random.h`), seeded from the clock like a real power-on; `-random N` repeats a run.
 6. **Collisions** come from the GTIA collision registers, read by the DLI after each object band; whether a touch on the read line counts depends on the cycle. The port runs the DLI with cycle counts (`src/display.cpp`, atari800's non-cycle-exact timing).
-7. **PAL/NTSC.** One cartridge for both: the PAL bit ($D014 → $BF) chooses the display list variant ($B77A) and the depot limit ($CB = $2E/$2F). Nothing else changes, so on PAL the whole game runs at 50 frames per second, about 17% slower. The UK cassette version (`.cas`, 2 files: loader at $0A00, game at $1000–$31FF) is the same code relocated to RAM, with a different copy protection and "1982, 1983, 1984" in the scrolling line.
+7. **PAL/NTSC.** One cartridge for both: the PAL bit ($D014 → $BF) chooses the display list variant ($B77A) and the depot limit ($CB = $2E/$2F). The game logic per frame is the same, so on PAL the whole game runs at 50 frames per second, about 17% slower; only what depends on the CPU time in a frame differs: power-on reaches the attract mode at frame 25 instead of 38, sub $B0F1 clears memory in 8 frames instead of 13, and at a game over the VBI comes before sub $B21A. The port's `-pal` does all of it (checked against `rr_oracle -pal`, see [port/README.md](port/README.md)). The UK cassette version (`.cas`, 2 files: loader at $0A00, game at $1000–$31FF) is the same code relocated to RAM, with a different copy protection and "1982, 1983, 1984" in the scrolling line.
 8. **Font** is copied from the OS ROM ($E000/$E100/$E300); the port has AltirraOS's font built in, `-os` loads Atari's.
 9. **Reference runner.** atari800 seeds POKEY from the clock; `rr_oracle -seed` (default 0) makes runs byte-identical. The atari800 build fails with `-Werror` on a ULONG redefinition; `build.sh` builds with `CFLAGS="-g -O2 -DNETSIO"`. Tested atari800 commit: 98cc2dc.
 10. **Determinism.** The river depends only on the bridge (993 LFSR steps from bridge to bridge; it comes back after 16.8 million bridges), the objects only on the last ~200 frames. So any moment is reached by running the river alone and then a few hundred whole frames; the viewer seeks that way. Details: [docs/NOTES.md](docs/NOTES.md), "Determinism and jumping". Saved states in the game use the same: screen memory is made again from the generator's state, so a saved state is about 0.5 KB.
@@ -57,13 +57,12 @@ A rule is read from the listing, then checked against a reference trace (`tools/
 - Verification compares the port's RAM with the reference `ram.bin` frame by frame; RANDOM values for it come from the reference `random.log`.
 - No ROM data in the code: the cartridge's tables are read through named accessors (`port/src/rom.h`).
 - Default colours: PAL, Altirra's model; NTSC and atari800's model on keys.
-- The window shows the game's picture (364×200 with the whole scrolling line), not the whole frame with its black border (`-border`, O); scaled sharp by whole numbers, then smoothly (`-filter`, L).
+- The window shows the game's picture (364×200 (`-pal`: 364×213) with the whole scrolling line), not the whole frame with its black border (`-border`, O); scaled sharp by whole numbers, then smoothly (`-filter`, L).
 - The game-over cycle race (whether the frame counter is reset before or after that frame's VBI depends on the main loop's cycles, see [port/README.md](port/README.md), Verification) is deliberately not reproduced.
-- On a 60/120 Hz display the game locks to the display (60.00 instead of 59.92 frames per second), sound resampled to match.
+- On a 60/120 Hz display the game locks to the display (60.00 instead of 59.92 frames per second; with `-pal` on a 50/100 Hz display, 50.00 instead of 49.86), sound resampled to match.
 
 ## Open questions
 - Power-on itself (A000–A17C, the first 38 frames) is drawn as an empty screen; `Game::powerOn` is not exact.
-- PAL: display list and 50 Hz timing are not reproduced (`-pal` only changes the depot limit and colours).
 
 ## Next steps
-1. Optional: PAL timing (50 Hz, PAL display list) for players who knew the game from a European TV.
+Nothing planned.

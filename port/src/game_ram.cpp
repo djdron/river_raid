@@ -72,6 +72,7 @@ void Game::loadFromRam(const uint8_t *ram) {
 	for (auto &f : gameFields(*this)) *f.second = ram[f.first.second];
 	for (auto &a : gameArrays(*this)) std::memcpy(std::get<2>(a), ram + std::get<1>(a), size_t(std::get<3>(a)));
 	std::memcpy(g.pm.bytes.data(), ram + 0x0B00, g.pm.bytes.size());
+	pal_ = ram[0xBF] == 0;   // A06F: GTIA's PAL bits, 0 on a PAL machine
 	screen = screenFromRam(ram);
 	g.screenTop = uint16_t(ram[0x3F04] | (ram[0x3F05] << 8));
 	// colours the VBI set (not in RAM): as it computes them
@@ -86,6 +87,7 @@ void Game::saveToRam(uint8_t *ram) const {
 	for (auto &f : gameFields(*this)) ram[f.first.second] = *f.second;
 	for (auto &a : gameArrays(*this)) std::memcpy(ram + std::get<1>(a), std::get<2>(a), size_t(std::get<3>(a)));
 	std::memcpy(ram + 0x0B00, g.pm.bytes.data(), g.pm.bytes.size());
+	ram[0xBF] = pal_ ? 0 : 0x0E;
 	ram[0x3F04] = uint8_t(g.screenTop);
 	ram[0x3F05] = uint8_t(g.screenTop >> 8);
 }

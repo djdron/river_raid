@@ -6,6 +6,8 @@
 //   folder and up to three folders above it.
 //   -os file: an Atari OS ROM (10 KB or 16 KB) or its 1 KB font, for Atari's own letters;
 //   without it the AltirraOS font is used (os_font.h).
+//   -pal: a PAL machine (Europe): 49.86 frames per second instead of 59.92 (the game about 17%
+//   slower), its panel layout, sound clock and fuel depot odds, and PAL colours (src/tv.h)
 //   -seed N: another river (and objects): game 1's river starts from generator state N
 //            (1..16777215); games 3-8 start at its bridges 5, 20, 50; difficulty grows as usual
 //   -bridge N: every game starts at bridge N (1..99999) of the river, at that bridge's level;
@@ -66,23 +68,22 @@ namespace {
 constexpr int kViewLeft = 10, kViewWidth = 364;
 constexpr int kViewTop = 0, kViewHeight = rr::kScreenHeight;
 constexpr int kScale = 6;               // initial window scale (less if the screen is smaller)
-constexpr double kPixelAspect = 0.86;   // width of a column / height of a line on an NTSC TV
-constexpr double kFrameRate = rr::PokeySound::kClock / (114 * 262);   // NTSC Atari: 59.92
 
 // Frames of the game per second, and how many display refreshes show one frame. On a display
-// whose refresh rate is a multiple of the Atari's (60, 120 Hz...) the game runs at exactly that
-// rate divided by the multiple, so that every frame stays on screen the same number of
-// refreshes (at 59.92 against 60 Hz, one frame in 750 would be shown twice); otherwise at the
-// Atari's own rate.
+// whose refresh rate is a multiple of the Atari's (60, 120 Hz... for NTSC's 59.92; 50, 100 Hz...
+// for PAL's 49.86) the game runs at exactly that rate divided by the multiple, so that every
+// frame stays on screen the same number of refreshes (at 59.92 against 60 Hz, one frame in 750
+// would be shown twice); otherwise at the Atari's own rate (frameRate).
 struct Pace {
-	double rate = kFrameRate;
+	double rate = 0;
 	int refreshesPerFrame = 0;   // 0: not locked to the display
 };
-Pace paceFor(double refreshRate) {
+Pace paceFor(double refreshRate, double frameRate) {
 	Pace p;
+	p.rate = frameRate;
 	if (refreshRate <= 0) return p;
-	const int n = int(refreshRate / kFrameRate + 0.5);
-	if (n >= 1 && std::abs(refreshRate / n - kFrameRate) < kFrameRate * 0.01) {
+	const int n = int(refreshRate / frameRate + 0.5);
+	if (n >= 1 && std::abs(refreshRate / n - frameRate) < frameRate * 0.01) {
 		p.rate = refreshRate / n;
 		p.refreshesPerFrame = n;
 	}
@@ -95,7 +96,7 @@ constexpr int kSampleRate = 48000;
 class Atari {
 public:
 	Atari(const rr::Rom &rom, const uint8_t osFont[rr::kOsFontBytes], bool pal, uint32_t seed)
-		: rom_(rom), game_(rom), pal_(pal), random_(seed), pokey_(kSampleRate),
+		: rom_(rom), game_(rom), pal_(pal), tv_(rr::tvSystem(pal)), random_(seed, tv_), pokey_(kSampleRate, tv_.clock),
 		charsets_(rr::buildCharsets(rom, osFont)) {
 		game_.keepLineStates = true;   // for small saved states
 		rr::initialPanel(rom, powerOnPanel_);
@@ -106,33 +107,37 @@ public:
 		};
 	}
 
-	// One frame (1/60 s) of the machine.
+	// One frame (1/60 s, 1/50 s on PAL) of the machine.
 	void frame(const rr::Input &input) {
 		frame_++;
-		if (frame_ < kGameStartFrame) {
+		const long gameStart = rr::Game::attractStartFrame(pal_);
+		if (frame_ < gameStart) {
 			// power-on: memory cleared, the attract mode about to start; only the scrolling
-			// line moves (from frame 11)
+			// line moves (from frame 11, 9 on PAL)
 			powerOnLogo_ = powerOnScroller_.logoX;
-			if (frame_ >= 11) powerOnScroller_.step(true);
-			rr::drawStatusBar(rom_, charsets_, powerOnPanel_, 0xFF, powerOnScroller_, powerOnLogo_, screen_);
+			if (frame_ >= rr::Game::scrollerStartFrame(pal_)) powerOnScroller_.step(true);
+			rr::drawStatusBar(rom_, charsets_, powerOnPanel_, 0xFF, powerOnScroller_, powerOnLogo_, screen_, pal_);
 		} else {
-			if (frame_ == kGameStartFrame) {
+			if (frame_ == gameStart) {
 				game_.startAttract(pal_);
 			} else {
-				// RANDOM is read in the main loop around scanline 192 (A205) and in the VBI (249)
+				// RANDOM is read in the main loop around scanline 192 (A205; 191, earlier in the
+				// line, on PAL) and in the VBI (249)
 				int reads = 0;
-				game_.frame(input, [this, &reads] { return random_.read(reads++ ? 249 : 192, 13); });
+				game_.frame(input, [this, &reads] {
+					return reads++ ? random_.read(249, 13) : pal_ ? random_.read(191, 24) : random_.read(192, 13);
+				});
 			}
 			const rr::GameState &g = game_.g;
 			if (g.idleTime & 0x80) {
 				std::memset(screen_, 0, sizeof screen_);   // screen off after a long time unused
 			} else {
-				rr::drawStatusBar(rom_, charsets_, g.panel, g.fuel, g.scroller, g.logoShown, screen_);
+				rr::drawStatusBar(rom_, charsets_, g.panel, g.fuel, g.scroller, g.logoShown, screen_, pal_);
 			}
 		}
 		random_.nextFrame();
 		// sound: the registers the VBI set at the end of the previous frame play for one frame
-		pokey_.run(rr::PokeyRandom::kCyclesPerLine * rr::PokeyRandom::kLinesPerFrame, audio_);
+		pokey_.run(tv_.cyclesPerFrame(), audio_);
 		for (int c = 0; c < 4; c++) {
 			pokey_.write(2 * c, game_.g.pokey.audf[c]);
 			pokey_.write(2 * c + 1, game_.g.pokey.audc[c]);
@@ -163,10 +168,10 @@ public:
 	}
 
 private:
-	static constexpr long kGameStartFrame = 38;   // the attract mode's river starts
 	const rr::Rom &rom_;
 	rr::Game game_;
 	bool pal_;
+	rr::TvSystem tv_;
 	rr::PokeyRandom random_;
 	rr::PokeySound pokey_;
 	rr::Charsets charsets_;
@@ -350,19 +355,20 @@ int main(int argc, char **argv) {
 		rr::builtinOsFont(osFont);
 	}
 
+	const rr::TvSystem &tv = rr::tvSystem(pal);
 	host::Host window;
 	// the game's picture only, or the whole frame
 	auto showBorder = [&]() {
 		if (border) window.setView(0, 0, kViewWidth, kViewHeight);
-		else window.setView(rr::kPictureLeft - kViewLeft, rr::kPictureTop - kViewTop, rr::kPictureWidth, rr::kPictureHeight);
+		else window.setView(rr::kPictureLeft - kViewLeft, rr::kPictureTop - kViewTop, rr::kPictureWidth, rr::pictureHeight(pal));
 	};
 	showBorder();   // before open(): the window is made in the size of the part shown
-	if (!window.open("River Raid", kViewWidth, kViewHeight, kPixelAspect, kScale, shotPath || !sound ? 0 : kSampleRate)) {
+	if (!window.open("River Raid", kViewWidth, kViewHeight, tv.pixelAspect(), kScale, shotPath || !sound ? 0 : kSampleRate)) {
 		fail(window.error());
 		return 1;
 	}
 	if (showStats) {
-		const Pace pace = paceFor(window.refreshRate());
+		const Pace pace = paceFor(window.refreshRate(), tv.frameRate());
 		std::fprintf(stderr, "%s, display %.2f Hz, game %.3f frames/s%s\n", window.info().c_str(), window.refreshRate(),
 			pace.rate, pace.refreshesPerFrame ? " (locked to the display)" : "");
 	}
@@ -476,7 +482,7 @@ int main(int argc, char **argv) {
 		const double dt = std::min(double(now - last) / 1e9, 0.1);
 		last = now;
 		if (!shotPath) {
-			const Pace pace = paceFor(window.refreshRate());
+			const Pace pace = paceFor(window.refreshRate(), tv.frameRate());
 			pending += dt * pace.rate;
 			const bool vsyncPaced = pace.refreshesPerFrame && presentWaited;
 			if (vsyncPaced) {
@@ -515,7 +521,7 @@ int main(int argc, char **argv) {
 			const double target = kSampleRate * 0.05;
 			const double queued = double(window.queuedSound());
 			const double correction = 1 + 0.005 * std::clamp((target - queued) / target, -1.0, 1.0);
-			atari.setSoundRate(kSampleRate * kFrameRate / paceFor(window.refreshRate()).rate * correction);
+			atari.setSoundRate(kSampleRate * tv.frameRate() / paceFor(window.refreshRate(), tv.frameRate()).rate * correction);
 		}
 		samples.clear();
 

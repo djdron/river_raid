@@ -26,7 +26,7 @@ const std::vector<uint8_t> &poly17() { static const auto s = polySequence(0x1FFF
 
 }  // namespace
 
-PokeySound::PokeySound(int sampleRate) : sampleRate_(sampleRate) {}
+PokeySound::PokeySound(int sampleRate, double clock) : sampleRate_(sampleRate), clock_(clock) {}
 
 void PokeySound::write(int reg, uint8_t value) {
 	if (reg < 0 || reg > 7) return;
@@ -62,7 +62,7 @@ void PokeySound::tick() {
 
 // Cycles with the output level unchanged: averaged into samples.
 void PokeySound::count(long cycles, std::vector<int16_t> &out) {
-	const double cyclesPerSample = kClock / sampleRate_;
+	const double cyclesPerSample = clock_ / sampleRate_;
 	for (long i = 0; i < cycles; i++) {
 		sum_ += level_;
 		sumCycles_++;

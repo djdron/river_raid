@@ -30,10 +30,10 @@ Bez argumentów sama znajduje ROM (zob. `rom`) i startuje jak kartridż: tryb de
 | `-seed N` | inna rzeka, z innymi wrogami i stacjami paliw. N to stan, od którego zaczyna generator rzeki, od 1 do 16777215. Gra 1 zaczyna się na początku tej rzeki, gry 3–8 przy jej mostach 5, 20 i 50; każda gra zachowuje swój zwykły poziom, więc trudność rośnie jak zwykle. Własna rzeka kartridża to `-seed 16241891` |
 | `-bridge N` | każda gra (1–8) zaczyna się przy moście N, od 1 do 99999: z N na liczniku mostów (powyżej 9999 jego ostatnie 4 cyfry, bo licznik oryginału się przekręca) i poziomem tego mostu (po 80 poziom zmienia się 79/80, jak w oryginale). Działa też z `-seed`. Start jest wyznaczany przez przebieg generatora rzeki aż do niego (poniżej sekundy dla 9999, około 8 dla 99999) |
 | `-random N` | wartość początkowa licznika RANDOM układu POKEY, który decyduje, który wróg kiedy się budzi, i o szumie wybuchów. Domyślnie brana z zegara, tak jak w prawdziwym komputerze zależy od chwili włączenia, więc każde uruchomienie jest inne; z tym samym N i tymi samymi naciśnięciami przebieg powtarza się dokładnie |
-| `-pal` | graj jak komputer PAL: jak na prawdziwym Atari PAL stacje paliw rzedną do poziomu 47 zamiast 46; kolory PAL. Taktowanie obrazu pozostaje NTSC (zob. Jeszcze nie zrobione) |
+| `-pal` | graj jak komputer PAL (Europa): 49,86 klatki na sekundę zamiast 59,92, więc cała gra idzie o około 17% wolniej, jak na europejskim telewizorze; panel ułożony tak, jak pokazuje go komputer PAL (wyższy); dźwięki nieco niższe; stacje paliw rzedną do poziomu 47 zamiast 46; kolory PAL. Na ekranie 50 lub 100 Hz gra idzie w jego takt |
 | `-colours ntsc\|pal` | kolory komputera NTSC lub PAL; domyślnie PAL. C przełącza w trakcie gry |
 | `-palette altirra\|atari800` | model kolorów: `altirra` (domyślnie) lub `atari800` (ciemniejsze tony średnie). V przełącza w trakcie gry |
-| `-border` | pokazuje całą klatkę z czarną ramką (384×240 bez 10 kolumn z każdej strony), jak emulatory. Domyślnie okno pokazuje tylko obraz gry z całym przewijanym paskiem, 364×200, więc na pełnym ekranie jest on o około 20% większy, a okno o tyle samo niższe. O przełącza w trakcie gry |
+| `-border` | pokazuje całą klatkę z czarną ramką (384×240 bez 10 kolumn z każdej strony), jak emulatory. Domyślnie okno pokazuje tylko obraz gry z całym przewijanym paskiem, 364×200 (`-pal`: 364×213), więc na pełnym ekranie jest on o około 20% większy, a okno o tyle samo niższe. O przełącza w trakcie gry |
 | `-filter sharp\|nearest\|linear` | jak obraz jest skalowany do okna lub ekranu: `sharp` (domyślnie) skaluje o całkowitą wielokrotność z ostrymi pikselami, a potem płynnie do docelowego rozmiaru, więc pozostaje ostry, a każdy piksel ma ten sam rozmiar; `nearest` to zwykłe bloki, ale przy niecałkowitej skali (w poziomie zawsze, bo piksele Atari nie są kwadratowe) niektóre kolumny wychodzą o piksel ekranu szersze; `linear` jest gładki i rozmyty. L przełącza w trakcie gry |
 | `-stats` | wypisuje renderer i częstotliwość ekranu, potem co sekundę liczbę klatek, czas na klatkę i kolejkę dźwięku |
 | `-nosound` | bez dźwięku |
@@ -186,6 +186,13 @@ Gra z graczem (`game_check` na przebiegach z wejściem). Od stanu trybu demonstr
 - gra dla dwóch z SELECT i klawiszem pauzy (`two_players.txt`, do końca gry w klatce 3 007): identyczna do końca gry (jedna klatka, zob. niżej);
 - obszar rzeki narysowany przez port (samolot, pocisk, wrogowie, wybuchy, czołg, pociski) jest równy ekranom oryginału we wszystkich 1 565 porównanych klatkach gry bota.
 
+Komputer PAL (`rr_oracle -pal`, `game_check -pal`): te same sprawdzenia na przebiegach oryginału jako Atari PAL: tryb demonstracyjny (2 974 klatki), gra bota do końca gry (5 974), gra dwóch graczy (7 774), obszar rzeki na ekranach (2 546 klatek), sterownik dźwięku (2 991) oraz panel i przewijany wiersz (1 299): brak różnic. Tak też ustalono, co klatka PAL zmienia poza listą wyświetlania: przy 312 liniach procesor ma w klatce więcej czasu, więc włączenie dochodzi do trybu demonstracyjnego w klatce 25 zamiast 38, a sub $B0F1 czyści pamięć w 8 klatek zamiast 13; a ponieważ przerwanie wyświetlania na panelu kończy się 12 linii później, przy końcu gry VBI przychodzi przed sub $B21A.
+
+```
+oracle/rr_oracle rom/River_Raid.rom oracle/scripts/start_only.txt 6000 out -pal -bot
+port/build/game_check rom/River_Raid.rom out/ram.bin out/random.log 25 5974 -attract -pal
+```
+
 Gdzie wynik oryginału zależy od taktów procesora:
 - DLI (`display.cpp`) działa z liczeniem taktów tak, jak emulator wzorcowy rozkłada linię skanowania: na początku pobrania player/missile i listy wyświetlania, procesor do taktu 28, potem rysowana jest cała linia (wraz z kolizjami), potem pobrania danych ekranu, WSYNC na takcie 106. Wiadomo więc, czy odczyt rejestru kolizji widzi już bieżącą linię: pocisk dotykający obiektu tylko w linii odczytu liczy się na moście (ta ścieżka czyta po takcie 28), a gdzie indziej nie, jak w oryginale.
 - Migawka RAM-u jest robiona na końcu klatki; zwykle pętla główna oryginału czeka wtedy na następną klatkę (AE99–AE9E). Zaraz po starcie gry, gdy rzeka jest wypełniana na nowo po 2 linie na klatkę, czasem wciąż rysuje drugą linię (1 klatka na wypełnienie). `game_check` zgłasza takie klatki osobno i ich nie porównuje; następna klatka jest znowu identyczna.
@@ -206,5 +213,4 @@ port/build/sound_render out/pokey.log port.wav
 
 ## Jeszcze nie zrobione
 - Samo włączenie (A000–A17C: pierwsze 38 klatek przed trybem demonstracyjnym) jest rysowane jako pusty ekran; `Game::powerOn` nie jest jeszcze dokładny.
-- Komputer PAL (`-pal`): generator go zna, lista wyświetlania i taktowanie nie.
 - Kolory idą za modelami wyjścia GTIA z emulatorów (domyślnie Altirra, atari800 pod V; oba sprawdzone bajt w bajt z kodem palety samych emulatorów przy ich ustawieniach domyślnych, atari800 rozciągnięty z poziomów wideo 16–235 do 0–255), a nie za paletą zmierzoną na prawdziwym telewizorze; to, jak jasno wygląda obraz, zależy od ustawień telewizora w tym samym stopniu co od komputera.

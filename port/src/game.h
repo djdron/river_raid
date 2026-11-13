@@ -171,6 +171,11 @@ public:
 	// (frame 38 of the original): game 1 reset (sub $B0F1 via RiverGen::startGame), no plane,
 	// the first river line generated.
 	void startAttract(bool pal = false);
+	// Power-on clears memory in the main loop while the interrupts go on: the scrolling line
+	// moves from frame 11 and the attract mode starts at frame 38. A PAL frame is longer and
+	// leaves the CPU more time, so there it takes fewer frames: 9 and 25.
+	static int scrollerStartFrame(bool pal) { return pal ? 9 : 11; }
+	static int attractStartFrame(bool pal) { return pal ? 25 : 38; }
 
 	// Power-on (A000-A17C): clears the RAM (keeping the high scores if their check is right),
 	// sets up the panel and game 1; the attract mode starts by itself a few frames later.
@@ -234,12 +239,15 @@ private:
 	void mainLoopEnd(const Input &input);         // A5B7-A6EA
 	void finishReset(const Input &input, const std::function<uint8_t()> &random);
 	void finishRespawn();                         // A3C1-A3E3
-	// sub $B0F1 clears memory for this many frames; the main loop continues in the last one
-	static constexpr int kResetFrames = 13;
+	// sub $B0F1 clears memory for this many frames; the main loop continues in the last one.
+	// A PAL frame leaves the CPU more time, so there it takes fewer.
+	int resetFrames() const { return pal_ ? 8 : 13; }
 	enum class Resume { None, NewGame, Respawn };
 	Resume resume_ = Resume::None;
 	int busy_ = 0;
 	bool gameOverText_ = false;
+	bool vbiSeesBeforeGameOver_ = false;          // PAL: see respawnOrGameOver()
+	uint8_t beforeGameOver_[3] = {};
 	void newGame();                               // A688-A17E
 	void reset(bool full);                        // sub $B0F1 ($4D-$5F, or $4D-$76 for a new game)
 	void drawLogoAndNeedle();

@@ -16,13 +16,15 @@
 #include <cstdint>
 #include <vector>
 
+#include "tv.h"
+
 namespace rr {
 
 class PokeySound {
 public:
-	static constexpr double kClock = 1789772.5;   // NTSC machine cycles per second
-
-	explicit PokeySound(int sampleRate = 48000);
+	// sampleRate: samples per second; clock: machine cycles per second (NTSC or PAL)
+	explicit PokeySound(int sampleRate = 48000, double clock = kNtsc.clock);
+	double clock() const { return clock_; }
 	// Samples per second of machine time; a little more or less than the output's rate makes
 	// the sound keep pace when the game runs a little faster or slower than the Atari.
 	void setSampleRate(double rate) { sampleRate_ = rate; }
@@ -33,6 +35,7 @@ public:
 
 private:
 	double sampleRate_;
+	double clock_;
 	uint8_t audf_[4] = {}, audc_[4] = {};
 	int counter_[4] = {};
 	uint8_t output_[4] = {};

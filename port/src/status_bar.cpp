@@ -31,11 +31,19 @@ void drawMode6(uint8_t screen[kScreenHeight][kScreenWidth], int top, const uint8
 	}
 }
 
-// Rows of the panel and the scrolling line.
-constexpr int kPanelTop = 181;                         // grey from here to 209
-constexpr int kPanelRows[3] = {182, 191, 199};         // mode 6 rows (blank line after the first)
-constexpr int kPanelBottom = 209;
-constexpr int kScrollerTop = 211;
+// Rows of the panel and the scrolling line, as the end of the display list ($B77A, NTSC or PAL
+// variant) places them; the needle's and the logo's sprite rows move with them (B135, B14F).
+struct Layout {
+	int panelBottom;      // grey from kPanelTop to here
+	int rows[3];          // mode 6 rows
+	int needleTop;        // first of the needle's 10 rows
+	int scrollerTop;      // the scrolling line, and the logo's 7 rows
+};
+constexpr int kPanelTop = 181;
+// NTSC: 2 blank lines, a row, 1 blank, 2 rows, 3 + 1 blank, the scrolling line
+constexpr Layout kNtscLayout = {209, {182, 191, 199}, 0xCC - 8, 211};
+// PAL: 6 blank lines, a row, 4 blank, 2 rows, 6 + 3 blank, the scrolling line
+constexpr Layout kPalLayout = {219, {186, 198, 206}, 0xCC + 7 - 8, 223};
 constexpr int kNormalLeft = 32;                        // normal-width playfield (DMACTL $3E)
 
 }  // namespace
@@ -102,26 +110,27 @@ void Scroller::step(bool attract) {
 }
 
 void drawStatusBar(const Rom &rom, const Charsets &cs, const uint8_t panel[kPanelBytes], uint8_t fuel,
-		const Scroller &scroller, uint8_t logoX, uint8_t screen[kScreenHeight][kScreenWidth]) {
+		const Scroller &scroller, uint8_t logoX, uint8_t screen[kScreenHeight][kScreenWidth], bool pal) {
+	const Layout &layout = pal ? kPalLayout : kNtscLayout;
 	for (int y = kRiverTop + kRiverRows; y < kScreenHeight; y++) std::memset(screen[y], 0, kScreenWidth);
 
 	// Panel (DLI B66B-B6BC): background $06, colours PF0 $1E, PF1 $8E, PF2 $1E, PF3 $00.
 	// Playfield has priority over sprites (PRIOR 4).
-	for (int y = kPanelTop; y <= kPanelBottom; y++)
+	for (int y = kPanelTop; y <= layout.panelBottom; y++)
 		for (int x = kBackFirst; x <= kBackLast; x++) screen[y][x] = 0x06;
-	// fuel needle: missile 1, 2 colour clocks wide, colour $1E, PM rows $CC-$D5,
-	// horizontal position $5B / 8 + $5C (B527)
+	// fuel needle: missile 1, 2 colour clocks wide, colour $1E, PM rows $CC-$D5 ($D3-$DC on
+	// PAL), horizontal position $5B / 8 + $5C (B527)
 	const int needleX = columnOf(fuel / 8 + 0x5C);
-	for (int y = 0xCC - 8; y <= 0xD5 - 8; y++) plot(screen, y, needleX, 4, 0x1E);
+	for (int y = layout.needleTop; y < layout.needleTop + 10; y++) plot(screen, y, needleX, 4, 0x1E);
 	static const uint8_t kPanelColours[4] = {0x1E, 0x8E, 0x1E, 0x00};
-	for (int r = 0; r < 3; r++) drawMode6(screen, kPanelRows[r], panel + r * 20, 20, cs.panel, kPanelColours, kNormalLeft);
+	for (int r = 0; r < 3; r++) drawMode6(screen, layout.rows[r], panel + r * 20, 20, cs.panel, kPanelColours, kNormalLeft);
 
 	// Rainbow logo (DLI B72A-B773): player 3 at quad width (data $FC) at logoX and player 2
 	// (data $FF) starting $15 colour clocks right of it, one clock further left on each row,
-	// both in the row colours from $B48D. PM data from sub $B0F1 (rows $DB-$E1).
+	// both in the row colours from $B48D. PM data from sub $B0F1 (rows $DB-$E1, $E7-$ED on PAL).
 	for (int k = 0; k < 7; k++) {
 		const uint8_t colour = rom.logoColour(6 - k);
-		const int y = kScrollerTop + k;
+		const int y = layout.scrollerTop + k;
 		for (int bit = 0; bit < 6; bit++) plot(screen, y, columnOf(logoX) + bit * 8, 8, colour);
 		const int p2 = uint8_t(logoX + 0x15 - k);
 		plot(screen, y, columnOf(p2), 16, colour);
@@ -132,7 +141,7 @@ void drawStatusBar(const Rom &rom, const Charsets &cs, const uint8_t panel[kPane
 	uint8_t text[25];
 	for (int i = 0; i < 25; i++) text[i] = rom.scrollerText(scroller.textLo + unsigned(i));
 	static const uint8_t kScrollerColours[4] = {0x0C, 0x0C, 0x0C, 0x0C};
-	drawMode6(screen, kScrollerTop, text, 25, cs.scroller, kScrollerColours, 2 + 2 * scroller.fineScroll);
+	drawMode6(screen, layout.scrollerTop, text, 25, cs.scroller, kScrollerColours, 2 + 2 * scroller.fineScroll);
 }
 
 }  // namespace rr

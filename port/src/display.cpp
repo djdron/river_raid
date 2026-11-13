@@ -33,7 +33,8 @@ namespace {
 // First scanline of the river (display list: 8 + 8 + 4 blank lines, then mode E from 28).
 constexpr int kRiverFirstLine = 28;
 constexpr int kRiverLines = 160;
-constexpr int kPanelFirstLine = 190;   // display list: 2 blank lines, then the panel (mode 6)
+// display list: 2 blank lines (6 on PAL), then the panel (mode 6)
+constexpr int kPanelFirstLine[2] = {190, 194};
 
 constexpr int kLineCycles = 114;
 constexpr int kDrawCycle = 28;
@@ -49,9 +50,9 @@ public:
 
 	// lmsLines: river rows whose display list instruction carries a screen address
 	Beam(const Game &game, const std::vector<std::array<uint8_t, kLineBytes>> &screen, int line, int xpos,
-		const bool lmsLines[kRiverLines], Record record)
+		const bool lmsLines[kRiverLines], bool pal, Record record)
 		: game_(game), screen_(screen), line_(line), xpos_(xpos), drawn_(xpos >= kDrawCycle), lms_(lmsLines),
-			record_(std::move(record)) {
+			panelFirstLine_(kPanelFirstLine[pal]), record_(std::move(record)) {
 		latch();
 	}
 
@@ -108,6 +109,7 @@ private:
 	int xpos_;
 	bool drawn_;
 	const bool *lms_;
+	int panelFirstLine_;
 	Record record_;
 	uint8_t p_[4] = {}, m_ = 0;   // player / missile graphics fetched at the start of the line
 
@@ -117,13 +119,13 @@ private:
 		const int r = river(line);
 		if (r >= 0 && r < kRiverLines) c += lms_[r] ? 3 : 1;          // one instruction per river line
 		else if (line == 24 || line == kRiverFirstLine + kRiverLines) c += 1;   // blank-line instructions
-		else if (line == kPanelFirstLine) c += 3;                    // panel: mode 6 with address
+		else if (line == panelFirstLine_) c += 3;                    // panel: mode 6 with address
 		return c;
 	}
 	int screenCycles(int line) const {
 		const int r = river(line);
 		if (r >= 0 && r < kRiverLines) return 48;                    // wide mode E line
-		if (line == kPanelFirstLine) return 20;                      // first line of a mode 6 row
+		if (line == panelFirstLine_) return 20;                      // first line of a mode 6 row
 		return 0;
 	}
 
@@ -249,7 +251,7 @@ void Game::display() {
 	};
 	// The DLI starts on scanline 23 (the last blank line before the river); B500-B51D take
 	// it to about cycle 76.
-	Beam beam(*this, screen, 23, 76, lms, record);
+	Beam beam(*this, screen, 23, 76, lms, pal_, record);
 	bp = &beam;
 	beam.bankColour = g.colourBank;   // set by the VBI (sub $AFD0)
 	beam.hposP[3] = 0;                 // VBI (B411)

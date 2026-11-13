@@ -1,6 +1,6 @@
 // Compare the status panel and the scrolling line with screens of the original.
 //
-// usage: status_check <rom> <screens.bin> <ram.bin>
+// usage: status_check <rom> <screens.bin> <ram.bin> [-pal]
 //   Both files from one run of `rr_oracle <rom> oracle/scripts/attract_idle.txt N out
 //   -screens A:B -ram A:B` (same A and B): full 384 x 240 screens and RAM of each frame.
 // Checks:
@@ -17,9 +17,10 @@
 
 int main(int argc, char **argv) {
 	if (argc < 4) {
-		std::fprintf(stderr, "usage: %s <rom> <screens.bin> <ram.bin>\n", argv[0]);
+		std::fprintf(stderr, "usage: %s <rom> <screens.bin> <ram.bin> [-pal]\n", argv[0]);
 		return 2;
 	}
+	const bool pal = argc > 4 && !std::strcmp(argv[4], "-pal");   // a trace of rr_oracle -pal
 	rr::Rom rom;
 	if (!rom.load(argv[1])) { std::fprintf(stderr, "cannot read ROM %s\n", argv[1]); return 2; }
 	FILE *scr = std::fopen(argv[2], "rb");
@@ -63,13 +64,13 @@ int main(int argc, char **argv) {
 		}
 		std::fseek(scr, f * frameBytes, SEEK_SET);
 		if (std::fread(want, 1, size_t(frameBytes), scr) != size_t(frameBytes)) break;
-		rr::drawStatusBar(rom, cs, &mem[0x1000], mem[0x5B], sc, prev[0x27], got);
+		rr::drawStatusBar(rom, cs, &mem[0x1000], mem[0x5B], sc, prev[0x27], got, pal);
 		compared++;
 		bool panelSame = true, scrollerSame = true, edges = true;
 		for (int y = rr::kRiverTop + rr::kRiverRows; y < rr::kScreenHeight; y++) {
 			for (int x = 0; x < rr::kScreenWidth; x++) {
 				if (got[y][x] == want[y][x]) continue;
-				if (y < 210) panelSame = false;
+				if (y < (pal ? 222 : 210)) panelSame = false;
 				else scrollerSame = false;
 				if (x >= 24 && x < 360) edges = false;
 			}

@@ -30,10 +30,10 @@ Ohne Argumente findet es das ROM selbst (siehe `rom`) und startet wie das Modul:
 | `-seed N` | ein anderer Fluss mit anderen Gegnern und Tanklagern. N ist der Zustand, mit dem der Flussgenerator beginnt, 1 bis 16777215. Spiel 1 beginnt am Anfang dieses Flusses, Spiele 3–8 an seinen Brücken 5, 20 und 50; jedes Spiel behält sein übliches Level, die Schwierigkeit steigt also wie gewohnt. Der Fluss des Moduls selbst ist `-seed 16241891` |
 | `-bridge N` | jedes Spiel (1–8) beginnt an Brücke N, 1 bis 99999: mit N auf dem Brückenzähler (über 9999 seine letzten 4 Ziffern, da der Zähler des Originals rundherum läuft) und dem Level dieser Brücke (nach 80 wechselt das Level zwischen 79/80, wie im Original). Funktioniert auch mit `-seed`. Der Start wird gefunden, indem der Flussgenerator bis dorthin läuft (unter einer Sekunde für 9999, etwa 8 für 99999) |
 | `-random N` | der Startwert von POKEYs RANDOM-Zähler, der entscheidet, welcher Gegner wann erwacht, und das Rauschen der Explosionen. Standardmäßig von der Uhr genommen, wie der des echten Geräts vom Moment des Einschaltens abhängt, sodass jeder Lauf anders ist; mit demselben N und denselben Eingaben wiederholt sich ein Lauf genau |
-| `-pal` | als PAL-Gerät spielen: wie auf einem echten PAL-Atari werden Tanklager bis Level 47 statt 46 seltener; PAL-Farben. Das Bild-Timing bleibt NTSC (siehe Noch nicht erledigt) |
+| `-pal` | als PAL-Gerät spielen (Europa): 49,86 Bilder pro Sekunde statt 59,92, das ganze Spiel läuft also etwa 17 % langsamer, wie an einem europäischen Fernseher; das Panel so angeordnet, wie ein PAL-Gerät es zeigt (höher); Töne etwas tiefer; Tanklager werden bis Level 47 statt 46 seltener; PAL-Farben. Auf einem 50- oder 100-Hz-Bildschirm läuft das Spiel in dessen Takt |
 | `-colours ntsc\|pal` | die Farben eines NTSC- oder PAL-Geräts; standardmäßig PAL. C schaltet während des Spiels um |
 | `-palette altirra\|atari800` | das Farbmodell: `altirra` (Standard) oder `atari800` (dunklere Mitteltöne). V schaltet während des Spiels um |
-| `-border` | zeigt das ganze Bild mit seinem schwarzen Rand (384×240 abzüglich 10 Spalten an jeder Seite), wie Emulatoren es tun. Standardmäßig zeigt das Fenster nur das Spielbild mit der ganzen Laufschrift, 364×200, daher ist es im Vollbild etwa 20 % größer, und ein Fenster ist um so viel niedriger. O schaltet während des Spiels um |
+| `-border` | zeigt das ganze Bild mit seinem schwarzen Rand (384×240 abzüglich 10 Spalten an jeder Seite), wie Emulatoren es tun. Standardmäßig zeigt das Fenster nur das Spielbild mit der ganzen Laufschrift, 364×200 (`-pal`: 364×213), daher ist es im Vollbild etwa 20 % größer, und ein Fenster ist um so viel niedriger. O schaltet während des Spiels um |
 | `-filter sharp\|nearest\|linear` | wie das Bild auf Fenster oder Bildschirm skaliert wird: `sharp` (Standard) skaliert um ganze Zahlen mit scharfen Pixeln und dann weich auf die Endgröße, so bleibt es scharf und jedes Pixel gleich groß; `nearest` sind einfache Blöcke, aber bei nicht ganzzahligem Maßstab (waagerecht immer, da Atari-Pixel nicht quadratisch sind) werden manche Spalten ein Bildschirmpixel breiter; `linear` ist weich und unscharf. L schaltet während des Spiels um |
 | `-stats` | gibt den Renderer und die Bildwiederholrate aus, dann jede Sekunde die Bildrate, die Zeit pro Bild und die Sound-Warteschlange |
 | `-nosound` | kein Sound |
@@ -186,6 +186,13 @@ Das Spiel mit einem Spieler (`game_check` bei Läufen mit Eingabe). Ab dem Zusta
 - Spiel für zwei mit SELECT und der Pausetaste (`two_players.txt`, bis zum Spielende in Bild 3 007): identisch bis zum Spielende (ein Bild, siehe unten);
 - der von der Portierung gezeichnete Flussbereich (Flugzeug, Kugel, Gegner, Explosionen, Panzer, Granaten) gleicht den Bildschirmen des Originals in allen 1 565 verglichenen Bildern eines Bot-Spiels.
 
+Das PAL-Gerät (`rr_oracle -pal`, `game_check -pal`): dieselben Prüfungen an Läufen des Originals als PAL-Atari: Demo-Modus (2 974 Bilder), ein Bot-Spiel bis Game Over (5 974), ein Zwei-Spieler-Spiel (7 774), der Flussbereich auf Bildschirmen (2 546 Bilder), der Soundtreiber (2 991) sowie Panel und Laufzeile (1 299): keine Unterschiede. So fand sich auch, was ein PAL-Bild außer der Display List ändert: Mit 312 Zeilen bleibt der CPU pro Bild mehr Zeit, daher erreicht das Einschalten den Demo-Modus bei Bild 25 statt 38, und sub $B0F1 löscht den Speicher in 8 statt 13 Bildern; und da der Display-Interrupt des Panels 12 Zeilen später endet, kommt beim Game Over der VBI vor sub $B21A.
+
+```
+oracle/rr_oracle rom/River_Raid.rom oracle/scripts/start_only.txt 6000 out -pal -bot
+port/build/game_check rom/River_Raid.rom out/ram.bin out/random.log 25 5974 -attract -pal
+```
+
 Wo das Ergebnis des Originals von CPU-Takten abhängt:
 - Der DLI (`display.cpp`) läuft mit Taktzählung, so wie der Referenz-Emulator eine Rasterzeile einteilt: Player/Missile- und Display-List-Zugriffe am Anfang, die CPU bis Takt 28, dann wird die ganze Zeile gezeichnet (samt Kollisionen), dann die Bildschirmdaten-Zugriffe, WSYNC bei Takt 106. So ist bekannt, ob ein Lesen eines Kollisionsregisters die aktuelle Rasterzeile schon sieht: Eine Kugel, die ein Objekt nur in der Zeile des Lesens berührt, zählt auf einer Brücke (dieser Pfad liest nach Takt 28) und anderswo nicht, wie im Original.
 - Der RAM-Schnappschuss wird am Ende des Bilds genommen; normalerweise wartet die Hauptschleife des Originals dann auf das nächste Bild (AE99–AE9E). Gleich nach dem Spielbeginn, während der Fluss mit 2 Zeilen pro Bild neu gefüllt wird, zeichnet sie manchmal noch die zweite Zeile (1 Bild pro Neufüllung). `game_check` meldet solche Bilder getrennt und vergleicht sie nicht; das nächste Bild ist wieder identisch.
@@ -206,5 +213,4 @@ port/build/sound_render out/pokey.log port.wav
 
 ## Noch nicht erledigt
 - Das Einschalten selbst (A000–A17C: die ersten 38 Bilder vor dem Demo-Modus) wird als leerer Bildschirm gezeichnet; `Game::powerOn` ist noch nicht genau.
-- Das PAL-Gerät (`-pal`): der Generator kennt es, Display List und Timing nicht.
 - Die Farben folgen den Modellen der GTIA-Ausgabe aus den Emulatoren (standardmäßig Altirra, atari800 auf V; beide Byte für Byte gegen den Palettencode der Emulatoren selbst mit ihren Standardeinstellungen geprüft, atari800 von seinen Videopegeln 16–235 auf 0–255 gestreckt), nicht einer an einem echten Fernseher gemessenen Palette; wie hell es aussieht, hängt ebenso von den Einstellungen des Fernsehers ab wie vom Gerät.
