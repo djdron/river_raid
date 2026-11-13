@@ -771,9 +771,9 @@ int main(int argc, char **argv) {
 		const long shown = attract.lines() - 1 - back;
 		// the newest bridge at the top of the screen or below it: the one on screen, or the one
 		// last passed (sections are much longer than the screen, so at most one is on it)
-		std::snprintf(buf, sizeof buf, "River Raid - bridge %d (level %d) - line %ld - speed x%g%s%s%s - %s machine, %s",
+		std::snprintf(buf, sizeof buf, "River Raid - bridge %d (level %d) - line %ld - speed x%g%s%s%s - %s, %s",
 			attract.bridge(shown), attract.level(shown), shown, kSpeeds[speedIndex], back ? " - looking back" : "", paused ? " - paused" : "", attract.sounds() ? " - sound" : "",
-			pal ? "PAL" : "NTSC", colours.c_str());
+			pal ? "PAL machine (50 Hz)" : "NTSC machine (60 Hz)", colours.c_str());
 		if (title != buf) {
 			title = buf;
 			window.setTitle(buf);
