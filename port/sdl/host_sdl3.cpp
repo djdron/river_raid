@@ -221,6 +221,9 @@ bool Host::open(const char *title, int width, int height, double pixelAspect, in
 		h.error = std::string("SDL_CreateWindowAndRenderer: ") + SDL_GetError();
 		return false;
 	}
+#ifdef SDL_PLATFORM_WINRT
+	h.fitHeight();   // UWP opens the window in the size it had the last time
+#endif
 	h.vsync = SDL_SetRenderVSync(h.renderer, 1);
 	h.texture = SDL_CreateTexture(h.renderer, SDL_PIXELFORMAT_XRGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
 	SDL_SetTextureScaleMode(h.texture, SDL_SCALEMODE_NEAREST);
