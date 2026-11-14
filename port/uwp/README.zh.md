@@ -2,11 +2,11 @@
 
 [English](README.md) | [Русский](README.ru.md) | [Українська](README.uk.md) | [Deutsch](README.de.md) | [Polski](README.pl.md) | [Italiano](README.it.md) | [Español](README.es.md) | 中文 | [日本語](README.ja.md)
 
-游戏（不含查看器）作为 UWP 应用：可在 Windows 10/11 以及处于 Dev Mode 的 Xbox One 或 Series 上运行。它基于 SDL2 构建，因为 SDL3 已不再支持 UWP。已在 Windows 11 和 Xbox Series S 上试过，用 Visual Studio 2026 构建。
+游戏（不含查看器）作为 UWP 应用：可在 Windows 10/11 以及处于 Dev Mode 的 Xbox One 或 Series 上运行。它基于保留了 UWP 支持的 SDL3 分支构建（SDL3 本身已放弃 UWP）：[djdron/SDL3-uwp](https://github.com/djdron/SDL3-uwp) 的 `river-raid` 分支，基于 [XboxEmulationHub/SDL3-uwp](https://github.com/XboxEmulationHub/SDL3-uwp)，并加上了游戏需要的功能：`main()` 中的启动参数、窗口标题、Xbox 上电视的显示模式（50 Hz）。在用 SDL2 构建时已在 Windows 11 和 Xbox Series S 上用 Visual Studio 2026 试过；用 SDL3 还没有试过。
 
 ## 需要什么
 - Windows 10/11 和 Visual Studio 2022 或 2026，带 C++ UWP 工具。2022：“使用 C++ 的桌面开发”和“通用 Windows 平台开发”工作负载（含 C++ UWP 工具）。2026：“使用 C++ 的桌面开发”，以及“WinUI 应用程序开发”工作负载中的“C++ Universal Windows Platform tools”组件。
-- CMake 3.16 或更新版本（Visual Studio 自带的即可）和 git：SDL2 会随游戏一起下载并构建。
+- CMake 3.16 或更新版本（Visual Studio 自带的即可）和 git：SDL3（该分支）会随游戏一起下载并构建。
 - 对于 Xbox：开发者帐户，以及处于 Dev Mode 的主机（Xbox 上的“Dev Mode Activation”应用）。
 - 你自己的卡带转储，命名为 `rom/River_Raid.rom`（8192 字节）：它会被放**进安装包**，所以安装包只供你自己使用；请勿分发。
 

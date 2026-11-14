@@ -3,11 +3,11 @@ project(river_raid_port C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 # UWP (Windows 10 apps, the Xbox in Dev Mode): -DCMAKE_SYSTEM_NAME=WindowsStore
-# -DCMAKE_SYSTEM_VERSION=10.0 with a Visual Studio generator. Only the game is built, on SDL2
-# (SDL3 has dropped UWP); see uwp/README.md.
+# -DCMAKE_SYSTEM_VERSION=10.0 with a Visual Studio generator. Only the game is built, on SDL3
+# from a fork that keeps UWP (SDL3 itself has dropped it); see uwp/README.md.
 if(CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
 	set(RR_UWP ON)
-	set(RR_SDL2 ON CACHE BOOL "Use SDL2 instead of SDL3" FORCE)
+	set(RR_SDL2 OFF CACHE BOOL "Use SDL2 instead of SDL3" FORCE)
 endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(MSVC)
@@ -117,14 +117,23 @@ if(RR_VIEWER)
 		set(RR_HOST sdl/host_sdl2.cpp)
 	else()
 		# 3.4 or newer: older versions move the mouse pointer when switching full screen
-		find_package(SDL3 3.4 CONFIG QUIET)
+		if(RR_UWP)
+			# XboxEmulationHub's SDL3 with UWP, as forked for this game: launch arguments in
+			# main(), the window title, the TV's modes on the Xbox (50 Hz for PAL)
+			set(RR_SDL3_REPOSITORY https://github.com/djdron/SDL3-uwp.git)
+			set(RR_SDL3_TAG river-raid)
+		else()
+			find_package(SDL3 3.4 CONFIG QUIET)
+			set(RR_SDL3_REPOSITORY https://github.com/libsdl-org/SDL.git)
+			set(RR_SDL3_TAG release-3.4.20)
+		endif()
 		if(NOT SDL3_FOUND)
 			set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 			set(SDL_STATIC ON CACHE BOOL "" FORCE)
 			set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
 			FetchContent_Declare(SDL3
-				GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-				GIT_TAG release-3.4.20
+				GIT_REPOSITORY ${RR_SDL3_REPOSITORY}
+				GIT_TAG ${RR_SDL3_TAG}
 				GIT_SHALLOW TRUE
 			)
 			FetchContent_MakeAvailable(SDL3)

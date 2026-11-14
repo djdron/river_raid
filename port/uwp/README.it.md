@@ -2,11 +2,11 @@
 
 [English](README.md) | [Русский](README.ru.md) | [Українська](README.uk.md) | [Deutsch](README.de.md) | [Polski](README.pl.md) | Italiano | [Español](README.es.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
-Il gioco (senza il visualizzatore) come app UWP: gira su Windows 10/11 e su una Xbox One o Series in Dev Mode. È compilato su SDL2, perché SDL3 non supporta più UWP. Provato su Windows 11 e su una Xbox Series S, compilato con Visual Studio 2026.
+Il gioco (senza il visualizzatore) come app UWP: gira su Windows 10/11 e su una Xbox One o Series in Dev Mode. È compilato su SDL3 da un fork che mantiene UWP (SDL3 stesso lo ha abbandonato): [djdron/SDL3-uwp](https://github.com/djdron/SDL3-uwp), ramo `river-raid`, basato su [XboxEmulationHub/SDL3-uwp](https://github.com/XboxEmulationHub/SDL3-uwp), con aggiunto ciò che serve al gioco: le opzioni di avvio in `main()`, il titolo della finestra, le modalità del televisore su Xbox (50 Hz). Provato su Windows 11 e su una Xbox Series S con Visual Studio 2026 quando era compilato su SDL2; su SDL3 non ancora.
 
 ## Cosa serve
 - Windows 10/11 con Visual Studio 2022 o 2026 e gli strumenti C++ per UWP. Nel 2022: i carichi di lavoro «Sviluppo di applicazioni desktop con C++» e «Sviluppo di applicazioni per la piattaforma UWP» (con gli strumenti C++ per UWP). Nel 2026: «Sviluppo di applicazioni desktop con C++» e, nel carico di lavoro «Sviluppo di applicazioni WinUI», il componente «C++ Universal Windows Platform tools».
-- CMake 3.16 o successivo (va bene quello di Visual Studio) e git: SDL2 viene scaricato e compilato insieme al gioco.
+- CMake 3.16 o successivo (va bene quello di Visual Studio) e git: SDL3 (il fork) viene scaricato e compilato insieme al gioco.
 - Per la Xbox: un account sviluppatore e la console in Dev Mode (l'app «Dev Mode Activation» sulla Xbox).
 - Il vostro dump della cartuccia come `rom/River_Raid.rom` (8192 byte): viene messo **nel pacchetto**, quindi il pacchetto è solo per voi; non distribuitelo.
 

@@ -360,6 +360,8 @@ void Host::setFullscreen(bool on) {
 
 void Host::setPixelAspect(double pixelAspect) { impl_->pixelAspect = pixelAspect; }
 
+bool Host::setRefreshRate(double) { return false; }
+
 void Host::setView(int x, int y, int width, int height) {
 	Impl &h = *impl_;
 	h.viewX = x;

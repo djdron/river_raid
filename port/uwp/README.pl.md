@@ -2,11 +2,11 @@
 
 [English](README.md) | [Русский](README.ru.md) | [Українська](README.uk.md) | [Deutsch](README.de.md) | Polski | [Italiano](README.it.md) | [Español](README.es.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
-Gra (bez przeglądarki) jako aplikacja UWP: działa na Windows 10/11 oraz na Xboksie One lub Series w Dev Mode. Budowana na SDL2, bo SDL3 nie obsługuje już UWP. Wypróbowane na Windows 11 i na Xboksie Series S, zbudowane w Visual Studio 2026.
+Gra (bez przeglądarki) jako aplikacja UWP: działa na Windows 10/11 oraz na Xboksie One lub Series w Dev Mode. Budowana na SDL3 z forka, który zachował UWP (sam SDL3 go porzucił): [djdron/SDL3-uwp](https://github.com/djdron/SDL3-uwp), gałąź `river-raid`, oparta na [XboxEmulationHub/SDL3-uwp](https://github.com/XboxEmulationHub/SDL3-uwp), z dodanym tym, czego potrzebuje gra: opcje uruchomienia w `main()`, tytuł okna, tryby telewizora na Xboksie (50 Hz). Wypróbowane na Windows 11 i na Xboksie Series S w Visual Studio 2026, gdy była budowana na SDL2; na SDL3 jeszcze nie.
 
 ## Co jest potrzebne
 - Windows 10/11 z Visual Studio 2022 lub 2026 i narzędziami C++ dla UWP. W 2022: obciążenia „Programowanie aplikacji klasycznych w języku C++” i „Programowanie aplikacji na platformę uniwersalną systemu Windows” (z narzędziami C++ dla UWP). W 2026: „Programowanie aplikacji klasycznych w języku C++” oraz w obciążeniu „Tworzenie aplikacji WinUI” składnik „C++ Universal Windows Platform tools”.
-- CMake 3.16 lub nowszy (wystarczy ten z Visual Studio) i git: SDL2 jest pobierany i budowany razem z grą.
+- CMake 3.16 lub nowszy (wystarczy ten z Visual Studio) i git: SDL3 (fork) jest pobierany i budowany razem z grą.
 - Dla Xboksa: konto dewelopera i konsola w Dev Mode (aplikacja „Dev Mode Activation” na Xboksie).
 - Twój zrzut kartridża jako `rom/River_Raid.rom` (8192 bajty): trafia **do pakietu**, więc pakiet jest tylko dla ciebie; nie udostępniaj go.
 

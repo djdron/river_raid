@@ -8,7 +8,7 @@ Questo file serve a riprendere il lavoro su qualsiasi computer o in una nuova ch
 Un port in C++ di River Raid (Activision, Atari 800, 1983, di Carol Shaw) per Windows, Linux e macOS:
 - logica di gioco identica all'originale, leggibile da un programmatore qualunque senza conoscere il 6502;
 - suono identico: lo stesso driver audio più un nucleo POKEY;
-- uno strato multipiattaforma: SDL3 (SDL2 come opzione, per UWP su Xbox);
+- uno strato multipiattaforma: SDL3 (SDL2 come opzione; UWP su Xbox con un fork di SDL3 che lo mantiene, vedi [port/uwp/README.it.md](port/uwp/README.it.md));
 - nessun dato originale viene distribuito; il port legge la ROM dell'utente all'avvio (deciso: nessun dato della ROM nel codice).
 
 ## Stato

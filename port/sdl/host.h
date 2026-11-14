@@ -85,6 +85,9 @@ public:
 	void setView(int x, int y, int width, int height);
 	// Changes the pixelAspect given to open() (the window keeps its size: for full screen).
 	void setPixelAspect(double pixelAspect);
+	// Switches the display to about hz where the game may (on the Xbox: the TV, full screen;
+	// refreshRate() then gives the new rate). false where it does not, or has no such mode.
+	bool setRefreshRate(double hz);
 	void setFilter(Filter filter);        // Filter::Sharp by default
 	bool fullscreen() const;
 	void setFullscreen(bool on);

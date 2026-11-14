@@ -61,9 +61,6 @@
 
 #include "host.h"
 #include "host_main.h"
-#ifdef RR_UWP
-#include "app.h"
-#endif
 
 namespace {
 
@@ -297,15 +294,6 @@ void fail(const std::string &msg) { host::Host::showError("River Raid", msg); }
 }  // namespace
 
 int main(int argc, char **argv) {
-#ifdef RR_UWP
-	// no command line on the Xbox: the options come with the link that started the app
-	std::vector<std::string> launchArgs = uwp::launchArguments();
-	std::vector<char *> args(argv, argv + argc);
-	for (std::string &a : launchArgs) args.push_back(a.data());
-	args.push_back(nullptr);
-	argc = int(args.size()) - 1;
-	argv = args.data();
-#endif
 	bool pal = false;
 	host::Filter filter = host::Filter::Sharp;   // -filter (L switches)
 	bool border = false;       // -border: the whole frame with its black border (O switches)
@@ -381,10 +369,9 @@ int main(int argc, char **argv) {
 	}
 	bool startLt = false;   // LT held at the start (UWP: PAL)
 #ifdef RR_UWP
-	// The Xbox has no command line: LT held while the game starts is -pal, with the TV switched
-	// to 50 Hz if the console allows it (Settings - TV & display options - Video modes - Allow
-	// 50 Hz). The gamepads show up a moment after the start: wait for one (up to 1.5 s), then
-	// let its state come in.
+	// On the Xbox LT held while the game starts is -pal (the options can also come with the
+	// link that starts it, riverraid:-pal ...). The gamepads show up a moment after the start:
+	// wait for one (up to 1.5 s), then let its state come in.
 	{
 		const uint64_t start = host::Host::ticksNs();
 		uint64_t seen = 0;
@@ -398,31 +385,17 @@ int main(int argc, char **argv) {
 			host::Host::delayNs(10000000);
 		}
 	}
-	if (startLt) pal = palColours = true;
-	if (pal) {   // LT, or -pal in the link that started the app
+	if (startLt && !pal) {
+		pal = palColours = true;
 		tv = rr::kPal;
 		window.setPixelAspect(tv.pixelAspect());
 		showBorder();
-		uwp::requestRefreshRate(50);
 	}
 #endif
-	// the display's refresh rate (on the Xbox the TV's mode, which SDL does not know; asked
-	// for twice a second, as it changes a moment after requestRefreshRate())
-#ifdef RR_UWP
-	double tvRate = 0;
-	uint64_t tvRateAt = 0;
-#endif
-	auto displayRate = [&]() {
-#ifdef RR_UWP
-		const uint64_t now = host::Host::ticksNs();
-		if (!tvRateAt || now - tvRateAt > 500000000) {
-			tvRate = uwp::displayRefreshRate();
-			tvRateAt = now;
-		}
-		if (tvRate > 0) return tvRate;
-#endif
-		return window.refreshRate();
-	};
+	// PAL: the TV at 50 Hz, where the display can be switched (the Xbox, if the console allows
+	// it: Settings - TV & display options - Video modes - Allow 50 Hz)
+	if (pal) window.setRefreshRate(50);
+	auto displayRate = [&]() { return window.refreshRate(); };
 	if (showStats) {
 		const Pace pace = paceFor(displayRate(), tv.frameRate());
 		std::fprintf(stderr, "%s, display %.2f Hz, game %.3f frames/s%s\n", window.info().c_str(), displayRate(),
@@ -445,9 +418,6 @@ int main(int argc, char **argv) {
 			(palColours ? "PAL" : "NTSC") + " colours, " +
 			rr::paletteName(paletteModel) + ", " + host::filterName(filter) + " scaling" + stateNote;
 		window.setTitle(title);
-#ifdef RR_UWP
-		uwp::setTitle(title.substr(title.find(" - ") + 3));   // after the app's name
-#endif
 	};
 	window.setFilter(filter);
 	showColours();
@@ -614,8 +584,5 @@ int main(int argc, char **argv) {
 		}
 	}
 
-#ifdef RR_UWP
-	uwp::restoreDisplayMode();
-#endif
 	return 0;
 }
