@@ -7,7 +7,10 @@
 #include <cctype>
 #include <cstdlib>
 
+#include <windows.h>   // OutputDebugStringA
+
 using namespace Windows::ApplicationModel::Activation;
+using namespace Windows::UI::ViewManagement;
 using namespace Windows::Graphics::Display::Core;
 
 namespace uwp {
@@ -72,6 +75,7 @@ std::vector<std::string> launchArguments() {
 		}
 	} catch (Platform::Exception ^) {
 	}
+	OutputDebugStringA(("River Raid: launch arguments \"" + line + "\"\n").c_str());   // Visual Studio's Output
 	std::vector<std::string> words;
 	std::string word;
 	for (char c : line + " ") {
@@ -83,6 +87,14 @@ std::vector<std::string> launchArguments() {
 		}
 	}
 	return words;
+}
+
+void setTitle(const std::string &title) {
+	try {
+		std::wstring w(title.begin(), title.end());
+		ApplicationView::GetForCurrentView()->Title = ref new Platform::String(w.c_str());
+	} catch (Platform::Exception ^) {
+	}
 }
 
 double displayRefreshRate() {

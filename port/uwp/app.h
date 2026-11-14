@@ -13,6 +13,10 @@ namespace uwp {
 // with %XX decoded, or the arguments of a plain launch; split at spaces.
 std::vector<std::string> launchArguments();
 
+// The window's title on a PC (SDL 2 sets none on UWP): shown in the title bar after the app's
+// name. ASCII.
+void setTitle(const std::string &title);
+
 // Refresh rate of the TV's current mode, 0 if unknown.
 double displayRefreshRate();
 // Asks the TV for a mode of the same resolution at about hz (the console has to allow it: on

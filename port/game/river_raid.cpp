@@ -445,6 +445,9 @@ int main(int argc, char **argv) {
 			(palColours ? "PAL" : "NTSC") + " colours, " +
 			rr::paletteName(paletteModel) + ", " + host::filterName(filter) + " scaling" + stateNote;
 		window.setTitle(title);
+#ifdef RR_UWP
+		uwp::setTitle(title.substr(title.find(" - ") + 3));   // after the app's name
+#endif
 	};
 	window.setFilter(filter);
 	showColours();
