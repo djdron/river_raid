@@ -561,7 +561,7 @@ int main(int argc, char **argv) {
 			for (int x = 0; x < kViewWidth; x++) pixels[y * kViewWidth + x] = palette[scr[y][kViewLeft + x]];
 		if (shotPath) {
 			for (int i = 0; i < 3; i++) {             // let a resized window settle
-				for (host::Event e; window.poll(e);) {}
+				for (host::Event settle; window.poll(settle);) {}
 				window.present();
 			}
 			window.savePicture(shotPath);
