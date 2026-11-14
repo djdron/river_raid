@@ -31,4 +31,4 @@ The gamepad works as on a PC (see [../README.md](../README.md)), X pauses. With 
 
 Hold LT while the game starts to play as a PAL machine (as `-pal`: 50 frames per second, about 17% slower): the game then switches the TV to 50 Hz, if the console allows it (Settings → TV & display options → Video modes → Allow 50 Hz), and back when it ends. Without 50 Hz it still runs as PAL, not locked to the TV.
 
-The options of a PC (see [../README.md](../README.md)) can be given at the start too: in Dev Home select the game, Launch with parameters, tick Use custom protocol and enter, for example, `riverraid:-pal -bridge 500`. The app declares the protocol `riverraid`; whatever follows it is the command line.
+The options of a PC (see [../README.md](../README.md)) can be given at the start too: in Dev Home select the game, Launch with parameters, tick Use custom protocol and enter, for example, `riverraid:-pal%20-bridge%20500`. The app declares the protocol `riverraid`; whatever follows it is the command line. Dev Home drops everything after the first space, so write the spaces as `%20`.

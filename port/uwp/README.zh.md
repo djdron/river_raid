@@ -31,4 +31,4 @@ cmake -S port -B build-uwp -G "Visual Studio 17 2022" -A x64 -DCMAKE_SYSTEM_NAME
 
 启动游戏时按住 LT，游戏会作为 PAL 机器运行（同 `-pal`：每秒 50 帧，慢约 17%），并在主机允许时把电视切换到 50 Hz（Settings → TV & display options → Video modes → Allow 50 Hz），退出时恢复原样。没有 50 Hz 时游戏仍按 PAL 运行，只是不与电视同步。
 
-PC 上的参数（见 [../README.zh.md](../README.zh.md)）在启动时也能给出：在 Dev Home 中选中游戏，Launch with parameters，勾选 Use custom protocol，然后输入例如 `riverraid:-pal -bridge 500`。应用声明了协议 `riverraid`；它后面的内容就是命令行。
+PC 上的参数（见 [../README.zh.md](../README.zh.md)）在启动时也能给出：在 Dev Home 中选中游戏，Launch with parameters，勾选 Use custom protocol，然后输入例如 `riverraid:-pal%20-bridge%20500`。应用声明了协议 `riverraid`；它后面的内容就是命令行。Dev Home 会丢掉第一个空格之后的所有内容，所以空格要写成 `%20`。

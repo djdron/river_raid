@@ -31,4 +31,4 @@ Il gamepad funziona come su PC (vedi [../README.it.md](../README.it.md)), X mett
 
 Tenendo premuto LT mentre il gioco parte, gira come una macchina PAL (come `-pal`: 50 fotogrammi al secondo, circa il 17% più lento) e porta il televisore a 50 Hz, se la console lo consente (Settings → TV & display options → Video modes → Allow 50 Hz), poi lo riporta com'era all'uscita. Senza 50 Hz gira comunque come PAL, solo non al ritmo del televisore.
 
-Le opzioni come su PC (vedi [../README.it.md](../README.it.md)) si possono dare anche all'avvio: in Dev Home selezionate il gioco, Launch with parameters, spuntate Use custom protocol e inserite per esempio `riverraid:-pal -bridge 500`. L'app dichiara il protocollo `riverraid`; ciò che segue è la riga di comando.
+Le opzioni come su PC (vedi [../README.it.md](../README.it.md)) si possono dare anche all'avvio: in Dev Home selezionate il gioco, Launch with parameters, spuntate Use custom protocol e inserite per esempio `riverraid:-pal%20-bridge%20500`. L'app dichiara il protocollo `riverraid`; ciò che segue è la riga di comando. Dev Home scarta tutto ciò che segue il primo spazio, quindi scrivete gli spazi come `%20`.
