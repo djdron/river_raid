@@ -133,6 +133,20 @@ struct Host::Impl {
 		SDL_UpdateTexture(texture, nullptr, pixels.data(), width * int(sizeof(uint32_t)));
 		int outW = 0, outH = 0;
 		SDL_GetRenderOutputSize(renderer, &outW, &outH);
+#ifdef SDL_PLATFORM_WINRT
+		{	// (diagnostic for UWP: the sizes SDL reports, in Visual Studio's Output, when they change)
+			static int lastW = -1, lastH = -1;
+			if (outW != lastW || outH != lastH) {
+				lastW = outW;
+				lastH = outH;
+				int ww = 0, wh = 0, pw = 0, ph = 0;
+				SDL_GetWindowSize(window, &ww, &wh);
+				SDL_GetWindowSizeInPixels(window, &pw, &ph);
+				SDL_Log("River Raid: window %dx%d, in pixels %dx%d, render output %dx%d, density %.2f, display scale %.2f",
+					ww, wh, pw, ph, outW, outH, SDL_GetWindowPixelDensity(window), SDL_GetWindowDisplayScale(window));
+			}
+		}
+#endif
 		const double imageW = viewW * pixelAspect;
 		const double scale = std::min(outW / imageW, double(outH) / viewH);
 		SDL_FRect dst;
