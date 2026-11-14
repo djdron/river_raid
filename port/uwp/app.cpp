@@ -3,13 +3,18 @@
 // asynchronous requests.
 #include "app.h"
 
+#include <chrono>
 #include <cmath>
 #include <cctype>
 #include <cstdlib>
+#include <thread>
 
 #include <windows.h>   // OutputDebugStringA
 
 using namespace Windows::ApplicationModel::Activation;
+using namespace Windows::ApplicationModel::Core;
+using namespace Windows::Foundation;
+using namespace Windows::UI::Core;
 using namespace Windows::UI::ViewManagement;
 using namespace Windows::Graphics::Display::Core;
 
@@ -60,10 +65,37 @@ std::string percentDecoded(const std::string &s) {
 
 }  // namespace
 
-std::vector<std::string> launchArguments() {
-	std::string line;
+// The app's activation: SDL starts the game (its main()) before the window's events are
+// processed, and ignores the activation's arguments; so listen to it and let the events in.
+static IActivatedEventArgs ^activation() {
+	static IActivatedEventArgs ^args = nullptr;
 	try {
-		IActivatedEventArgs ^args = Windows::ApplicationModel::AppInstance::GetActivatedEventArgs();
+		CoreApplicationView ^view = CoreApplication::GetCurrentView();
+		const EventRegistrationToken token = view->Activated +=
+			ref new TypedEventHandler<CoreApplicationView ^, IActivatedEventArgs ^>(
+				[](CoreApplicationView ^, IActivatedEventArgs ^a) { args = a; });
+		CoreWindow ^window = CoreWindow::GetForCurrentThread();
+		for (int i = 0; i < 50 && !args && window; i++) {   // up to half a second
+			window->Dispatcher->ProcessEvents(CoreProcessEventsOption::ProcessAllIfPresent);
+			if (!args) std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		}
+		view->Activated -= token;
+	} catch (Platform::Exception ^) {
+	}
+	if (!args) {   // it came before: Windows keeps it from 10.0.17134 on
+		try {
+			args = Windows::ApplicationModel::AppInstance::GetActivatedEventArgs();
+		} catch (Platform::Exception ^) {
+		}
+	}
+	return args;
+}
+
+std::vector<std::string> launchArguments() {
+	std::string line, kind = "no activation";
+	try {
+		IActivatedEventArgs ^args = activation();
+		if (args) kind = "activation kind " + std::to_string(int(args->Kind));
 		if (args && args->Kind == ActivationKind::Protocol) {
 			const std::string uri = utf8(static_cast<ProtocolActivatedEventArgs ^>(args)->Uri->AbsoluteUri);
 			const size_t colon = uri.find(':');
@@ -75,7 +107,7 @@ std::vector<std::string> launchArguments() {
 		}
 	} catch (Platform::Exception ^) {
 	}
-	OutputDebugStringA(("River Raid: launch arguments \"" + line + "\"\n").c_str());   // Visual Studio's Output
+	OutputDebugStringA(("River Raid: launch arguments \"" + line + "\" (" + kind + ")\n").c_str());   // Visual Studio's Output
 	std::vector<std::string> words;
 	std::string word;
 	for (char c : line + " ") {
