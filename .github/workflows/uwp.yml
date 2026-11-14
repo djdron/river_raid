@@ -12,6 +12,9 @@ on:
 jobs:
   uwp:
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: cmd   # (PowerShell splits -DCMAKE_SYSTEM_VERSION=10.0 at the dot)
     steps:
       - uses: actions/checkout@v4
       - name: Configure
