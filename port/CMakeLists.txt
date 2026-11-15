@@ -171,5 +171,11 @@ if(RR_VIEWER)
 		add_executable(river_view WIN32 viewer/river_view.cpp)
 		target_link_libraries(river_view rrcore rrhost)
 		target_compile_options(river_view PRIVATE ${RR_WARNINGS})
+		if(WIN32)   # the icon, for Explorer and the window
+			target_sources(river_raid PRIVATE windows/river_raid.rc)
+			target_sources(river_view PRIVATE windows/river_raid.rc)
+		elseif(APPLE)   # the game as river_raid.app, with the ROM inside
+			include(macos/macos.cmake)
+		endif()
 	endif()
 endif()

@@ -1,0 +1,46 @@
+# Builds the game and the viewer on Windows (with the icon) and macOS (the game as
+# river_raid.app), without the ROM: whether they compile and are put together. They are kept
+# as the run's artifacts (the ROM is not in them).
+name: Desktop build
+
+on:
+  push:
+    paths:
+      - 'port/**'
+      - '.github/workflows/desktop.yml'
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S port -B build
+      - name: Build
+        run: cmake --build build --config Release --target river_raid river_view -- /m
+      - uses: actions/upload-artifact@v4
+        with:
+          name: river_raid-windows
+          path: |
+            build/Release/river_raid.exe
+            build/Release/river_view.exe
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S port -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --target river_raid river_view -j4
+      - name: The bundle
+        run: |
+          find build/river_raid.app
+          plutil -lint build/river_raid.app/Contents/Info.plist
+          plutil -p build/river_raid.app/Contents/Info.plist
+          ditto -c -k --keepParent build/river_raid.app build/river_raid-macos.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: river_raid-macos
+          path: build/river_raid-macos.zip

@@ -1,0 +1,2 @@
+// The programs' icon on Windows: Explorer shows it, and SDL takes it for the window.
+1 ICON "river_raid.ico"
