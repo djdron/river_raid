@@ -17,6 +17,8 @@ Con SDL2 en lugar de SDL3 (para plataformas que SDL3 no admite): `cmake -S . -B 
 
 En Windows con Visual Studio: `cmake --build build --config Release`, los programas quedan en `build\Release\`. Compilado y probado en Windows (MSVC), macOS (Xcode, Apple M2) y Linux (gcc).
 
+En Windows los programas llevan su icono (`windows/river_raid.ico`), en el Explorador y en la ventana. En macOS el juego se compila como app, `build/river_raid.app`, con su icono y la ROM dentro (`rom/River_Raid.rom` del repositorio, otra con `-DRR_MACOS_ROM=...`), así que arranca desde el Finder; esa app es solo suya, no la comparta. Opciones desde el terminal: `open build/river_raid.app --args -pal` o `build/river_raid.app/Contents/MacOS/river_raid -pal`. El visor sigue siendo un programa normal.
+
 ## El juego
 ```
 river_raid [rom] [opciones]

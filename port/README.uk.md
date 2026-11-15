@@ -17,6 +17,8 @@ cmake --build build
 
 У Windows з Visual Studio: `cmake --build build --config Release`, програми опиняються в `build\Release\`. Зібрано й перевірено в грі під Windows (MSVC), macOS (Xcode, Apple M2) і Linux (gcc).
 
+Під Windows програми мають іконку (`windows/river_raid.ico`): у провіднику й на вікні. Під macOS гра збирається як застосунок, `build/river_raid.app`, з іконкою й ROM усередині (`rom/River_Raid.rom` з репозиторію, інший — через `-DRR_MACOS_ROM=...`), тож вона запускається з Finder; такий застосунок лише ваш, не передавайте його іншим. Опції з термінала: `open build/river_raid.app --args -pal` або `build/river_raid.app/Contents/MacOS/river_raid -pal`. Переглядач лишається звичайною програмою.
+
 ## Гра
 ```
 river_raid [rom] [параметри]

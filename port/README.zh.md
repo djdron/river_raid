@@ -17,6 +17,8 @@ cmake --build build
 
 在 Windows 上用 Visual Studio：`cmake --build build --config Release`，程序位于 `build\Release\`。已在 Windows（MSVC）、macOS（Xcode，Apple M2）和 Linux（gcc）上构建并试玩。
 
+在 Windows 上，程序带有图标（`windows/river_raid.ico`），显示在资源管理器和窗口上。在 macOS 上，游戏构建为应用 `build/river_raid.app`，内含图标和 ROM（仓库中的 `rom/River_Raid.rom`，其他 ROM 用 `-DRR_MACOS_ROM=...`），因此可以从 Finder 启动；这样的应用只属于你，不要分享。从终端传选项：`open build/river_raid.app --args -pal` 或 `build/river_raid.app/Contents/MacOS/river_raid -pal`。查看器仍是普通程序。
+
 ## 游戏
 ```
 river_raid [rom] [选项]

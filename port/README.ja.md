@@ -17,6 +17,8 @@ SDL3 の代わりに SDL2 を使う場合（SDL3 がサポートしないプラ�
 
 Windows の Visual Studio では：`cmake --build build --config Release`。プログラムは `build\Release\` にできます。Windows（MSVC）、macOS（Xcode、Apple M2）、Linux（gcc）でビルドして遊べることを確認済みです。
 
+Windows ではプログラムにアイコン（`windows/river_raid.ico`）が付き、エクスプローラーとウィンドウに表示されます。macOS ではゲームはアプリ `build/river_raid.app` としてビルドされ、アイコンと ROM（リポジトリの `rom/River_Raid.rom`、別のものは `-DRR_MACOS_ROM=...`）が中に入るので、Finder から起動できます。そのアプリはあなた専用です。人に渡さないでください。ターミナルからオプションを渡すには：`open build/river_raid.app --args -pal` または `build/river_raid.app/Contents/MacOS/river_raid -pal`。ビューアは普通のプログラムのままです。
+
 ## ゲーム
 ```
 river_raid [rom] [オプション]
