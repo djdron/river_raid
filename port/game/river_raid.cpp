@@ -197,8 +197,9 @@ private:
 };
 
 // A gamepad's left stick as the Atari's digital joystick. The direction comes from the stick's
-// angle: up, down, left and right get 60 degrees each, the diagonals 30, so pulling back to slow
-// down with the stick a little to one side stays straight back. Up and down count once the stick
+// angle: up, left and right get 60 degrees each, down 42, the diagonals the rest (30 each, 39 the
+// two down the sides), so pulling back to slow down with the stick a little to one side stays
+// straight back, yet turning while slowing down is not far from it. Up and down count once the stick
 // is out past kOn, left and right (which turn the plane at once) only further out, past kOnSide;
 // each until the stick is back inside kOff / kOffSide.
 class AnalogStick {
@@ -212,13 +213,13 @@ public:
 			// the angle from the right, counter-clockwise (y points down), 0..360
 			float a = std::atan2(-y, x) * 57.29578f;
 			if (a < 0) a += 360;
-			// 8 sectors: right at 0, up-right at 45 ... a cardinal is +-30, a diagonal +-15
+			// 8 sectors, each up to its upper edge: right (from -30), up-right, up, up-left, left,
+			// down-left, down (270 +-21), down-right
+			static const float kEdge[8] = {30, 60, 120, 150, 210, 249, 291, 330};
 			static const uint8_t kDirs[8] = {0x07, 0x06, 0x0E, 0x0A, 0x0B, 0x09, 0x0D, 0x05};
-			for (int k = 0; k < 8; k++) {
-				float d = std::fabs(a - k * 45.0f);
-				if (d > 180) d = 360 - d;
-				if (d <= ((k & 1) ? 15.0f : 30.0f)) { bits = kDirs[k]; break; }
-			}
+			const float from = a >= kEdge[7] ? a - 360 : a;   // right reaches down to -30
+			for (int k = 0; k < 8; k++)
+				if (from < kEdge[k]) { bits = kDirs[k]; break; }
 			// each part only past its own threshold
 			if (r < ((last_ & 0x03) != 0x03 ? kOff : kOn)) bits |= 0x03;
 			if (r < ((last_ & 0x0C) != 0x0C ? kOffSide : kOnSide)) bits |= 0x0C;
