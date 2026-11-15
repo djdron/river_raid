@@ -442,6 +442,11 @@ uint64_t Host::ticksNs() {
 void Host::delayNs(uint64_t ns) { SDL_Delay(Uint32(ns / 1000000)); }
 
 std::string Host::basePath() {
+#ifdef __SWITCH__
+	// the .nro's own files (RomFS: the ROM put in at the build, switch/switch.cmake)
+	static const bool romfs = R_SUCCEEDED(romfsInit());
+	return romfs ? "romfs:/" : "";
+#endif
 	char *path = SDL_GetBasePath();
 	if (!path) return "";
 	std::string s = path;

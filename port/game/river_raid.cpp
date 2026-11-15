@@ -284,8 +284,8 @@ std::string findRom(int argc, char **argv) {
 		}
 		return argv[i];
 	}
-	// next to the program (on UWP: in the app's package; on the Switch: in the .nro's folder on
-	// the SD card, from argv[0]), then the current folder and up to 3 above it
+	// next to the program (on UWP: in the app's package; on the Switch: in the .nro's RomFS, then
+	// in its folder on the SD card, from argv[0]), then the current folder and up to 3 above it
 	std::vector<std::string> places = {host::Host::basePath()};
 	if (argc > 0) {
 		const std::string self = argv[0];
