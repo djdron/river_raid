@@ -368,16 +368,17 @@ bool Host::setRefreshRate(double hz) {
 	Impl &h = *impl_;
 	h.exclusive = false;
 	if (hz > 0) {
-		// the desktop's resolution, the rate nearest to hz (SDL2 gives whole numbers: 59.94 may
-		// be 59)
+		// the desktop's resolution, a rate of about hz or a multiple of it, the one nearest the
+		// desktop's rate (SDL2 gives whole numbers: 59.94 may be 59)
 		const int display = SDL_GetWindowDisplayIndex(h.window);
 		SDL_DisplayMode desktop, m, found;
 		if (display >= 0 && SDL_GetDesktopDisplayMode(display, &desktop) == 0) {
 			for (int i = 0; i < SDL_GetNumDisplayModes(display); i++) {
-				if (SDL_GetDisplayMode(display, i, &m) != 0 || m.w != desktop.w || m.h != desktop.h ||
-						std::abs(m.refresh_rate - hz) >= 1)
-					continue;
-				if (!h.exclusive || std::abs(m.refresh_rate - hz) < std::abs(found.refresh_rate - hz)) found = m;
+				if (SDL_GetDisplayMode(display, i, &m) != 0 || m.w != desktop.w || m.h != desktop.h) continue;
+				const int k = int(m.refresh_rate / hz + 0.5);
+				if (k < 1 || std::abs(double(m.refresh_rate) / k - hz) >= 1) continue;
+				if (!h.exclusive || std::abs(m.refresh_rate - desktop.refresh_rate) < std::abs(found.refresh_rate - desktop.refresh_rate))
+					found = m;
 				h.exclusive = true;
 			}
 			if (h.exclusive) h.exclusive = SDL_SetWindowDisplayMode(h.window, &found) == 0;

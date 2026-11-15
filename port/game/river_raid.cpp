@@ -17,8 +17,9 @@
 //   -border: show the whole frame with its black border, not just the game's picture
 //   -filter: how the picture is scaled to the window: sharp (default: whole-number scale, then
 //   smoothly to fit), nearest (blocky, pixels of slightly uneven size) or linear (blurred)
-//   -fullscreen_exclusive: full screen switches the display to 60 Hz (PAL: 50) at the desktop's
-//   resolution, where it has such a mode; otherwise full screen is the desktop as it is
+//   -fullscreen_exclusive: full screen switches the display to 60 Hz (PAL: 50) or a multiple of
+//   it, the one nearest the desktop's rate, at the desktop's resolution, where it has such a
+//   mode; otherwise full screen is the desktop as it is
 //
 // The whole game runs as the original does (src/game.cpp): after power-on the attract mode
 // flies over the river; START begins a game, SELECT (or OPTION) chooses games 1-8 (even
@@ -375,10 +376,11 @@ int main(int argc, char **argv) {
 		fail(window.error());
 		return 1;
 	}
-	// The display's rate in full screen: with -fullscreen_exclusive 60 Hz, 50 on PAL (an exclusive
-	// mode at the desktop's resolution); on the Xbox the TV at 50 Hz on PAL, if the console
-	// allows it (Settings - TV & display options - Video modes - Allow 50 Hz). Otherwise, or
-	// without such a mode, the desktop as it is.
+	// The display's rate in full screen: with -fullscreen_exclusive 60 Hz, 50 on PAL, or a
+	// multiple of it (an exclusive mode at the desktop's resolution, the rate nearest the
+	// desktop's); on the Xbox the TV at 50 Hz (or 100) on PAL, if the console allows it
+	// (Settings - TV & display options - Video modes - Allow 50 Hz). Otherwise, or without such
+	// a mode, the desktop as it is.
 	auto fullscreenRate = [&]() {
 #ifdef RR_UWP
 		if (pal) return 50.0;

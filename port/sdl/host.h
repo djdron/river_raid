@@ -86,7 +86,9 @@ public:
 	// Changes the pixelAspect given to open() (the window keeps its size: for full screen).
 	void setPixelAspect(double pixelAspect);
 	// The display's mode in full screen: hz > 0, an exclusive mode at the desktop's resolution
-	// and about hz (at once if in full screen; on the Xbox the window always is: the TV's mode);
+	// and about hz or a whole multiple of it, the one nearest the desktop's own rate (so the
+	// desktop's if it is one; at once if in full screen; on the Xbox the window always is: the
+	// TV's mode);
 	// 0, or no such mode: full screen on the desktop as it is (the default). refreshRate() gives
 	// the rate in use. false if there is no such mode, or the display cannot be switched (a PC
 	// under UWP).

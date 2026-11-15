@@ -364,16 +364,18 @@ bool Host::setRefreshRate(double hz) {
 	const SDL_DisplayMode *found = nullptr;
 	SDL_DisplayMode **modes = nullptr;
 	if (hz > 0) {
-		// the desktop's resolution, the rate nearest to hz (60 may be 59.94)
+		// the desktop's resolution, a rate of about hz or a multiple of it (60 may be 59.94,
+		// 120 119.88), the one nearest the desktop's rate
 		const SDL_DisplayID display = SDL_GetDisplayForWindow(window);
 		const SDL_DisplayMode *desktop = SDL_GetDesktopDisplayMode(display);
 		int count = 0;
 		modes = SDL_GetFullscreenDisplayModes(display, &count);
 		for (int i = 0; i < count && desktop; i++) {
 			const SDL_DisplayMode *m = modes[i];
-			if (m->w == desktop->w && m->h == desktop->h && m->pixel_density == desktop->pixel_density &&
-					std::abs(m->refresh_rate - hz) < 0.5 &&
-					(!found || std::abs(m->refresh_rate - hz) < std::abs(found->refresh_rate - hz)))
+			const int k = int(m->refresh_rate / hz + 0.5);
+			if (m->w == desktop->w && m->h == desktop->h && m->pixel_density == desktop->pixel_density && k >= 1 &&
+					std::abs(m->refresh_rate / k - hz) < 0.5 &&
+					(!found || std::abs(m->refresh_rate - desktop->refresh_rate) < std::abs(found->refresh_rate - desktop->refresh_rate)))
 				found = m;
 		}
 	}
