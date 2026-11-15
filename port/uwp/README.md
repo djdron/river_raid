@@ -2,7 +2,7 @@
 
 English | [Русский](README.ru.md) | [Українська](README.uk.md) | [Deutsch](README.de.md) | [Polski](README.pl.md) | [Italiano](README.it.md) | [Español](README.es.md) | [中文](README.zh.md) | [日本語](README.ja.md)
 
-The game (not the viewer) as a UWP app: it runs on Windows 10/11 and on an Xbox One or Series in Dev Mode. It is built on SDL3 from a fork that keeps UWP (SDL3 itself has dropped it): [djdron/SDL3-uwp](https://github.com/djdron/SDL3-uwp), branch `river-raid`, based on [XboxEmulationHub/SDL3-uwp](https://github.com/XboxEmulationHub/SDL3-uwp), with what the game needs added: the launch options in `main()`, the window title, the TV's modes on the Xbox (50 Hz). Tried on Windows 11 and on an Xbox Series S with Visual Studio 2026 while it was built on SDL2; on SDL3 not yet.
+The game (not the viewer) as a UWP app: it runs on Windows 10/11 and on an Xbox One or Series in Dev Mode. It is built on SDL3 from a fork that keeps UWP (SDL3 itself has dropped it): [djdron/SDL3-uwp](https://github.com/djdron/SDL3-uwp), branch `river-raid`, based on [XboxEmulationHub/SDL3-uwp](https://github.com/XboxEmulationHub/SDL3-uwp), with what the game needs added: the launch options in `main()`, the window title, the TV's modes on the Xbox (50 Hz). Tried on Windows 11 and on an Xbox Series S with Visual Studio 2026, on SDL2 and on SDL3.
 
 ## What you need
 - Windows 10/11 with Visual Studio 2022 or 2026 and the C++ tools for UWP. In 2022: the workloads "Desktop development with C++" and "Universal Windows Platform development" (with the C++ UWP tools). In 2026: "Desktop development with C++" and, in "WinUI application development", the component "C++ Universal Windows Platform tools".
@@ -29,6 +29,6 @@ Then in Dev Home select the app, View details, and set App type to **Game**: an 
 
 The gamepad works as on a PC (see [../README.md](../README.md)), X pauses. With no keyboard the other settings stay at their defaults: PAL colours, Altirra, the game's picture only, sharp scaling (LT switches it). B is also the system's Back button; the game takes it, so it does not close the app. The Xbox button leaves the game.
 
-Hold LT while the game starts to play as a PAL machine (as `-pal`: 50 frames per second, about 17% slower): the game then switches the TV to 50 Hz, if the console allows it (Settings → TV & display options → Video modes → Allow 50 Hz), and back when it ends. Without 50 Hz it still runs as PAL, not locked to the TV.
+Back and Start pressed together switch to a PAL machine (as `-pal`: 50 frames per second, about 17% slower) and back to NTSC; the game starts over, as when switched on. With PAL the game switches the TV to 50 Hz, if the console allows it (Settings → TV & display options → Video modes → Allow 50 Hz), and back with NTSC or when it ends. Without 50 Hz it still runs as PAL, not locked to the TV. (A button held while the game starts does not reach it on the Xbox, so the choice cannot be made at the start.)
 
 The options of a PC (see [../README.md](../README.md)) can be given at the start too: in Dev Home select the game, Launch with parameters, tick Use custom protocol and enter, for example, `riverraid:-pal%20-bridge%20500`. The app declares the protocol `riverraid`; whatever follows it is the command line. Dev Home drops everything after the first space, so write the spaces as `%20`.

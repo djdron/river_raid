@@ -56,12 +56,13 @@ Dopo l'accensione la modalità dimostrativa sorvola il fiume. START inizia una p
 | C | colori NTSC / PAL |
 | V | modello di colore Altirra / atari800 |
 | O | solo l'immagine del gioco / l'intero fotogramma con il bordo |
+| P | l'altra macchina, NTSC / PAL, riaccesa (come `-pal`; sull'Xbox il televisore passa a 50 Hz e ritorna) |
 | L | scalatura: sharp / nearest / linear |
 | F7 / F8 | salvare lo stato del gioco / tornarci (in memoria, fino all'uscita) |
 | Esc | esce dallo schermo intero |
 | clic del mouse | nasconde il puntatore finché il mouse non si muove (lo stesso passando a schermo intero) |
 
-La tastiera comanda entrambi i joystick, così anche una persona sola può fare una partita a due. Gamepad: il primo è il joystick 1 (e il 2 finché non c'è un secondo), il secondo è il joystick 2; croce direzionale o levetta sinistra, A/B/Y o il grilletto destro per sparare, X = pausa, Start = START, Back = SELECT, RB / LB = F7 / F8 (salvare lo stato / tornarci), LT = L (scala). La levetta sinistra va secondo il suo angolo, quindi tirarla indietro un po' di lato rallenta soltanto; per sterzare va spinta più a fondo (55%) che per accelerare o rallentare (30%).
+La tastiera comanda entrambi i joystick, così anche una persona sola può fare una partita a due. Gamepad: il primo è il joystick 1 (e il 2 finché non c'è un secondo), il secondo è il joystick 2; croce direzionale o levetta sinistra, A/B/Y o il grilletto destro per sparare, X = pausa, Start = START, Back = SELECT, RB / LB = F7 / F8 (salvare lo stato / tornarci), LT = L (scala), Back e Start insieme = P (l'altra macchina). La levetta sinistra va secondo il suo angolo, quindi tirarla indietro un po' di lato rallenta soltanto; per sterzare va spinta più a fondo (55%) che per accelerare o rallentare (30%).
 
 ## Visualizzatore del fiume
 ```

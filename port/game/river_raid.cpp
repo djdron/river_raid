@@ -33,6 +33,7 @@
 //   F, F11 or Alt+Enter       full screen
 //   C / V                     NTSC / PAL colours; Altirra / atari800 colour model
 //   O                         the game's picture only / the whole frame with its border
+//   P                         another machine, NTSC / PAL: switched on again (as -pal)
 //   L                         scaling: sharp / nearest / linear
 //   F7 / F8                   save the game's state / go back to it (in memory, until quitting)
 //   Esc                       leave full screen
@@ -41,7 +42,7 @@
 // Gamepads: the first one is joystick 1 (and 2 while there is no second), the second one
 // joystick 2. D-pad or left stick: joystick; A, B, Y or the right trigger: fire; X: the key
 // that pauses; Start: START; Back: SELECT; RB / LB: save the state / go back to it (as F7 / F8);
-// LT: the next scaling (as L).
+// LT: the next scaling (as L); Back and Start together: the other machine (as P).
 // The left stick goes by its angle (see AnalogStick).
 #include <algorithm>
 #include <cmath>
@@ -231,7 +232,9 @@ private:
 };
 
 // Joystick and console keys from the keyboard and up to two gamepads.
-rr::Input readControls(const host::Host &h, AnalogStick sticks[2]) {
+// padConsole false: the gamepads' Start and Back are left out (after switching the machine with
+// both, until they are let go).
+rr::Input readControls(const host::Host &h, AnalogStick sticks[2], bool padConsole) {
 	using host::Key;
 	rr::Input in;
 	uint8_t keys = 0x0F;   // PORTA bits: 0 up, 1 down, 2 left, 3 right; 0 = pressed
@@ -258,8 +261,8 @@ rr::Input readControls(const host::Host &h, AnalogStick sticks[2]) {
 			in.trigger[j] = in.trigger[j] || pad.fire;
 		}
 		in.key = in.key || pad.x;   // X: the key that pauses (the Xbox has no keyboard)
-		in.start = in.start || pad.start;
-		in.select = in.select || pad.select;
+		in.start = in.start || (padConsole && pad.start);
+		in.select = in.select || (padConsole && pad.select);
 	}
 	return in;
 }
@@ -367,34 +370,6 @@ int main(int argc, char **argv) {
 		fail(window.error());
 		return 1;
 	}
-	bool startLt = false;   // LT held at the start (UWP: PAL)
-#ifdef RR_UWP
-	// On the Xbox LT held while the game starts is -pal (the options can also come with the
-	// link that starts it, riverraid:-pal ...). The gamepads show up a moment after the start:
-	// wait for one (up to 2 s), then let its state come in. The window may get the focus only
-	// later, and SDL would drop the trigger's movement until then.
-	{
-		window.setBackgroundInput(true);
-		const uint64_t start = host::Host::ticksNs();
-		uint64_t seen = 0;
-		for (;;) {
-			host::Event e;
-			while (window.poll(e)) {}
-			const uint64_t now = host::Host::ticksNs();
-			if (window.gamepadCount() > 0 && !seen) seen = now;
-			for (int i = 0; i < window.gamepadCount(); i++) startLt = startLt || window.gamepad(i).leftTrigger;
-			if (startLt || (seen && now - seen > 500000000) || now - start > 2000000000) break;
-			host::Host::delayNs(10000000);
-		}
-		window.setBackgroundInput(false);
-	}
-	if (startLt && !pal) {
-		pal = palColours = true;
-		tv = rr::kPal;
-		window.setPixelAspect(tv.pixelAspect());
-		showBorder();
-	}
-#endif
 	// PAL: the TV at 50 Hz, where the display can be switched (the Xbox, if the console allows
 	// it: Settings - TV & display options - Video modes - Allow 50 Hz)
 	if (pal) window.setRefreshRate(50);
@@ -425,8 +400,9 @@ int main(int argc, char **argv) {
 	window.setFilter(filter);
 	showColours();
 
-	Atari atari(rom, osFont, pal, seed);
-	atari.setRiver(riverSeed, startBridge);
+	std::optional<Atari> atari;   // (made again for the other machine)
+	atari.emplace(rom, osFont, pal, seed);
+	atari->setRiver(riverSeed, startBridge);
 	double pending = 0;   // original frames still to run
 	bool presentWaited = false;   // the last present() waited for the display's refresh
 	struct Stats {
@@ -445,13 +421,13 @@ int main(int argc, char **argv) {
 			rr::Input in;
 			if (f >= startAt && f < startAt + 10) in.start = true;
 			if (startAt >= 0 && f > startAt + 200) { in.stick[0] = 0x0E; in.trigger[0] = (f / 8) & 1; }
-			atari.frame(in);
+			atari->frame(in);
 		}
-		atari.audio().clear();
+		atari->audio().clear();
 	}
 
 	auto saveState = [&]() {
-		atari.saveState();
+		atari->saveState();
 		stateNote = " - state saved";
 		showColours();
 	};
@@ -461,26 +437,53 @@ int main(int argc, char **argv) {
 		showColours();
 	};
 	auto loadState = [&]() {
-		stateNote = atari.loadState() ? " - state loaded" : " - no state saved (F7)";
+		stateNote = atari->loadState() ? " - state loaded" : " - no state saved (F7)";
 		showColours();
 	};
-	bool padHeld[3] = {false, false, startLt};   // RB, LB, LT on any gamepad, last pass
+	// P, or Back and Start together on a gamepad: the other machine, NTSC or PAL, switched on
+	// again (as with -pal or without it); on the Xbox the TV goes to 50 Hz or back
+	bool padConsole = true;   // the gamepads' Start and Back go to the game (see readControls)
+	auto switchMachine = [&]() {
+		pal = !pal;
+		if (pal && !palColours) {
+			palColours = true;
+			makePalette();
+		}
+		tv = rr::tvSystem(pal);
+		window.setPixelAspect(tv.pixelAspect());
+		showBorder();
+		window.setRefreshRate(pal ? 50 : 0);
+		atari.emplace(rom, osFont, pal, seed);
+		atari->setRiver(riverSeed, startBridge);
+		pending = 0;
+		stateNote.clear();
+		showColours();
+	};
+	bool padHeld[4] = {};   // RB, LB, LT, Back and Start together, on any gamepad, last pass
 	AnalogStick sticks[2];       // the gamepads' left sticks
 
 	for (bool running = true; running;) {
 		{
-			// gamepad: RB saves the state, LB goes back to it, LT the next scaling (on pressing)
-			bool held[3] = {};
+			// gamepad: RB saves the state, LB goes back to it, LT the next scaling, Back and Start
+			// the other machine (on pressing)
+			bool held[4] = {}, console = false;
 			for (int i = 0; i < window.gamepadCount(); i++) {
 				const host::Gamepad pad = window.gamepad(i);
 				held[0] = held[0] || pad.rightShoulder;
 				held[1] = held[1] || pad.leftShoulder;
 				held[2] = held[2] || pad.leftTrigger;
+				held[3] = held[3] || (pad.select && pad.start);
+				console = console || pad.select || pad.start;
 			}
 			if (held[0] && !padHeld[0]) saveState();
 			if (held[1] && !padHeld[1]) loadState();
 			if (held[2] && !padHeld[2]) nextFilter();
-			for (int i = 0; i < 3; i++) padHeld[i] = held[i];
+			if (held[3] && !padHeld[3]) {
+				switchMachine();
+				padConsole = false;
+			}
+			if (!console) padConsole = true;
+			for (int i = 0; i < 4; i++) padHeld[i] = held[i];
 		}
 		host::Event e;
 		while (window.poll(e)) {
@@ -500,6 +503,8 @@ int main(int argc, char **argv) {
 			} else if (e.key == Key::O) {
 				border = !border;
 				showBorder();
+			} else if (e.key == Key::P) {
+				switchMachine();
 			} else if (e.key == Key::F7) {
 				saveState();
 			} else if (e.key == Key::F8) {
@@ -535,15 +540,15 @@ int main(int argc, char **argv) {
 			}
 			if (pending >= 1) {
 				const uint64_t t0 = host::Host::ticksNs();
-				const rr::Input input = readControls(window, sticks);
+				const rr::Input input = readControls(window, sticks, padConsole);
 				for (; pending >= 1; pending--) {
-					atari.frame(input);
+					atari->frame(input);
 					stats.frames++;
 				}
 				stats.emulation += host::Host::ticksNs() - t0;
 			}
 		}
-		std::vector<int16_t> &samples = atari.audio();
+		std::vector<int16_t> &samples = atari->audio();
 		window.playSound(samples.data(), samples.size());
 		if (!shotPath && sound) {
 			// The sound for the next frames: as many samples per second as the output plays.
@@ -554,12 +559,12 @@ int main(int argc, char **argv) {
 			const double target = kSampleRate * 0.05;
 			const double queued = double(window.queuedSound());
 			const double correction = 1 + 0.005 * std::clamp((target - queued) / target, -1.0, 1.0);
-			atari.setSoundRate(kSampleRate * tv.frameRate() / paceFor(displayRate(), tv.frameRate()).rate * correction);
+			atari->setSoundRate(kSampleRate * tv.frameRate() / paceFor(displayRate(), tv.frameRate()).rate * correction);
 		}
 		samples.clear();
 
 		uint32_t *pixels = window.pixels();
-		const auto *scr = atari.screen();
+		const auto *scr = atari->screen();
 		for (int y = 0; y < kViewHeight; y++)
 			for (int x = 0; x < kViewWidth; x++) pixels[y * kViewWidth + x] = palette[scr[y][kViewLeft + x]];
 		if (shotPath) {

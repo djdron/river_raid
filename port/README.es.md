@@ -56,12 +56,13 @@ Tras encender, el modo de demostración sobrevuela el río. START comienza una p
 | C | colores NTSC / PAL |
 | V | modelo de color Altirra / atari800 |
 | O | solo la imagen del juego / el fotograma completo con su borde |
+| P | la otra máquina, NTSC / PAL, encendida de nuevo (como `-pal`; en la Xbox el televisor pasa a 50 Hz y vuelve) |
 | L | escalado: sharp / nearest / linear |
 | F7 / F8 | guardar el estado de la partida / volver a él (en memoria, hasta salir) |
 | Esc | salir de pantalla completa |
 | clic del ratón | oculta el puntero hasta que se mueva el ratón (también al pasar a pantalla completa) |
 
-El teclado maneja ambos joysticks, así que una sola persona también puede jugar una partida a dos. Mandos: el primero es el joystick 1 (y el 2 mientras no haya un segundo), el segundo es el joystick 2; cruceta o stick izquierdo, A/B/Y o el gatillo derecho para disparar, X = pausa, Start = START, Back = SELECT, RB / LB = F7 / F8 (guardar el estado / volver a él), LT = L (escalado). El stick izquierdo va según su ángulo, así que tirar de él hacia atrás un poco de lado solo frena; para girar hay que inclinarlo más (55 %) que para acelerar o frenar (30 %).
+El teclado maneja ambos joysticks, así que una sola persona también puede jugar una partida a dos. Mandos: el primero es el joystick 1 (y el 2 mientras no haya un segundo), el segundo es el joystick 2; cruceta o stick izquierdo, A/B/Y o el gatillo derecho para disparar, X = pausa, Start = START, Back = SELECT, RB / LB = F7 / F8 (guardar el estado / volver a él), LT = L (escalado), Back y Start a la vez = P (la otra máquina). El stick izquierdo va según su ángulo, así que tirar de él hacia atrás un poco de lado solo frena; para girar hay que inclinarlo más (55 %) que para acelerar o frenar (30 %).
 
 ## Visor del río
 ```

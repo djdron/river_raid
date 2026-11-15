@@ -2,7 +2,7 @@
 
 [English](README.md) | [Русский](README.ru.md) | [Українська](README.uk.md) | [Deutsch](README.de.md) | [Polski](README.pl.md) | [Italiano](README.it.md) | [Español](README.es.md) | 中文 | [日本語](README.ja.md)
 
-游戏（不含查看器）作为 UWP 应用：可在 Windows 10/11 以及处于 Dev Mode 的 Xbox One 或 Series 上运行。它基于保留了 UWP 支持的 SDL3 分支构建（SDL3 本身已放弃 UWP）：[djdron/SDL3-uwp](https://github.com/djdron/SDL3-uwp) 的 `river-raid` 分支，基于 [XboxEmulationHub/SDL3-uwp](https://github.com/XboxEmulationHub/SDL3-uwp)，并加上了游戏需要的功能：`main()` 中的启动参数、窗口标题、Xbox 上电视的显示模式（50 Hz）。在用 SDL2 构建时已在 Windows 11 和 Xbox Series S 上用 Visual Studio 2026 试过；用 SDL3 还没有试过。
+游戏（不含查看器）作为 UWP 应用：可在 Windows 10/11 以及处于 Dev Mode 的 Xbox One 或 Series 上运行。它基于保留了 UWP 支持的 SDL3 分支构建（SDL3 本身已放弃 UWP）：[djdron/SDL3-uwp](https://github.com/djdron/SDL3-uwp) 的 `river-raid` 分支，基于 [XboxEmulationHub/SDL3-uwp](https://github.com/XboxEmulationHub/SDL3-uwp)，并加上了游戏需要的功能：`main()` 中的启动参数、窗口标题、Xbox 上电视的显示模式（50 Hz）。用 SDL2 和 SDL3 构建时都已在 Windows 11 和 Xbox Series S 上用 Visual Studio 2026 试过。
 
 ## 需要什么
 - Windows 10/11 和 Visual Studio 2022 或 2026，带 C++ UWP 工具。2022：“使用 C++ 的桌面开发”和“通用 Windows 平台开发”工作负载（含 C++ UWP 工具）。2026：“使用 C++ 的桌面开发”，以及“WinUI 应用程序开发”工作负载中的“C++ Universal Windows Platform tools”组件。
@@ -29,6 +29,6 @@ cmake -S port -B build-uwp -G "Visual Studio 17 2022" -A x64 -DCMAKE_SYSTEM_NAME
 
 手柄的用法与 PC 上相同（见 [../README.zh.md](../README.zh.md)），X 暂停。没有键盘，其他设置保持默认：PAL 颜色、Altirra、只显示游戏画面、清晰缩放（LT 可切换）。B 同时也是系统的返回键；游戏会接管它，所以它不会关闭应用。Xbox 键退出游戏。
 
-启动游戏时按住 LT，游戏会作为 PAL 机器运行（同 `-pal`：每秒 50 帧，慢约 17%），并在主机允许时把电视切换到 50 Hz（Settings → TV & display options → Video modes → Allow 50 Hz），退出时恢复原样。没有 50 Hz 时游戏仍按 PAL 运行，只是不与电视同步。
+同时按下 Back 和 Start，会切换为 PAL 机器（同 `-pal`：每秒 50 帧，慢约 17%），再按一次切回 NTSC；游戏像刚开机一样重新开始。PAL 时，如果主机允许（Settings → TV & display options → Video modes → Allow 50 Hz），游戏会把电视切换到 50 Hz，切回 NTSC 或退出时恢复原样。没有 50 Hz 时游戏仍按 PAL 运行，只是不与电视同步。（在 Xbox 上，游戏启动时按住的键传不到游戏，所以无法在启动时选择。）
 
 PC 上的参数（见 [../README.zh.md](../README.zh.md)）在启动时也能给出：在 Dev Home 中选中游戏，Launch with parameters，勾选 Use custom protocol，然后输入例如 `riverraid:-pal%20-bridge%20500`。应用声明了协议 `riverraid`；它后面的内容就是命令行。Dev Home 会丢掉第一个空格之后的所有内容，所以空格要写成 `%20`。

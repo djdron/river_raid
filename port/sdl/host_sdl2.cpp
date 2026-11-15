@@ -26,6 +26,7 @@ SDL_Scancode scancode(Key key) {
 	case Key::L: return SDL_SCANCODE_L;
 	case Key::M: return SDL_SCANCODE_M;
 	case Key::O: return SDL_SCANCODE_O;
+	case Key::P: return SDL_SCANCODE_P;
 	case Key::V: return SDL_SCANCODE_V;
 	case Key::X: return SDL_SCANCODE_X;
 	case Key::Z: return SDL_SCANCODE_Z;
@@ -68,6 +69,7 @@ Key keyFromEvent(SDL_Keycode code) {
 	case SDLK_l: return Key::L;
 	case SDLK_m: return Key::M;
 	case SDLK_o: return Key::O;
+	case SDLK_p: return Key::P;
 	case SDLK_v: return Key::V;
 	case SDLK_x: return Key::X;
 	case SDLK_z: return Key::Z;
@@ -361,8 +363,6 @@ void Host::setFullscreen(bool on) {
 void Host::setPixelAspect(double pixelAspect) { impl_->pixelAspect = pixelAspect; }
 
 bool Host::setRefreshRate(double) { return false; }
-
-void Host::setBackgroundInput(bool on) { SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, on ? "1" : "0"); }
 
 void Host::setView(int x, int y, int width, int height) {
 	Impl &h = *impl_;

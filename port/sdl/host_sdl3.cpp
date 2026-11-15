@@ -27,6 +27,7 @@ SDL_Scancode scancode(Key key) {
 	case Key::L: return SDL_SCANCODE_L;
 	case Key::M: return SDL_SCANCODE_M;
 	case Key::O: return SDL_SCANCODE_O;
+	case Key::P: return SDL_SCANCODE_P;
 	case Key::V: return SDL_SCANCODE_V;
 	case Key::X: return SDL_SCANCODE_X;
 	case Key::Z: return SDL_SCANCODE_Z;
@@ -69,6 +70,7 @@ Key keyFromEvent(SDL_Keycode code) {
 	case SDLK_L: return Key::L;
 	case SDLK_M: return Key::M;
 	case SDLK_O: return Key::O;
+	case SDLK_P: return Key::P;
 	case SDLK_V: return Key::V;
 	case SDLK_X: return Key::X;
 	case SDLK_Z: return Key::Z;
@@ -133,20 +135,6 @@ struct Host::Impl {
 		SDL_UpdateTexture(texture, nullptr, pixels.data(), width * int(sizeof(uint32_t)));
 		int outW = 0, outH = 0;
 		SDL_GetRenderOutputSize(renderer, &outW, &outH);
-#ifdef SDL_PLATFORM_WINRT
-		{	// (diagnostic for UWP: the sizes SDL reports, in Visual Studio's Output, when they change)
-			static int lastW = -1, lastH = -1;
-			if (outW != lastW || outH != lastH) {
-				lastW = outW;
-				lastH = outH;
-				int ww = 0, wh = 0, pw = 0, ph = 0;
-				SDL_GetWindowSize(window, &ww, &wh);
-				SDL_GetWindowSizeInPixels(window, &pw, &ph);
-				SDL_Log("River Raid: window %dx%d, in pixels %dx%d, render output %dx%d, density %.2f, display scale %.2f",
-					ww, wh, pw, ph, outW, outH, SDL_GetWindowPixelDensity(window), SDL_GetWindowDisplayScale(window));
-			}
-		}
-#endif
 		const double imageW = viewW * pixelAspect;
 		const double scale = std::min(outW / imageW, double(outH) / viewH);
 		SDL_FRect dst;
@@ -280,17 +268,7 @@ bool Host::poll(Event &out) {
 			out.wheel = e.wheel.y;
 			return true;
 		case SDL_EVENT_GAMEPAD_ADDED:
-			if (SDL_Gamepad *pad = SDL_OpenGamepad(e.gdevice.which)) {
-				h.pads.push_back(pad);
-#ifdef SDL_PLATFORM_WINRT
-				{	// (diagnostic for UWP: when the gamepad came, and how SDL reads it)
-					char *mapping = SDL_GetGamepadMapping(pad);
-					SDL_Log("River Raid: %u ms, gamepad added: %s, mapping %s", unsigned(SDL_GetTicks()),
-						SDL_GetGamepadName(pad), mapping ? mapping : "(none)");
-					SDL_free(mapping);
-				}
-#endif
-			}
+			if (SDL_Gamepad *pad = SDL_OpenGamepad(e.gdevice.which)) h.pads.push_back(pad);
 			break;
 		case SDL_EVENT_GAMEPAD_REMOVED:
 			for (size_t i = 0; i < h.pads.size(); i++)
@@ -352,20 +330,6 @@ Gamepad Host::gamepad(int index) const {
 	g.leftShoulder = SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER);
 	g.rightShoulder = SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER);
 	g.leftTrigger = SDL_GetGamepadAxis(p, SDL_GAMEPAD_AXIS_LEFT_TRIGGER) > 16000;
-#ifdef SDL_PLATFORM_WINRT
-	if (SDL_GetTicks() < 5000) {	// (diagnostic for UWP: the trigger and the raw axes at the start)
-		static std::string last;
-		SDL_Joystick *j = SDL_GetGamepadJoystick(p);
-		std::string axes;
-		for (int i = 0; i < SDL_GetNumJoystickAxes(j); i++) axes += " " + std::to_string(SDL_GetJoystickAxis(j, i));
-		const std::string now = std::to_string(SDL_GetGamepadAxis(p, SDL_GAMEPAD_AXIS_LEFT_TRIGGER)) + ", axes" + axes +
-			(SDL_GetKeyboardFocus() ? ", focus" : ", no focus");
-		if (now != last) {
-			last = now;
-			SDL_Log("River Raid: %u ms, LT %s", unsigned(SDL_GetTicks()), now.c_str());
-		}
-	}
-#endif
 	return g;
 }
 
@@ -389,13 +353,12 @@ void Host::setFullscreen(bool on) {
 
 void Host::setPixelAspect(double pixelAspect) { impl_->pixelAspect = pixelAspect; }
 
-void Host::setBackgroundInput(bool on) { SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, on ? "1" : "0"); }
-
 bool Host::setRefreshRate(double hz) {
 #ifdef SDL_PLATFORM_WINRT
 	// on the Xbox the display's full screen modes are the TV's (SDL3 with UWP, uwp/README.md);
 	// on a PC the game does not take over the monitor
 	if (SDL_GetWinRTDeviceFamily() != SDL_WINRT_DEVICEFAMILY_XBOX) return false;
+	if (hz <= 0) return SDL_SetWindowFullscreenMode(impl_->window, nullptr);   // the desktop's mode
 	const SDL_DisplayID display = SDL_GetDisplayForWindow(impl_->window);
 	const SDL_DisplayMode *desktop = SDL_GetDesktopDisplayMode(display);
 	int count = 0;

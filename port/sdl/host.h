@@ -19,7 +19,7 @@ namespace host {
 enum class Key {
 	None,
 	Up, Down, Left, Right,
-	W, A, S, D, B, C, F, L, M, O, V, X, Z,
+	W, A, S, D, B, C, F, L, M, O, P, V, X, Z,
 	LeftCtrl, RightCtrl, Alt, Return, Space, Backspace, Escape,   // Alt: either Alt key (keyHeld only)
 	PageUp, PageDown, Home,
 	F1, F2, F3, F4, F7, F8, F11,
@@ -86,11 +86,9 @@ public:
 	// Changes the pixelAspect given to open() (the window keeps its size: for full screen).
 	void setPixelAspect(double pixelAspect);
 	// Switches the display to about hz where the game may (on the Xbox: the TV, full screen;
-	// refreshRate() then gives the new rate). false where it does not, or has no such mode.
+	// refreshRate() then gives the new rate); 0: back to the display's own. false where it
+	// does not, or has no such mode.
 	bool setRefreshRate(double hz);
-	// Gamepads also while the window has no focus (SDL ignores them then by default: at the
-	// start the window may get it only after a button is already held).
-	void setBackgroundInput(bool on);
 	void setFilter(Filter filter);        // Filter::Sharp by default
 	bool fullscreen() const;
 	void setFullscreen(bool on);

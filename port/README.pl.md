@@ -56,12 +56,13 @@ Po włączeniu tryb demonstracyjny przelatuje nad rzeką. START rozpoczyna grę;
 | C | kolory NTSC / PAL |
 | V | model kolorów Altirra / atari800 |
 | O | tylko obraz gry / cała klatka z ramką |
+| P | drugi komputer, NTSC / PAL, włączony od nowa (jak `-pal`; na Xbox telewizor przechodzi na 50 Hz i z powrotem) |
 | L | skalowanie: sharp / nearest / linear |
 | F7 / F8 | zapisać stan gry / wrócić do niego (w pamięci, do wyjścia) |
 | Esc | wyjście z pełnego ekranu |
 | kliknięcie myszą | ukrywa wskaźnik myszy, dopóki mysz się nie ruszy (przejście na pełny ekran też) |
 
-Klawiatura steruje oboma joystickami, więc także jedna osoba może grać w grę dla dwóch. Gamepady: pierwszy to joystick 1 (i 2, dopóki nie ma drugiego), drugi to joystick 2; krzyżak lub lewy drążek, A/B/Y lub prawy spust do strzału, X = pauza, Start = START, Back = SELECT, RB / LB = F7 / F8 (zapisać stan / wrócić do niego), LT = L (skalowanie). Lewa gałka działa według kąta wychylenia, więc pociągnięcie jej do tyłu lekko w bok tylko hamuje; do skrętu trzeba ją wychylić mocniej (55%) niż do przyspieszania czy hamowania (30%).
+Klawiatura steruje oboma joystickami, więc także jedna osoba może grać w grę dla dwóch. Gamepady: pierwszy to joystick 1 (i 2, dopóki nie ma drugiego), drugi to joystick 2; krzyżak lub lewy drążek, A/B/Y lub prawy spust do strzału, X = pauza, Start = START, Back = SELECT, RB / LB = F7 / F8 (zapisać stan / wrócić do niego), LT = L (skalowanie), Back i Start razem = P (drugi komputer). Lewa gałka działa według kąta wychylenia, więc pociągnięcie jej do tyłu lekko w bok tylko hamuje; do skrętu trzeba ją wychylić mocniej (55%) niż do przyspieszania czy hamowania (30%).
 
 ## Przeglądarka rzeki
 ```

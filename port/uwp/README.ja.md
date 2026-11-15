@@ -2,7 +2,7 @@
 
 [English](README.md) | [Русский](README.ru.md) | [Українська](README.uk.md) | [Deutsch](README.de.md) | [Polski](README.pl.md) | [Italiano](README.it.md) | [Español](README.es.md) | [中文](README.zh.md) | 日本語
 
-ゲーム（ビューアは含まない）を UWP アプリとして：Windows 10/11 と、Dev Mode の Xbox One または Series で動きます。UWP 対応を残した SDL3 のフォークでビルドします（SDL3 本体は UWP をやめました）：[djdron/SDL3-uwp](https://github.com/djdron/SDL3-uwp) の `river-raid` ブランチで、[XboxEmulationHub/SDL3-uwp](https://github.com/XboxEmulationHub/SDL3-uwp) をもとに、ゲームに必要なもの（`main()` への起動オプション、ウィンドウのタイトル、Xbox でのテレビの表示モード（50 Hz））を加えています。SDL2 でビルドしていたときに Windows 11 と Xbox Series S で Visual Studio 2026 を使って試しました。SDL3 ではまだです。
+ゲーム（ビューアは含まない）を UWP アプリとして：Windows 10/11 と、Dev Mode の Xbox One または Series で動きます。UWP 対応を残した SDL3 のフォークでビルドします（SDL3 本体は UWP をやめました）：[djdron/SDL3-uwp](https://github.com/djdron/SDL3-uwp) の `river-raid` ブランチで、[XboxEmulationHub/SDL3-uwp](https://github.com/XboxEmulationHub/SDL3-uwp) をもとに、ゲームに必要なもの（`main()` への起動オプション、ウィンドウのタイトル、Xbox でのテレビの表示モード（50 Hz））を加えています。SDL2 と SDL3 の両方で、Windows 11 と Xbox Series S で Visual Studio 2026 を使って試しました。
 
 ## 必要なもの
 - Windows 10/11 と Visual Studio 2022 または 2026、C++ の UWP ツール付き。2022：ワークロード「C++ によるデスクトップ開発」と「ユニバーサル Windows プラットフォーム開発」（C++ UWP ツールを含む）。2026：「C++ によるデスクトップ開発」と、ワークロード「WinUI アプリケーション開発」のコンポーネント「C++ Universal Windows Platform tools」。
@@ -29,6 +29,6 @@ Visual Studio 2026 ではジェネレーターは `-G "Visual Studio 18 2026"`�
 
 ゲームパッドは PC と同じように使えます（[../README.ja.md](../README.ja.md) を参照）。X はポーズです。キーボードがないので、ほかの設定は既定のままです：PAL の色、Altirra、ゲーム画面のみ、くっきりした拡大（LT で切り替え）。B はシステムの戻るボタンでもあります。ゲームがこれを受け取るので、アプリは閉じません。Xbox ボタンでゲームを離れます。
 
-ゲームの起動中に LT を押し続けると PAL 機として動き（`-pal` と同じ：1 秒 50 フレーム、約 17% 遅い）、本体が許可していればテレビを 50 Hz に切り替え（Settings → TV & display options → Video modes → Allow 50 Hz）、終了時に元に戻します。50 Hz がなくても PAL として動きますが、テレビとは同期しません。
+Back と Start を同時に押すと PAL 機に切り替わり（`-pal` と同じ：1 秒 50 フレーム、約 17% 遅い）、もう一度押すと NTSC に戻ります。ゲームは電源を入れたときのように最初から始まります。PAL のときは、本体が許可していればテレビを 50 Hz に切り替え（Settings → TV & display options → Video modes → Allow 50 Hz）、NTSC に戻すときや終了時に元に戻します。50 Hz がなくても PAL として動きますが、テレビとは同期しません。（Xbox では、ゲームの起動中に押し続けたボタンはゲームに届かないので、起動時には選べません。）
 
 PC と同じオプション（[../README.ja.md](../README.ja.md) を参照）は起動時にも指定できます：Dev Home でゲームを選び、Launch with parameters で Use custom protocol にチェックを入れて、例えば `riverraid:-pal%20-bridge%20500` と入力します。アプリはプロトコル `riverraid` を宣言しており、その後に続く部分がコマンドラインになります。Dev Home は最初の空白より後ろをすべて捨てるので、空白は `%20` と書いてください。

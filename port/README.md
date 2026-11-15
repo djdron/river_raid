@@ -56,12 +56,13 @@ After power-on the attract mode flies over the river. START begins a game; SELEC
 | C | NTSC / PAL colours |
 | V | Altirra / atari800 colour model |
 | O | the game's picture only / the whole frame with its border |
+| P | another machine, NTSC / PAL, switched on again (as `-pal`; on the Xbox the TV goes to 50 Hz and back) |
 | L | scaling: sharp / nearest / linear |
 | F7 / F8 | save the game's state / go back to it (in memory, until quitting) |
 | Esc | leave full screen |
 | mouse click | hides the mouse pointer until the mouse moves (so does going full screen) |
 
-The keyboard drives both joysticks, so one person can play a two-player game too. Gamepads: the first is joystick 1 (and 2 while there is no second), the second is joystick 2; D-pad or left stick, A/B/Y or the right trigger to fire, X = pause, Start = START, Back = SELECT, RB / LB = F7 / F8 (save the state / go back to it), LT = L (scaling). The left stick goes by its angle, so pulling back with it a little to one side only slows down; to turn, it has to go further out (55%) than to speed up or slow down (30%).
+The keyboard drives both joysticks, so one person can play a two-player game too. Gamepads: the first is joystick 1 (and 2 while there is no second), the second is joystick 2; D-pad or left stick, A/B/Y or the right trigger to fire, X = pause, Start = START, Back = SELECT, RB / LB = F7 / F8 (save the state / go back to it), LT = L (scaling), Back and Start together = P (the other machine). The left stick goes by its angle, so pulling back with it a little to one side only slows down; to turn, it has to go further out (55%) than to speed up or slow down (30%).
 
 ## River viewer
 ```
