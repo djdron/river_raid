@@ -20,7 +20,7 @@ jobs:
       - name: Configure
         run: cmake -S port -B build-switch -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake -DCMAKE_BUILD_TYPE=Release
       - name: Build
-        run: cmake --build build-switch --target river_raid -j4
+        run: cmake --build build-switch -j4 && ls -l build-switch/*.nro
       - uses: actions/upload-artifact@v4
         with:
           name: river_raid-switch
