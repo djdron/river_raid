@@ -49,6 +49,12 @@ River Raid（Activision、Atari 800、1983、作者 Carol Shaw）の C++ 移植�
 - ROM はリポジトリに含まれていません（`.gitignore`）。自分のダンプを `rom/River_Raid.rom` に置いてください。
 - コードのインデントはタブで、継続行も同じです（`.editorconfig`）。ドキュメント：`X.md` は英語、`X.ru.md` はロシア語、ほかに `X.uk.md`、`X.de.md`、`X.pl.md`、`X.it.md`、`X.es.md`、`X.zh.md`、`X.ja.md`。`tools/doc_languages.py` が各タイトルの下に言語の行を書き、図のラベルは `tools/doc_figures_i18n.py` にあります。ドキュメントを変更するときは全言語に反映します。
 
+## UWP と Xbox
+- UWP を残した SDL3 のフォークでビルドします：[djdron/SDL3-uwp](https://github.com/djdron/SDL3-uwp) の `river-raid` ブランチ（XboxEmulationHub/SDL3-uwp の `uwp-3.4.20` ブランチがもと）。`port/CMakeLists.txt` が `CMAKE_SYSTEM_NAME=WindowsStore` のときにこれを使います。パッチはこのプロジェクト専用です：SDL は生成 AI で書かれた貢献を受け付けないので、本家には提案しません。何を変えたか：[docs/NOTES.ja.md](docs/NOTES.ja.md)、「UWP と SDL3 のフォーク」。フォークを変えたら、ビルド フォルダーの `_deps/sdl3-*` を消して CMake をやり直します。
+- CI：`.github/workflows/uwp.yml` が `port/` を変えるプッシュのたびに windows-latest で UWP アプリを（ROM なしで）ビルドします。わかるのはコンパイルとパッケージ化ができることだけです。フォークだけの変更では動きません。
+- Visual Studio 2026 で Windows 11（拡大率 175%）と Dev Mode の Xbox Series S で、SDL2 と SDL3 の両方で試しました。
+- Xbox では：誰かがサインインしている必要があります（そうでないと Visual Studio が 0x8004090a を報告）。Dev Home で App type を Game にします。アプリの起動中に押し続けたボタンはアプリに届かないので、PAL はゲームの中で選びます（Back + Start）。Dev Home の Launch with parameters（Use custom protocol）では最初の空白より後ろが捨てられるので、空白は `%20` と書きます：`riverraid:-pal%20-bridge%20100`。PC ではリンク（Win+R）と Visual Studio の Command Line Arguments は空白をそのまま受け付けます。
+
 ## 方法
 規則は逆アセンブルから読み取り、その後で基準の記録で確認します（`tools/verify_trace.py`、次に C++ の照合ツール）。記録だけでは、どこを見ればよいかを探すのにしか使いません。動作を変えないはずの変更（名前の変更、構成の見直し）は `port/tools/equivalence` で古いコミットと比べます：差分 0 が必要で、さらに [port/README.ja.md](port/README.ja.md) の「検証」のすべての確認を通ること。
 
@@ -60,6 +66,7 @@ River Raid（Activision、Atari 800、1983、作者 Carol Shaw）の C++ 移植�
 - ウィンドウはゲームの画面（364×200 (`-pal`: 364×213)、流れる文字全体を含む）を表示し、黒い枠を含むフレーム全体（`-border`、O）は表示しない。拡大はくっきりと整数倍、その後なめらかに（`-filter`、L）。
 - ゲームオーバー時のサイクルの競合（そのフレームの VBI の前と後のどちらでフレームカウンターがリセットされるかはメインループのサイクルで決まる。[port/README.ja.md](port/README.ja.md) の「検証」を参照）は意図的に再現しない。
 - 60/120 Hz の画面ではゲームを画面に同期させ（59.92 ではなく 1 秒 60.00 フレーム。`-pal` で 50/100 Hz の画面なら 49.86 ではなく 50.00）、サウンドはそれに合わせて変換する。
+- PAL/NTSC はゲームの中でも切り替えられます（P、ゲームパッドでは Back + Start）：もう一方の機として電源を入れ直します。Xbox ではテレビが 50 Hz に切り替わり、また戻ります。
 
 ## 未解決の問題
 - 電源投入そのもの（A000–A17C、最初の 38 フレーム）は空の画面として描いている。`Game::powerOn` は正確ではない。

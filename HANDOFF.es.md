@@ -49,6 +49,12 @@ El juego está completo y se puede jugar: `port/game/river_raid.cpp` (modo de de
 - La ROM no está en el repositorio (`.gitignore`); ponga su volcado en `rom/River_Raid.rom`.
 - El código se sangra con tabuladores, también las líneas de continuación (`.editorconfig`). Documentación: `X.md` en inglés, `X.ru.md` en ruso, y además `X.uk.md`, `X.de.md`, `X.pl.md`, `X.it.md`, `X.es.md`, `X.zh.md`, `X.ja.md`; `tools/doc_languages.py` escribe la línea de idiomas bajo cada título, los rótulos de las imágenes están en `tools/doc_figures_i18n.py`. Un cambio en un documento se hace en todos los idiomas.
 
+## UWP y la Xbox
+- Se compila con un fork de SDL3 que mantiene UWP: [djdron/SDL3-uwp](https://github.com/djdron/SDL3-uwp), rama `river-raid` (sobre XboxEmulationHub/SDL3-uwp, rama `uwp-3.4.20`); `port/CMakeLists.txt` lo toma con `CMAKE_SYSTEM_NAME=WindowsStore`. Los parches son solo para este proyecto: SDL no acepta contribuciones escritas con IA generativa, así que no se proponen allí. Qué cambian: [docs/NOTES.es.md](docs/NOTES.es.md), «UWP y el fork de SDL3». Tras un cambio en el fork, borre `_deps/sdl3-*` en la carpeta de compilación y vuelva a ejecutar CMake.
+- CI: `.github/workflows/uwp.yml` compila la app UWP en windows-latest, sin la ROM, en cada push que cambia `port/`; solo muestra que compila y se empaqueta. Un cambio solo en el fork no lo lanza.
+- Probado con Visual Studio 2026 en Windows 11 (con escala al 175 %) y en una Xbox Series S en Dev Mode, con SDL2 y con SDL3.
+- En la Xbox: alguien tiene que haber iniciado sesión (si no, Visual Studio informa de 0x8004090a); en Dev Home ponga App type en Game. Un botón mantenido mientras arranca la app nunca le llega, así que PAL se elige en el juego (Back + Start). En Launch with parameters de Dev Home (Use custom protocol) se descarta todo lo que sigue al primer espacio, así que los espacios se escriben como `%20`: `riverraid:-pal%20-bridge%20100`. En el PC el enlace (Win+R) y los Command Line Arguments de Visual Studio aceptan los espacios tal cual.
+
 ## Método
 Una regla se lee del listado y luego se comprueba con una traza de referencia (`tools/verify_trace.py`, luego las herramientas de comparación en C++). Las trazas por sí solas solo sirven para saber dónde mirar. Los cambios que no deberían alterar el comportamiento (renombrados, reestructuraciones) se comprueban con `port/tools/equivalence` frente a un commit anterior: se exigen 0 diferencias, más todas las comprobaciones de [port/README.es.md](port/README.es.md), «Verificación».
 
@@ -60,6 +66,7 @@ Una regla se lee del listado y luego se comprueba con una traza de referencia (`
 - La ventana muestra la imagen del juego (364×200 (`-pal`: 364×213) con todo el rótulo deslizante), no el fotograma completo con su borde negro (`-border`, O); escalada nítida por números enteros y luego suavemente (`-filter`, L).
 - La carrera de ciclos al final de la partida (que el contador de fotogramas se reinicie antes o después del VBI de ese fotograma depende de los ciclos del bucle principal, vea [port/README.es.md](port/README.es.md), «Verificación») no se reproduce a propósito.
 - En una pantalla de 60/120 Hz el juego se sincroniza con la pantalla (60,00 en lugar de 59,92 fotogramas por segundo; con `-pal` en una pantalla de 50/100 Hz, 50,00 en lugar de 49,86), y el sonido se recalcula en consecuencia.
+- PAL/NTSC también se puede cambiar en el juego (P; mando Back + Start): la máquina se enciende de nuevo como la otra; en la Xbox el televisor pasa a 50 Hz y vuelve.
 
 ## Preguntas abiertas
 - El encendido en sí (A000–A17C, los primeros 38 fotogramas) se dibuja como una pantalla vacía; `Game::powerOn` no es exacto.

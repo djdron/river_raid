@@ -49,6 +49,12 @@
 - ROM 不在仓库中（`.gitignore`）；把你的转储放到 `rom/River_Raid.rom`。
 - 代码用制表符缩进，续行也一样（`.editorconfig`）。文档：`X.md` 为英文，`X.ru.md` 为俄文，另有 `X.uk.md`、`X.de.md`、`X.pl.md`、`X.it.md`、`X.es.md`、`X.zh.md`、`X.ja.md`；`tools/doc_languages.py` 在每个标题下写入语言行，图片的文字在 `tools/doc_figures_i18n.py` 中。修改一个文档时要改所有语言。
 
+## UWP 与 Xbox
+- 用保留了 UWP 的 SDL3 分支构建：[djdron/SDL3-uwp](https://github.com/djdron/SDL3-uwp) 的 `river-raid` 分支（基于 XboxEmulationHub/SDL3-uwp 的 `uwp-3.4.20` 分支）；`port/CMakeLists.txt` 在 `CMAKE_SYSTEM_NAME=WindowsStore` 时使用它。这些补丁只供本项目使用：SDL 不接受用生成式 AI 写的贡献，所以不向上游提交。改了什么：[docs/NOTES.zh.md](docs/NOTES.zh.md)，“UWP 与 SDL3 分支”。分支有改动后，删除构建目录中的 `_deps/sdl3-*` 并重新运行 CMake。
+- CI：`.github/workflows/uwp.yml` 在每次改动 `port/` 的推送时于 windows-latest 上构建 UWP 应用（不含 ROM）；它只说明能编译和打包。只改分支不会触发它。
+- 已用 Visual Studio 2026 在 Windows 11（175% 缩放）和 Dev Mode 下的 Xbox Series S 上试过，SDL2 与 SDL3 都试过。
+- 在 Xbox 上：必须有人登录（否则 Visual Studio 报 0x8004090a）；在 Dev Home 中把 App type 设为 Game。应用启动时按住的键永远传不到应用，所以 PAL 在游戏中选择（Back + Start）。Dev Home 的 Launch with parameters（Use custom protocol）会丢掉第一个空格之后的所有内容，所以空格要写成 `%20`：`riverraid:-pal%20-bridge%20100`。在 PC 上，链接（Win+R）和 Visual Studio 的 Command Line Arguments 可以直接带空格。
+
 ## 方法
 规则先从反汇编中读出，再用参考记录检验（`tools/verify_trace.py`，然后是 C++ 比对工具）。记录本身只用来找该看哪里。不应改变行为的修改（重命名、重构）用 `port/tools/equivalence` 与旧提交对比：要求 0 差异，并通过 [port/README.zh.md](port/README.zh.md)“验证”中的所有检查。
 
@@ -60,6 +66,7 @@
 - 窗口显示游戏画面（364×200 (`-pal`: 364×213)，含完整的滚动字幕），而不是带黑边的整帧（`-border`、O）；先清晰地整数倍放大，再平滑缩放（`-filter`、L）。
 - 游戏结束时的周期竞争（帧计数器在该帧 VBI 之前还是之后被重置，取决于主循环的周期，见 [port/README.zh.md](port/README.zh.md) 的“验证”）有意不重现。
 - 在 60/120 Hz 的屏幕上，游戏锁定到屏幕（每秒 60.00 帧而不是 59.92；用 `-pal` 时在 50/100 Hz 的屏幕上为 50.00 而不是 49.86），声音相应重新采样。
+- PAL/NTSC 也可以在游戏中切换（P；手柄 Back + Start）：机器作为另一种重新开机；在 Xbox 上电视切换到 50 Hz 再切回。
 
 ## 未决问题
 - 开机本身（A000–A17C，前 38 帧）画成空屏幕；`Game::powerOn` 不精确。

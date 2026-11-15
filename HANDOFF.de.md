@@ -49,6 +49,12 @@ Das Spiel ist fertig und spielbar: `port/game/river_raid.cpp` (Demo-Modus, Spiel
 - Das ROM ist nicht im Repository (`.gitignore`); legen Sie Ihr Abbild unter `rom/River_Raid.rom` ab.
 - Code wird mit Tabs eingerückt, auch Fortsetzungszeilen (`.editorconfig`). Dokumentation: `X.md` auf Englisch, `X.ru.md` auf Russisch, dazu `X.uk.md`, `X.de.md`, `X.pl.md`, `X.it.md`, `X.es.md`, `X.zh.md`, `X.ja.md`; `tools/doc_languages.py` schreibt die Sprachzeile unter jeden Titel, die Bildbeschriftungen stehen in `tools/doc_figures_i18n.py`. Eine Änderung an einem Dokument geht in alle Sprachen.
 
+## UWP und die Xbox
+- Gebaut mit einem Fork von SDL3, der UWP behält: [djdron/SDL3-uwp](https://github.com/djdron/SDL3-uwp), Zweig `river-raid` (auf XboxEmulationHub/SDL3-uwp, Zweig `uwp-3.4.20`); `port/CMakeLists.txt` nimmt ihn bei `CMAKE_SYSTEM_NAME=WindowsStore`. Die Patches sind nur für dieses Projekt: SDL nimmt keine Beiträge an, die mit generativer KI geschrieben wurden, deshalb werden sie dort nicht angeboten. Was sie ändern: [docs/NOTES.de.md](docs/NOTES.de.md), „UWP und der SDL3-Fork“. Nach einer Änderung am Fork `_deps/sdl3-*` im Build-Ordner löschen und CMake neu laufen lassen.
+- CI: `.github/workflows/uwp.yml` baut die UWP-App auf windows-latest, ohne ROM, bei jedem Push, der `port/` ändert; er zeigt nur, dass sie kompiliert und sich verpacken lässt. Eine Änderung nur am Fork startet ihn nicht.
+- Ausprobiert mit Visual Studio 2026 unter Windows 11 (bei 175 % Skalierung) und auf einer Xbox Series S im Dev Mode, mit SDL2 und mit SDL3.
+- Auf der Xbox: jemand muss angemeldet sein (sonst meldet Visual Studio 0x8004090a); in Dev Home App type auf Game stellen. Eine Taste, die beim Start der App gehalten wird, kommt nie bei ihr an, deshalb wird PAL im Spiel gewählt (Back + Start). In Dev Homes Launch with parameters (Use custom protocol) fällt alles nach dem ersten Leerzeichen weg, deshalb werden Leerzeichen als `%20` geschrieben: `riverraid:-pal%20-bridge%20100`. Am PC nehmen der Link (Win+R) und die Command Line Arguments von Visual Studio Leerzeichen so, wie sie sind.
+
 ## Methode
 Eine Regel wird aus dem Listing gelesen und dann an einem Referenz-Trace geprüft (`tools/verify_trace.py`, dann die C++-Prüfwerkzeuge). Traces allein dienen nur dazu, die richtige Stelle zu finden. Änderungen, die das Verhalten nicht ändern sollen (Umbenennung, Umbau), werden mit `port/tools/equivalence` gegen einen älteren Commit geprüft: 0 Unterschiede verlangt, dazu alle Prüfungen in [port/README.de.md](port/README.de.md), „Überprüfung“.
 
@@ -60,6 +66,7 @@ Eine Regel wird aus dem Listing gelesen und dann an einem Referenz-Trace geprüf
 - Das Fenster zeigt das Spielbild (364×200 (`-pal`: 364×213) mit der ganzen Laufschrift), nicht das ganze Bild mit seinem schwarzen Rand (`-border`, O); skaliert scharf um ganze Zahlen, dann weich (`-filter`, L).
 - Das Taktrennen beim Spielende (ob der Bildzähler vor oder nach dem VBI dieses Bilds zurückgesetzt wird, hängt von den Takten der Hauptschleife ab, siehe [port/README.de.md](port/README.de.md), „Überprüfung“) wird bewusst nicht nachgebildet.
 - Auf einem 60/120-Hz-Bildschirm koppelt sich das Spiel an den Bildschirm (60,00 statt 59,92 Bilder pro Sekunde; mit `-pal` auf einem 50/100-Hz-Bildschirm 50,00 statt 49,86), der Sound wird entsprechend umgerechnet.
+- PAL/NTSC lässt sich auch im Spiel umschalten (P; Gamepad Back + Start): das Gerät wird als das andere neu eingeschaltet; auf der Xbox geht der Fernseher auf 50 Hz und zurück.
 
 ## Offene Fragen
 - Das Einschalten selbst (A000–A17C, die ersten 38 Bilder) wird als leerer Bildschirm gezeichnet; `Game::powerOn` ist nicht genau.

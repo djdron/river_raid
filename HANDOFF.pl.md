@@ -49,6 +49,12 @@ Gra jest gotowa i grywalna: `port/game/river_raid.cpp` (tryb demonstracyjny, gry
 - ROM-u nie ma w repozytorium (`.gitignore`); połóż swój zrzut w `rom/River_Raid.rom`.
 - Kod jest wcinany tabulatorami, także linie kontynuacji (`.editorconfig`). Dokumentacja: `X.md` po angielsku, `X.ru.md` po rosyjsku, a także `X.uk.md`, `X.de.md`, `X.pl.md`, `X.it.md`, `X.es.md`, `X.zh.md`, `X.ja.md`; `tools/doc_languages.py` zapisuje linię języków pod każdym tytułem, podpisy obrazków są w `tools/doc_figures_i18n.py`. Zmiana dokumentu trafia do wszystkich języków.
 
+## UWP i Xbox
+- Budowane na forku SDL3, który zachowuje UWP: [djdron/SDL3-uwp](https://github.com/djdron/SDL3-uwp), gałąź `river-raid` (na XboxEmulationHub/SDL3-uwp, gałąź `uwp-3.4.20`); `port/CMakeLists.txt` bierze go przy `CMAKE_SYSTEM_NAME=WindowsStore`. Łatki są tylko dla tego projektu: SDL nie przyjmuje zmian napisanych z pomocą generatywnej SI, więc nie są tam proponowane. Co zmieniają: [docs/NOTES.pl.md](docs/NOTES.pl.md), „UWP i fork SDL3”. Po zmianie forka usuń `_deps/sdl3-*` w katalogu budowania i uruchom CMake od nowa.
+- CI: `.github/workflows/uwp.yml` buduje aplikację UWP na windows-latest, bez ROM, przy każdym pushu zmieniającym `port/`; pokazuje tylko, że kompiluje się i pakuje. Sama zmiana forka go nie uruchamia.
+- Wypróbowane w Visual Studio 2026 na Windows 11 (przy skalowaniu 175%) i na Xboksie Series S w Dev Mode, na SDL2 i na SDL3.
+- Na Xboksie: ktoś musi być zalogowany (inaczej Visual Studio zgłasza 0x8004090a); w Dev Home ustaw App type na Game. Przycisk trzymany przy starcie aplikacji nigdy do niej nie dociera, więc PAL wybiera się w grze (Back + Start). W Launch with parameters w Dev Home (Use custom protocol) wszystko po pierwszej spacji jest odrzucane, więc spacje zapisuje się jako `%20`: `riverraid:-pal%20-bridge%20100`. Na PC link (Win+R) i Command Line Arguments w Visual Studio przyjmują spacje bez zmian.
+
 ## Metoda
 Regułę odczytuje się z listingu, a potem sprawdza na śladzie wzorcowym (`tools/verify_trace.py`, potem narzędzia porównawcze C++). Same ślady służą tylko do znalezienia, gdzie szukać. Zmiany, które nie powinny zmieniać zachowania (zmiana nazw, przebudowa), sprawdza się `port/tools/equivalence` wobec starszego commitu: wymagane 0 różnic, plus wszystkie sprawdzenia z [port/README.pl.md](port/README.pl.md), „Weryfikacja”.
 
@@ -60,6 +66,7 @@ Regułę odczytuje się z listingu, a potem sprawdza na śladzie wzorcowym (`too
 - Okno pokazuje obraz gry (364×200 (`-pal`: 364×213) z całym przewijanym paskiem), a nie całą klatkę z czarną ramką (`-border`, O); skalowany ostro o całkowitą wielokrotność, potem płynnie (`-filter`, L).
 - Wyścig taktów przy końcu gry (czy licznik klatek zostanie wyzerowany przed, czy po VBI tej klatki, zależy od taktów pętli głównej, zob. [port/README.pl.md](port/README.pl.md), „Weryfikacja”) świadomie nie jest odtwarzany.
 - Na ekranie 60/120 Hz gra wiąże się z ekranem (60,00 zamiast 59,92 klatek na sekundę; z `-pal` na ekranie 50/100 Hz 50,00 zamiast 49,86), dźwięk jest pod to przeliczany.
+- PAL/NTSC można też przełączyć w grze (P; na gamepadzie Back + Start): komputer włącza się od nowa jako drugi; na Xboksie telewizor przechodzi na 50 Hz i z powrotem.
 
 ## Otwarte pytania
 - Samo włączenie (A000–A17C, pierwsze 38 klatek) jest rysowane jako pusty ekran; `Game::powerOn` nie jest dokładny.

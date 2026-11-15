@@ -49,6 +49,12 @@ The game is complete and playable: `port/game/river_raid.cpp` (attract mode, gam
 - The ROM is not in the repository (`.gitignore`); put your dump at `rom/River_Raid.rom`.
 - Code is indented with tabs, continuation lines too (`.editorconfig`). Documentation: `X.md` in English, `X.ru.md` in Russian, and `X.uk.md`, `X.de.md`, `X.pl.md`, `X.it.md`, `X.es.md`, `X.zh.md`, `X.ja.md`; `tools/doc_languages.py` writes the language line under each title, the picture labels are in `tools/doc_figures_i18n.py`. A change to a document goes into every language.
 
+## UWP and the Xbox
+- Built on a fork of SDL3 that keeps UWP: [djdron/SDL3-uwp](https://github.com/djdron/SDL3-uwp), branch `river-raid` (on XboxEmulationHub/SDL3-uwp, branch `uwp-3.4.20`); `port/CMakeLists.txt` takes it for `CMAKE_SYSTEM_NAME=WindowsStore`. The patches are for this project only: SDL does not accept contributions written with generative AI, so they are not offered upstream. What they change: [docs/NOTES.md](docs/NOTES.md), "UWP and the SDL3 fork". After a change to the fork, delete `_deps/sdl3-*` in the build folder and run CMake again.
+- CI: `.github/workflows/uwp.yml` builds the UWP app on windows-latest, without the ROM, on every push that changes `port/`; it only shows that it compiles and packages. A change to the fork alone does not start it.
+- Tried with Visual Studio 2026 on Windows 11 (at 175% scaling) and on an Xbox Series S in Dev Mode, on SDL2 and on SDL3.
+- On the Xbox: someone must be signed in (otherwise Visual Studio reports 0x8004090a); set App type to Game in Dev Home. A button held while the app starts never reaches it, so PAL is chosen in the game (Back + Start). In Dev Home's Launch with parameters (Use custom protocol) everything after the first space is dropped, so spaces are written as `%20`: `riverraid:-pal%20-bridge%20100`. On a PC the link (Win+R) and Visual Studio's Command Line Arguments take spaces as they are.
+
 ## Method
 A rule is read from the listing, then checked against a reference trace (`tools/verify_trace.py`, then the C++ check tools). Traces alone are only used to find where to look. Changes that should not change behaviour (renaming, restructuring) are checked with `port/tools/equivalence` against an older commit: 0 differences required, plus all checks in [port/README.md](port/README.md), "Verification".
 
@@ -60,6 +66,7 @@ A rule is read from the listing, then checked against a reference trace (`tools/
 - The window shows the game's picture (364×200 (`-pal`: 364×213) with the whole scrolling line), not the whole frame with its black border (`-border`, O); scaled sharp by whole numbers, then smoothly (`-filter`, L).
 - The game-over cycle race (whether the frame counter is reset before or after that frame's VBI depends on the main loop's cycles, see [port/README.md](port/README.md), Verification) is deliberately not reproduced.
 - On a 60/120 Hz display the game locks to the display (60.00 instead of 59.92 frames per second; with `-pal` on a 50/100 Hz display, 50.00 instead of 49.86), sound resampled to match.
+- PAL/NTSC can also be switched in the game (P; gamepad Back + Start): the machine is switched on again as the other one; on the Xbox the TV goes to 50 Hz and back.
 
 ## Open questions
 - Power-on itself (A000–A17C, the first 38 frames) is drawn as an empty screen; `Game::powerOn` is not exact.

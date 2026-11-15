@@ -182,5 +182,18 @@
 - **查看器中的跳转**（`viewer/river_view.cpp`）。锚点（河的状态和计数器，约 170 字节）在当前进程中每 1024 帧一个；完整快照（约 16 KB）每 128 帧一个，只保留在当前时刻之前的最后 8192 帧，以及重放位置周围（64 个）。显示第 L 行时，从最近的快照或锚点出发：先只跑河，再跑 400 个完整帧（如果之后要往回滚动，再多 512 帧）。B 只用生成器找到下一座桥，再以同样方式飞过去；`-bridge N` 从河的起点飞过去。内存：每座桥约 190 字节，外加固定的约 2 MB。
 - **游戏中的存档**（F7 / F8，手柄上 RB / LB；`Game::save` / `load`）。与查看器不同，这里无法让任何东西“自行归位”：飞机会与物体相互作用，所以保存整个状态，但只保存无法重新算出的部分。保存的有：变量（`GameState`）连同 player-missile 内存、生成器的状态，以及屏幕内存最旧一行之前的生成器状态和行数；屏幕内存（最近 256 行河道，12 KB）由此重新生成，因为这些行只取决于生成器（为此游戏在运行时记住屏幕上每一行之前的生成器状态，`keepLineStates`，约 31 KB）。不保存的有：按扫描线的数据（`scan`），display() 每帧都会清空并重建；以及画面，由下一帧画出（暂停时也一样：暂停只停止游戏逻辑）。player-missile 内存（1.25 KB：4 个“玩家”是宽 8 像素、高 256 行的竖条，再加上导弹；视频芯片每行为每个读一个字节）无法重新算出：游戏在别处画一个形状之前并不总是擦掉旧的，残留部分会参与碰撞；但它几乎全是零。所有内容都按零的连续段压缩（一个零字节，后跟该段的长度）：加上 RANDOM 计数器和 POKEY 声音共 400–620 字节（原先连同屏幕内存和画面要 110 KB）。已验证：12 个存档（不同速度飞行、爆炸、坠毁后重新填充屏幕、游戏结束、暂停），每个之后 900 帧：画面和声音都相同。
 
+## UWP 与 SDL3 分支
+[djdron/SDL3-uwp](https://github.com/djdron/SDL3-uwp) 的 `river-raid` 分支中的补丁，每个都是游戏需要的：
+- **启动参数**（`src/core/winrt/SDL_winrtapp_direct3d.cpp`）：SDL 在激活到来之前就调用 `main()`，丢掉了激活的参数。现在 `Run()` 会等待激活（最多 2 秒）。普通启动给出 `LaunchActivatedEventArgs::Arguments`，协议链接（`riverraid:...`）给出协议名后面的部分并解码（或其 `cmd` 参数的值）；按词拆分，引号可把多个词合为一个。
+- **窗口标题**：`SDL_SetWindowTitle` 设置 `ApplicationView::Title`。
+- **Xbox 上的电视模式**（`src/video/winrt/SDL_winrtvideo.cpp`）：`HdmiDisplayInformation` 中的刷新率成为当前分辨率下的全屏模式；选择其中之一调用 `RequestSetCurrentDisplayModeAsync`，选择桌面模式调用 `SetDefaultDisplayModeAsync`。游戏中的 `Host::setRefreshRate(50)` 和 `(0)`（恢复）使用它们。
+- **线程**（`src/thread/stdcpp`）：线程 ID 从未被设置，所以线程“是不是我”的检查总是失败，WASAPI 的管理线程在打开声音时等待它自己（黑窗口）。
+- **Direct3D 11 交换链**在 WinRT 上也按像素（`SDL_GetWindowSizeInPixels`）。
+- **像素尺寸**：窗口尺寸以 DIP 为单位，而通过 DXGI 找到的显示模式的 `pixel_density` 为 1，所以在 175% 缩放下画面只占窗口左上部分。现在是 DIP × `LogicalDpi` / 96。
+- **`SDL_SetWindowSize`**：SDL3 把新尺寸放在 `window->pending` 中；WinRT 代码取的是 `window->floating`，即旧尺寸。
+- **手柄**：`SDL_HINT_JOYSTICK_WGI` 默认关闭（在桌面上 Windows.Gaming.Input 是其他驱动的后备）；在 WinRT 上它是唯一的驱动，所以那里现在默认开启。
+
+游戏中（`port/sdl/host_sdl3.cpp`）：UWP 以上次运行时的尺寸打开窗口，所以打开后立即把窗口高度调整为适合画面。在 Xbox 上观察到：游戏启动时按住的扳机读作松开（半秒时 LT 为 −32768，窗口有焦点）；只有启动后的变化才会传来。
+
 ## 下一步
 分析中没有遗留的问题。对移植版：精确的开机序列（A000–A17C）。
