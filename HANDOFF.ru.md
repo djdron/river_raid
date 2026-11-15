@@ -8,7 +8,7 @@
 Порт River Raid (Activision, Atari 800, 1983, автор Carol Shaw) на C++ под Windows, Linux и macOS:
 - игровая логика 1 в 1 с оригиналом, читаемая обычным программистом без знания 6502;
 - звук 1 в 1: тот же звуковой драйвер плюс ядро POKEY;
-- кроссплатформенный слой: SDL3 (SDL2 — опция; UWP на Xbox — на форке SDL3, где он остался, см. [port/uwp/README.ru.md](port/uwp/README.ru.md));
+- кроссплатформенный слой: SDL3 (SDL2 — опция; UWP на Xbox — на форке SDL3, где он остался, см. [port/uwp/README.ru.md](port/uwp/README.ru.md); homebrew для Nintendo Switch — на SDL2 из devkitPro, см. [port/switch/README.ru.md](port/switch/README.ru.md));
 - оригинальные данные не распространяются; порт читает ROM пользователя при запуске (решено: данных ROM в коде нет).
 
 ## Состояние

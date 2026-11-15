@@ -8,7 +8,7 @@ Ten plik służy do podjęcia pracy na dowolnym komputerze lub w nowym czacie. Z
 Port River Raid (Activision, Atari 800, 1983, autorka Carol Shaw) na C++ dla Windows, Linuksa i macOS:
 - logika gry identyczna z oryginałem, czytelna dla zwykłego programisty bez znajomości 6502;
 - identyczny dźwięk: ten sam sterownik dźwięku plus rdzeń POKEY;
-- warstwa wieloplatformowa: SDL3 (SDL2 jako opcja; UWP na Xboksie na forku SDL3, który go zachował, zob. [port/uwp/README.pl.md](port/uwp/README.pl.md));
+- warstwa wieloplatformowa: SDL3 (SDL2 jako opcja; UWP na Xboksie na forku SDL3, który go zachował, zob. [port/uwp/README.pl.md](port/uwp/README.pl.md); homebrew na Nintendo Switch na SDL2 z devkitPro, zob. [port/switch/README.pl.md](port/switch/README.pl.md));
 - żadne oryginalne dane nie są rozpowszechniane; port czyta ROM użytkownika w czasie działania (postanowione: żadnych danych ROM w kodzie).
 
 ## Stan

@@ -8,7 +8,7 @@
 River Raid（Activision、Atari 800、1983、作者 Carol Shaw）の C++ 移植。Windows、Linux、macOS 向け：
 - ゲームロジックはオリジナルと同一で、6502 を知らない普通のプログラマーにも読めること。
 - サウンドも同一：同じサウンドドライバーと POKEY のコア。
-- クロスプラットフォームの層：SDL3（SDL2 はオプション。Xbox の UWP は UWP を残した SDL3 のフォークで、[port/uwp/README.ja.md](port/uwp/README.ja.md) を参照）。
+- クロスプラットフォームの層：SDL3（SDL2 はオプション。Xbox の UWP は UWP を残した SDL3 のフォークで、[port/uwp/README.ja.md](port/uwp/README.ja.md) を参照。Nintendo Switch の homebrew は devkitPro の SDL2 で、[port/switch/README.ja.md](port/switch/README.ja.md) を参照）。
 - オリジナルのデータは配布しない。移植版は実行時にユーザーの ROM を読む（決定済み：コードに ROM のデータを入れない）。
 
 ## 状態
