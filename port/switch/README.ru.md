@@ -6,7 +6,7 @@
 
 ## Что нужно
 - devkitPro с пакетами для Switch `switch-dev` и `switch-sdl2` (ставятся через `dkp-pacman`) или его Docker-образ `devkitpro/devkita64`.
-- Ваш собственный дамп картриджа, `River_Raid.rom` (8192 байта). В `.nro` он не кладётся, так что сам `.nro` можно передавать другим.
+- Ваш собственный дамп картриджа как `rom/River_Raid.rom` (8192 байта; другой путь: `-DRR_SWITCH_ROM=...`). Он кладётся **внутрь** `.nro` (в его RomFS), так что этот `.nro` только ваш: не передавайте его другим.
 
 ## Сборка
 Из корня репозитория:
@@ -14,14 +14,14 @@
 cmake -S port -B build-switch -DCMAKE_TOOLCHAIN_FILE=$DEVKITPRO/cmake/Switch.cmake -DCMAKE_BUILD_TYPE=Release
 cmake --build build-switch
 ```
-Получится `build-switch/river_raid.nro`. CI (`.github/workflows/switch.yml`) собирает его при каждом пуше, меняющем `port/`, и сохраняет как артефакт запуска.
+Получится `build-switch/river_raid.nro`. Без ROM он тоже соберётся и тогда будет искать ROM на SD-карте (ниже). CI (`.github/workflows/switch.yml`) собирает его при каждом пуше, меняющем `port/`, и сохраняет, без ROM, как артефакт запуска.
 
 ## На консоли
-Скопируйте на SD-карту:
+Скопируйте `river_raid.nro` на SD-карту, например в `/switch/river_raid/`, и запустите River Raid (port) из Homebrew Launcher. `.nro`, собранный без ROM, читает его из папки `rom` рядом с собой:
 ```
 /switch/river_raid/river_raid.nro
 /switch/river_raid/rom/River_Raid.rom
 ```
-и запустите River Raid (port) из Homebrew Launcher. Без ROM игра сообщит об этом и будет ждать +.
+Без ROM игра сообщит об этом и будет ждать +.
 
 Управление как у геймпада на ПК (см. [../README.ru.md](../README.ru.md)): левый стик или крестовина — руль, A, B, Y или ZR — огонь, X — пауза, R сохраняет состояние, L возвращается к нему, ZL переключает масштабирование; − — это SELECT, + — START, оба вместе переключают NTSC и PAL. Выход из игры — кнопкой HOME (закрыть программу). Экран Switch и её выход на телевизор работают только на 60 Гц, поэтому машина PAL идёт со своими 49,86 кадра в секунду, без привязки к экрану.
