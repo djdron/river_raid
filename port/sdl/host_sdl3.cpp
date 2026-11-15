@@ -238,6 +238,26 @@ std::string Host::info() const {
 	return buf;
 }
 
+std::string Host::displayModes() const {
+	const SDL_DisplayID display = SDL_GetDisplayForWindow(impl_->window);
+	const SDL_DisplayMode *desktop = SDL_GetDesktopDisplayMode(display);
+	if (!desktop) return "no display mode";
+	char buf[160];
+	std::snprintf(buf, sizeof buf, "desktop %dx%d (x%.2f) at %.2f Hz; full screen modes at that size:", desktop->w,
+		desktop->h, desktop->pixel_density, desktop->refresh_rate);
+	std::string s = buf;
+	int count = 0;
+	SDL_DisplayMode **modes = SDL_GetFullscreenDisplayModes(display, &count);
+	for (int i = 0; i < count; i++) {
+		const SDL_DisplayMode *m = modes[i];
+		if (m->w != desktop->w || m->h != desktop->h) continue;
+		std::snprintf(buf, sizeof buf, " %.2f Hz (x%.2f)", m->refresh_rate, m->pixel_density);
+		s += buf;
+	}
+	SDL_free(modes);
+	return s;
+}
+
 double Host::refreshRate() const {
 	const SDL_DisplayMode *mode = SDL_GetCurrentDisplayMode(SDL_GetDisplayForWindow(impl_->window));
 	if (!mode) return 0;
