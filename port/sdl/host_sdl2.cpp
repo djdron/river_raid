@@ -362,6 +362,8 @@ void Host::setPixelAspect(double pixelAspect) { impl_->pixelAspect = pixelAspect
 
 bool Host::setRefreshRate(double) { return false; }
 
+void Host::setBackgroundInput(bool on) { SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, on ? "1" : "0"); }
+
 void Host::setView(int x, int y, int width, int height) {
 	Impl &h = *impl_;
 	h.viewX = x;

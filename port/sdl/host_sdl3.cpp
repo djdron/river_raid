@@ -365,6 +365,8 @@ void Host::setFullscreen(bool on) {
 
 void Host::setPixelAspect(double pixelAspect) { impl_->pixelAspect = pixelAspect; }
 
+void Host::setBackgroundInput(bool on) { SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, on ? "1" : "0"); }
+
 bool Host::setRefreshRate(double hz) {
 #ifdef SDL_PLATFORM_WINRT
 	// on the Xbox the display's full screen modes are the TV's (SDL3 with UWP, uwp/README.md);

@@ -88,6 +88,9 @@ public:
 	// Switches the display to about hz where the game may (on the Xbox: the TV, full screen;
 	// refreshRate() then gives the new rate). false where it does not, or has no such mode.
 	bool setRefreshRate(double hz);
+	// Gamepads also while the window has no focus (SDL ignores them then by default: at the
+	// start the window may get it only after a button is already held).
+	void setBackgroundInput(bool on);
 	void setFilter(Filter filter);        // Filter::Sharp by default
 	bool fullscreen() const;
 	void setFullscreen(bool on);

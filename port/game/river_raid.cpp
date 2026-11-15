@@ -371,8 +371,10 @@ int main(int argc, char **argv) {
 #ifdef RR_UWP
 	// On the Xbox LT held while the game starts is -pal (the options can also come with the
 	// link that starts it, riverraid:-pal ...). The gamepads show up a moment after the start:
-	// wait for one (up to 1.5 s), then let its state come in.
+	// wait for one (up to 2 s), then let its state come in. The window may get the focus only
+	// later, and SDL would drop the trigger's movement until then.
 	{
+		window.setBackgroundInput(true);
 		const uint64_t start = host::Host::ticksNs();
 		uint64_t seen = 0;
 		for (;;) {
@@ -381,9 +383,10 @@ int main(int argc, char **argv) {
 			const uint64_t now = host::Host::ticksNs();
 			if (window.gamepadCount() > 0 && !seen) seen = now;
 			for (int i = 0; i < window.gamepadCount(); i++) startLt = startLt || window.gamepad(i).leftTrigger;
-			if (startLt || (seen && now - seen > 200000000) || now - start > 1500000000) break;
+			if (startLt || (seen && now - seen > 500000000) || now - start > 2000000000) break;
 			host::Host::delayNs(10000000);
 		}
+		window.setBackgroundInput(false);
 	}
 	if (startLt && !pal) {
 		pal = palColours = true;
