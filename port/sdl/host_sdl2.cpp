@@ -4,6 +4,7 @@
 #include <SDL.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <vector>
 
@@ -115,6 +116,7 @@ struct Host::Impl {
 	std::string error;
 
 	int windowedW = 0;   // width of the window before it went full screen
+	bool exclusive = false;   // full screen in the mode setRefreshRate() chose
 
 	// In a window: keeps the window's width (by default its current one) and sets its height
 	// to the proportions of the part shown. Full screen draws the part as large as fits, so
@@ -343,7 +345,7 @@ void Host::setTitle(const std::string &title) { SDL_SetWindowTitle(impl_->window
 
 bool Host::fullscreen() const { return (SDL_GetWindowFlags(impl_->window) & SDL_WINDOW_FULLSCREEN) != 0; }
 
-// Full screen on the desktop's resolution. SDL2 keeps the pointer at the same place in the
+// Full screen on the desktop's resolution (or in setRefreshRate()'s mode). SDL2 keeps the pointer at the same place in the
 // window, which moves it on the screen (towards the top left corner); put it back.
 void Host::setFullscreen(bool on) {
 	Impl &h = *impl_;
@@ -354,7 +356,7 @@ void Host::setFullscreen(bool on) {
 	}
 	int x, y;
 	SDL_GetGlobalMouseState(&x, &y);
-	SDL_SetWindowFullscreen(h.window, on ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+	SDL_SetWindowFullscreen(h.window, !on ? 0 : h.exclusive ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_FULLSCREEN_DESKTOP);
 	SDL_WarpMouseGlobal(x, y);
 	if (on) h.hidePointer();
 	else h.fitHeight(h.windowedW);   // the view may have changed while in full screen
@@ -362,7 +364,29 @@ void Host::setFullscreen(bool on) {
 
 void Host::setPixelAspect(double pixelAspect) { impl_->pixelAspect = pixelAspect; }
 
-bool Host::setRefreshRate(double) { return false; }
+bool Host::setRefreshRate(double hz) {
+	Impl &h = *impl_;
+	h.exclusive = false;
+	if (hz > 0) {
+		// the desktop's resolution, the rate nearest to hz (SDL2 gives whole numbers: 59.94 may
+		// be 59)
+		const int display = SDL_GetWindowDisplayIndex(h.window);
+		SDL_DisplayMode desktop, m, found;
+		if (display >= 0 && SDL_GetDesktopDisplayMode(display, &desktop) == 0) {
+			for (int i = 0; i < SDL_GetNumDisplayModes(display); i++) {
+				if (SDL_GetDisplayMode(display, i, &m) != 0 || m.w != desktop.w || m.h != desktop.h ||
+						std::abs(m.refresh_rate - hz) >= 1)
+					continue;
+				if (!h.exclusive || std::abs(m.refresh_rate - hz) < std::abs(found.refresh_rate - hz)) found = m;
+				h.exclusive = true;
+			}
+			if (h.exclusive) h.exclusive = SDL_SetWindowDisplayMode(h.window, &found) == 0;
+		}
+	}
+	if (fullscreen())
+		SDL_SetWindowFullscreen(h.window, h.exclusive ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_FULLSCREEN_DESKTOP);
+	return h.exclusive || hz <= 0;
+}
 
 void Host::setView(int x, int y, int width, int height) {
 	Impl &h = *impl_;

@@ -35,6 +35,7 @@ Bez argumentów sama znajduje ROM (zob. `rom`) i startuje jak kartridż: tryb de
 | `-palette altirra\|atari800` | model kolorów: `altirra` (domyślnie) lub `atari800` (ciemniejsze tony średnie). V przełącza w trakcie gry |
 | `-border` | pokazuje całą klatkę z czarną ramką (384×240 bez 10 kolumn z każdej strony), jak emulatory. Domyślnie okno pokazuje tylko obraz gry z całym przewijanym paskiem, 364×200 (`-pal`: 364×213), więc na pełnym ekranie jest on o około 20% większy, a okno o tyle samo niższe. O przełącza w trakcie gry |
 | `-filter sharp\|nearest\|linear` | jak obraz jest skalowany do okna lub ekranu: `sharp` (domyślnie) skaluje o całkowitą wielokrotność z ostrymi pikselami, a potem płynnie do docelowego rozmiaru, więc pozostaje ostry, a każdy piksel ma ten sam rozmiar; `nearest` to zwykłe bloki, ale przy niecałkowitej skali (w poziomie zawsze, bo piksele Atari nie są kwadratowe) niektóre kolumny wychodzą o piksel ekranu szersze; `linear` jest gładki i rozmyty. L przełącza w trakcie gry |
+| `-fullscreen_exclusive` | pełny ekran (F) przełącza wyświetlacz w tryb wyłączny w rozdzielczości pulpitu i 60 Hz, z `-pal` 50 Hz (P przełącza razem z komputerem), więc gra wiąże się z nim; jeśli wyświetlacz nie ma takiego trybu, pełny ekran zostaje na pulpicie bez zmian. Po wyjściu z pełnego ekranu wraca tryb pulpitu. Nie działa w Wayland, który nie pozwala programom zmieniać trybu wyświetlacza |
 | `-stats` | wypisuje renderer i częstotliwość ekranu, potem co sekundę liczbę klatek, czas na klatkę i kolejkę dźwięku |
 | `-nosound` | bez dźwięku |
 

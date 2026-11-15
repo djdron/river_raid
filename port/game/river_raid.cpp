@@ -1,7 +1,7 @@
 // River Raid (Activision, 1982, Atari 8-bit), the game, C++ port (window, sound and input through
 // SDL: sdl/host.h).
 //
-// usage: river_raid [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-border] [-filter sharp|nearest|linear] [-stats] [-nosound] [-seed N] [-bridge N] [-random N]
+// usage: river_raid [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-border] [-filter sharp|nearest|linear] [-fullscreen_exclusive] [-stats] [-nosound] [-seed N] [-bridge N] [-random N]
 //   rom: the cartridge image; by default rom/River_Raid.rom is looked for in the current
 //   folder and up to three folders above it.
 //   -os file: an Atari OS ROM (10 KB or 16 KB) or its 1 KB font, for Atari's own letters;
@@ -17,6 +17,8 @@
 //   -border: show the whole frame with its black border, not just the game's picture
 //   -filter: how the picture is scaled to the window: sharp (default: whole-number scale, then
 //   smoothly to fit), nearest (blocky, pixels of slightly uneven size) or linear (blurred)
+//   -fullscreen_exclusive: full screen switches the display to 60 Hz (PAL: 50) at the desktop's
+//   resolution, where it has such a mode; otherwise full screen is the desktop as it is
 //
 // The whole game runs as the original does (src/game.cpp): after power-on the attract mode
 // flies over the river; START begins a game, SELECT (or OPTION) chooses games 1-8 (even
@@ -302,6 +304,7 @@ int main(int argc, char **argv) {
 	host::Filter filter = host::Filter::Sharp;   // -filter (L switches)
 	bool border = false;       // -border: the whole frame with its black border (O switches)
 	bool palColours = true;    // colours of a PAL machine (C switches to NTSC)
+	bool fullscreenExclusive = false;   // -fullscreen_exclusive: full screen at 60 / 50 Hz
 	rr::PaletteModel paletteModel = rr::PaletteModel::Altirra;   // V switches
 	const char *osPath = nullptr;
 	bool showStats = false;            // -stats: renderer, frame rate and timings once a second
@@ -315,6 +318,7 @@ int main(int argc, char **argv) {
 	for (int i = 1; i < argc; i++) {
 		if (!std::strcmp(argv[i], "-pal")) pal = palColours = true;
 		else if (!std::strcmp(argv[i], "-border")) border = true;
+		else if (!std::strcmp(argv[i], "-fullscreen_exclusive")) fullscreenExclusive = true;
 		else if (!std::strcmp(argv[i], "-filter") && i + 1 < argc) {
 			const char *name = argv[++i];
 			filter = !std::strcmp(name, "nearest") ? host::Filter::Nearest
@@ -371,9 +375,17 @@ int main(int argc, char **argv) {
 		fail(window.error());
 		return 1;
 	}
-	// PAL: the TV at 50 Hz, where the display can be switched (the Xbox, if the console allows
-	// it: Settings - TV & display options - Video modes - Allow 50 Hz)
-	if (pal) window.setRefreshRate(50);
+	// The display's rate in full screen: with -fullscreen_exclusive 60 Hz, 50 on PAL (an exclusive
+	// mode at the desktop's resolution); on the Xbox the TV at 50 Hz on PAL, if the console
+	// allows it (Settings - TV & display options - Video modes - Allow 50 Hz). Otherwise, or
+	// without such a mode, the desktop as it is.
+	auto fullscreenRate = [&]() {
+#ifdef RR_UWP
+		if (pal) return 50.0;
+#endif
+		return fullscreenExclusive ? (pal ? 50.0 : 60.0) : 0.0;
+	};
+	window.setRefreshRate(fullscreenRate());
 	auto displayRate = [&]() { return window.refreshRate(); };
 	if (showStats) {
 		const Pace pace = paceFor(displayRate(), tv.frameRate());
@@ -442,7 +454,8 @@ int main(int argc, char **argv) {
 		showColours();
 	};
 	// P, or Back and Start together on a gamepad: the other machine, NTSC or PAL, switched on
-	// again (as with -pal or without it); on the Xbox the TV goes to 50 Hz or back
+	// again (as with -pal or without it); the full screen rate follows (on the Xbox the TV goes
+	// to 50 Hz or back)
 	bool padConsole = true;   // the gamepads' Start and Back go to the game (see readControls)
 	auto switchMachine = [&]() {
 		pal = !pal;
@@ -453,7 +466,7 @@ int main(int argc, char **argv) {
 		tv = rr::tvSystem(pal);
 		window.setPixelAspect(tv.pixelAspect());
 		showBorder();
-		window.setRefreshRate(pal ? 50 : 0);
+		window.setRefreshRate(fullscreenRate());
 		atari.emplace(rom, osFont, pal, seed);
 		atari->setRiver(riverSeed, startBridge);
 		pending = 0;

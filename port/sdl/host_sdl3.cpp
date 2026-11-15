@@ -353,26 +353,37 @@ void Host::setFullscreen(bool on) {
 
 void Host::setPixelAspect(double pixelAspect) { impl_->pixelAspect = pixelAspect; }
 
+// SDL3 keeps the mode with the window and uses it whenever the window is in full screen.
 bool Host::setRefreshRate(double hz) {
+	SDL_Window *window = impl_->window;
 #ifdef SDL_PLATFORM_WINRT
 	// on the Xbox the display's full screen modes are the TV's (SDL3 with UWP, uwp/README.md);
-	// on a PC the game does not take over the monitor
+	// on a PC an app under UWP does not take over the monitor
 	if (SDL_GetWinRTDeviceFamily() != SDL_WINRT_DEVICEFAMILY_XBOX) return false;
-	if (hz <= 0) return SDL_SetWindowFullscreenMode(impl_->window, nullptr);   // the desktop's mode
-	const SDL_DisplayID display = SDL_GetDisplayForWindow(impl_->window);
-	const SDL_DisplayMode *desktop = SDL_GetDesktopDisplayMode(display);
-	int count = 0;
-	SDL_DisplayMode **modes = SDL_GetFullscreenDisplayModes(display, &count);
-	const SDL_DisplayMode *found = nullptr;
-	for (int i = 0; i < count && desktop; i++)
-		if (modes[i]->w == desktop->w && modes[i]->h == desktop->h && std::abs(modes[i]->refresh_rate - hz) < 0.5) found = modes[i];
-	const bool ok = found && SDL_SetWindowFullscreenMode(impl_->window, found) && SDL_SetWindowFullscreen(impl_->window, true);
-	SDL_free(modes);
-	return ok;
-#else
-	(void)hz;
-	return false;
 #endif
+	const SDL_DisplayMode *found = nullptr;
+	SDL_DisplayMode **modes = nullptr;
+	if (hz > 0) {
+		// the desktop's resolution, the rate nearest to hz (60 may be 59.94)
+		const SDL_DisplayID display = SDL_GetDisplayForWindow(window);
+		const SDL_DisplayMode *desktop = SDL_GetDesktopDisplayMode(display);
+		int count = 0;
+		modes = SDL_GetFullscreenDisplayModes(display, &count);
+		for (int i = 0; i < count && desktop; i++) {
+			const SDL_DisplayMode *m = modes[i];
+			if (m->w == desktop->w && m->h == desktop->h && m->pixel_density == desktop->pixel_density &&
+					std::abs(m->refresh_rate - hz) < 0.5 &&
+					(!found || std::abs(m->refresh_rate - hz) < std::abs(found->refresh_rate - hz)))
+				found = m;
+		}
+	}
+	bool ok = SDL_SetWindowFullscreenMode(window, found) && (found || hz <= 0);
+	SDL_free(modes);
+#ifdef SDL_PLATFORM_WINRT
+	SDL_SetWindowFullscreen(window, true);
+#endif
+	if (fullscreen()) SDL_SyncWindow(window);
+	return ok;
 }
 
 void Host::setView(int x, int y, int width, int height) {

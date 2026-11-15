@@ -35,6 +35,7 @@ Without arguments it finds the ROM by itself (see `rom`) and starts like the car
 | `-palette altirra\|atari800` | the colour model: `altirra` (default) or `atari800` (darker middle tones). V switches while playing |
 | `-border` | shows the whole frame with its black border (384×240 less 10 columns at each side), as emulators do. By default the window shows only the game's picture with the whole scrolling line, 364×200 (`-pal`: 364×213), so in full screen it is about 20% larger, and a window is that much lower. O switches while playing |
 | `-filter sharp\|nearest\|linear` | how the picture is scaled to the window or screen: `sharp` (default) scales by whole numbers with sharp pixels and then smoothly to the final size, so it stays sharp and every pixel is the same size; `nearest` is plain blocks, but at a scale that is not a whole number (always so across, as Atari pixels are not square) some columns come out one screen pixel wider; `linear` is smooth and blurred. L switches while playing |
+| `-fullscreen_exclusive` | full screen (F) switches the display to an exclusive mode at the desktop's resolution and 60 Hz, 50 Hz with `-pal` (P switches with the machine), so the game locks to it; if the display has no such mode, full screen stays on the desktop as it is. Back from full screen, the desktop's mode returns. Not on Wayland, which does not let programs change the display's mode |
 | `-stats` | prints the renderer and display rate, then once a second the frame rate, time per frame and the sound queue |
 | `-nosound` | no sound |
 
