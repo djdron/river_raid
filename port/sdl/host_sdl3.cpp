@@ -280,7 +280,17 @@ bool Host::poll(Event &out) {
 			out.wheel = e.wheel.y;
 			return true;
 		case SDL_EVENT_GAMEPAD_ADDED:
-			if (SDL_Gamepad *pad = SDL_OpenGamepad(e.gdevice.which)) h.pads.push_back(pad);
+			if (SDL_Gamepad *pad = SDL_OpenGamepad(e.gdevice.which)) {
+				h.pads.push_back(pad);
+#ifdef SDL_PLATFORM_WINRT
+				{	// (diagnostic for UWP: when the gamepad came, and how SDL reads it)
+					char *mapping = SDL_GetGamepadMapping(pad);
+					SDL_Log("River Raid: %u ms, gamepad added: %s, mapping %s", unsigned(SDL_GetTicks()),
+						SDL_GetGamepadName(pad), mapping ? mapping : "(none)");
+					SDL_free(mapping);
+				}
+#endif
+			}
 			break;
 		case SDL_EVENT_GAMEPAD_REMOVED:
 			for (size_t i = 0; i < h.pads.size(); i++)
@@ -342,6 +352,20 @@ Gamepad Host::gamepad(int index) const {
 	g.leftShoulder = SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER);
 	g.rightShoulder = SDL_GetGamepadButton(p, SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER);
 	g.leftTrigger = SDL_GetGamepadAxis(p, SDL_GAMEPAD_AXIS_LEFT_TRIGGER) > 16000;
+#ifdef SDL_PLATFORM_WINRT
+	if (SDL_GetTicks() < 5000) {	// (diagnostic for UWP: the trigger and the raw axes at the start)
+		static std::string last;
+		SDL_Joystick *j = SDL_GetGamepadJoystick(p);
+		std::string axes;
+		for (int i = 0; i < SDL_GetNumJoystickAxes(j); i++) axes += " " + std::to_string(SDL_GetJoystickAxis(j, i));
+		const std::string now = std::to_string(SDL_GetGamepadAxis(p, SDL_GAMEPAD_AXIS_LEFT_TRIGGER)) + ", axes" + axes +
+			(SDL_GetKeyboardFocus() ? ", focus" : ", no focus");
+		if (now != last) {
+			last = now;
+			SDL_Log("River Raid: %u ms, LT %s", unsigned(SDL_GetTicks()), now.c_str());
+		}
+	}
+#endif
 	return g;
 }
 
