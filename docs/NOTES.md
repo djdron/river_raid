@@ -192,6 +192,7 @@ The patches in [djdron/SDL3-uwp](https://github.com/djdron/SDL3-uwp), branch `ri
 - **Size in pixels**: window sizes are in DIPs, and the display modes found through DXGI have `pixel_density` 1, so at 175% scaling the picture filled only the top-left part of the window. Now DIPs × `LogicalDpi` / 96.
 - **`SDL_SetWindowSize`**: SDL3 keeps the new size in `window->pending`; the WinRT code took `window->floating`, the old one.
 - **Gamepads**: `SDL_HINT_JOYSTICK_WGI` is off by default (on the desktop Windows.Gaming.Input is a fallback for other drivers); on WinRT it is the only driver, so there it is now on by default.
+- **Sound after the background** (`src/audio/wasapi/SDL_wasapi.c`): a UWP app's audio resources are invalidated when it goes to the background (on the Xbox: to the home screen), and WASAPI then returns `AUDCLNT_E_RESOURCES_INVALIDATED`. SDL took it as a dead device, so after coming back there was no sound; now the device is opened again, as after `AUDCLNT_E_DEVICE_INVALIDATED`.
 
 In the game (`port/sdl/host_sdl3.cpp`): UWP opens the window in the size it had in the last run, so its height is fitted to the picture right after opening. Seen on the Xbox: a trigger held while the game starts reads as released (LT at −32768 half a second in, with the window focused); only changes after the start come in.
 

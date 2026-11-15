@@ -192,6 +192,7 @@
 - **ピクセル単位のサイズ**：ウィンドウのサイズは DIP 単位で、DXGI で見つけた画面モードの `pixel_density` は 1 なので、拡大率 175% では画像がウィンドウの左上の一部しか占めていませんでした。いまは DIP × `LogicalDpi` / 96。
 - **`SDL_SetWindowSize`**：SDL3 は新しいサイズを `window->pending` に置きます。WinRT のコードは古いサイズの `window->floating` を使っていました。
 - **ゲームパッド**：`SDL_HINT_JOYSTICK_WGI` は既定でオフです（デスクトップでは Windows.Gaming.Input はほかのドライバーの予備）。WinRT では唯一のドライバーなので、そこではいま既定でオンです。
+- **バックグラウンドの後の音**（`src/audio/wasapi/SDL_wasapi.c`）：UWP アプリがバックグラウンドに回ると（Xbox ではホーム画面へ）、その音声リソースは無効になり、その後 WASAPI は `AUDCLNT_E_RESOURCES_INVALIDATED` を返します。SDL はこれを壊れたデバイスとみなしていたので、戻っても音が出ませんでした。いまは `AUDCLNT_E_DEVICE_INVALIDATED` の後と同じくデバイスを開き直します。
 
 ゲームの中（`port/sdl/host_sdl3.cpp`）：UWP はウィンドウを前回のサイズで開くので、開いた直後に高さを画像に合わせます。Xbox で見たこと：ゲームの起動中に押し続けたトリガーは離されたものとして読まれます（0.5 秒の時点で LT は −32768、ウィンドウにフォーカスあり）。届くのは起動後の変化だけです。
 

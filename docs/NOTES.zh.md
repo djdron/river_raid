@@ -192,6 +192,7 @@
 - **像素尺寸**：窗口尺寸以 DIP 为单位，而通过 DXGI 找到的显示模式的 `pixel_density` 为 1，所以在 175% 缩放下画面只占窗口左上部分。现在是 DIP × `LogicalDpi` / 96。
 - **`SDL_SetWindowSize`**：SDL3 把新尺寸放在 `window->pending` 中；WinRT 代码取的是 `window->floating`，即旧尺寸。
 - **手柄**：`SDL_HINT_JOYSTICK_WGI` 默认关闭（在桌面上 Windows.Gaming.Input 是其他驱动的后备）；在 WinRT 上它是唯一的驱动，所以那里现在默认开启。
+- **回到前台后的声音**（`src/audio/wasapi/SDL_wasapi.c`）：UWP 应用转入后台时（在 Xbox 上：回到主屏幕），其音频资源被作废，之后 WASAPI 返回 `AUDCLNT_E_RESOURCES_INVALIDATED`。SDL 把它当作设备已失效，所以回来后没有声音；现在会像 `AUDCLNT_E_DEVICE_INVALIDATED` 之后那样重新打开设备。
 
 游戏中（`port/sdl/host_sdl3.cpp`）：UWP 以上次运行时的尺寸打开窗口，所以打开后立即把窗口高度调整为适合画面。在 Xbox 上观察到：游戏启动时按住的扳机读作松开（半秒时 LT 为 −32768，窗口有焦点）；只有启动后的变化才会传来。
 

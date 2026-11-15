@@ -192,6 +192,7 @@ Generator, logika gry, dźwięk i tablice są identyczne; sprawdzenie PAL także
 - **Rozmiar w pikselach**: rozmiary okna są w DIP, a tryby ekranu znalezione przez DXGI mają `pixel_density` 1, więc przy skalowaniu 175% obraz zajmował tylko lewą górną część okna. Teraz DIP × `LogicalDpi` / 96.
 - **`SDL_SetWindowSize`**: SDL3 trzyma nowy rozmiar w `window->pending`; kod WinRT brał `window->floating`, stary.
 - **Gamepady**: `SDL_HINT_JOYSTICK_WGI` jest domyślnie wyłączony (na zwykłym Windows Windows.Gaming.Input jest zapasowym sterownikiem); na WinRT jest jedynym, więc tam jest teraz domyślnie włączony.
+- **Dźwięk po tle** (`src/audio/wasapi/SDL_wasapi.c`): gdy aplikacja UWP przechodzi w tło (na Xboksie: na ekran główny), jej zasoby dźwiękowe są unieważniane, a WASAPI zwraca potem `AUDCLNT_E_RESOURCES_INVALIDATED`. SDL uznawał to za martwe urządzenie, więc po powrocie nie było dźwięku; teraz urządzenie jest otwierane od nowa, jak po `AUDCLNT_E_DEVICE_INVALIDATED`.
 
 W grze (`port/sdl/host_sdl3.cpp`): UWP otwiera okno w rozmiarze z ostatniego uruchomienia, więc zaraz po otwarciu jego wysokość jest dopasowywana do obrazu. Zaobserwowane na Xboksie: spust trzymany przy starcie gry czyta się jako puszczony (LT = −32768 po pół sekundy, przy oknie z fokusem); docierają tylko zmiany po starcie.
 
