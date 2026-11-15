@@ -1,7 +1,7 @@
 // River Raid (Activision, 1982, Atari 8-bit), the game, C++ port (window, sound and input through
 // SDL: sdl/host.h).
 //
-// usage: river_raid [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-border] [-filter sharp|nearest|linear] [-fullscreen_exclusive] [-stats] [-nosound] [-seed N] [-bridge N] [-random N]
+// usage: river_raid [rom] [-os file] [-pal] [-colours ntsc|pal] [-palette altirra|atari800] [-border] [-filter sharp|nearest|linear] [-fullscreen] [-fullscreen_exclusive] [-stats] [-nosound] [-seed N] [-bridge N] [-random N]
 //   rom: the cartridge image; by default rom/River_Raid.rom is looked for in the current
 //   folder and up to three folders above it.
 //   -os file: an Atari OS ROM (10 KB or 16 KB) or its 1 KB font, for Atari's own letters;
@@ -17,6 +17,7 @@
 //   -border: show the whole frame with its black border, not just the game's picture
 //   -filter: how the picture is scaled to the window: sharp (default: whole-number scale, then
 //   smoothly to fit), nearest (blocky, pixels of slightly uneven size) or linear (blurred)
+//   -fullscreen: start in full screen (F switches)
 //   -fullscreen_exclusive: full screen switches the display to 60 Hz (PAL: 50) or a multiple of
 //   it, the one nearest the desktop's rate, at the desktop's resolution, where it has such a
 //   mode; otherwise full screen is the desktop as it is
@@ -310,6 +311,7 @@ int main(int argc, char **argv) {
 	host::Filter filter = host::Filter::Sharp;   // -filter (L switches)
 	bool border = false;       // -border: the whole frame with its black border (O switches)
 	bool palColours = true;    // colours of a PAL machine (C switches to NTSC)
+	bool fullscreen = false;            // -fullscreen: start in full screen
 	bool fullscreenExclusive = false;   // -fullscreen_exclusive: full screen at 60 / 50 Hz
 	rr::PaletteModel paletteModel = rr::PaletteModel::Altirra;   // V switches
 	const char *osPath = nullptr;
@@ -324,6 +326,7 @@ int main(int argc, char **argv) {
 	for (int i = 1; i < argc; i++) {
 		if (!std::strcmp(argv[i], "-pal")) pal = palColours = true;
 		else if (!std::strcmp(argv[i], "-border")) border = true;
+		else if (!std::strcmp(argv[i], "-fullscreen")) fullscreen = true;
 		else if (!std::strcmp(argv[i], "-fullscreen_exclusive")) fullscreenExclusive = true;
 		else if (!std::strcmp(argv[i], "-filter") && i + 1 < argc) {
 			const char *name = argv[++i];
@@ -393,6 +396,7 @@ int main(int argc, char **argv) {
 		return fullscreenExclusive ? (pal ? 50.0 : 60.0) : 0.0;
 	};
 	window.setRefreshRate(fullscreenRate());
+	if (fullscreen && !shotPath) window.setFullscreen(true);
 	auto displayRate = [&]() { return window.refreshRate(); };
 	if (showStats) {
 		const Pace pace = paceFor(displayRate(), tv.frameRate());
