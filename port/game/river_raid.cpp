@@ -284,9 +284,14 @@ std::string findRom(int argc, char **argv) {
 		}
 		return argv[i];
 	}
-	// next to the program (on UWP: in the app's package), then the current folder and up to 3
-	// above it
+	// next to the program (on UWP: in the app's package; on the Switch: in the .nro's folder on
+	// the SD card, from argv[0]), then the current folder and up to 3 above it
 	std::vector<std::string> places = {host::Host::basePath()};
+	if (argc > 0) {
+		const std::string self = argv[0];
+		const size_t slash = self.find_last_of("/\\");
+		if (slash != std::string::npos) places.push_back(self.substr(0, slash + 1));
+	}
 	std::string up;
 	for (int d = 0; d < 4; d++, up += "../") places.push_back(up);
 	for (const std::string &place : places) {

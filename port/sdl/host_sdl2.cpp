@@ -2,6 +2,9 @@
 #include "host.h"
 
 #include <SDL.h>
+#ifdef __SWITCH__
+#include <switch.h>
+#endif
 
 #include <algorithm>
 #include <cmath>
@@ -448,7 +451,22 @@ std::string Host::basePath() {
 
 void Host::showError(const char *title, const std::string &message) {
 	std::fprintf(stderr, "%s\n", message.c_str());
+#ifdef __SWITCH__
+	// no message boxes there: libnx's text console, until + is pressed
+	consoleInit(nullptr);
+	padConfigureInput(1, HidNpadStyleSet_NpadStandard);
+	PadState pad;
+	padInitializeDefault(&pad);
+	std::printf("%s\n\n%s\n\nPress + to exit.\n", title, message.c_str());
+	while (appletMainLoop()) {
+		padUpdate(&pad);
+		if (padGetButtonsDown(&pad) & HidNpadButton_Plus) break;
+		consoleUpdate(nullptr);
+	}
+	consoleExit(nullptr);
+#else
 	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, message.c_str(), nullptr);
+#endif
 }
 
 }  // namespace host
