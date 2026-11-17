@@ -37,3 +37,31 @@ two kinds of line give different collisions (all were jets, kind 7, player 3).
 
 Runs of game 7 from power-on: `oracle/scripts/start_game7.txt` with `-bot`. On NTSC the
 comparison stops at the first game over, which the port does not model (README).
+
+## Step 2: collisions by spans
+
+`collideSpans` (the default; `RR_COLLIDE=masks` for the pixel masks of the whole line as
+before): each sprite on the scanline is its graphics bits and the colour clocks from its first
+to its last set bit. Against the playfield it is tested run by run (the line without
+decoration, 5-9 runs of one colour); a run that reaches past the first or last set bit is hit,
+one strictly between them is looked at bit by bit. Two sprites: their spans first, bit by bit
+only where they meet. Still per scanline, inside the beam: what each line holds and when the
+DLI reads the registers is the beam's.
+
+The same runs as above: no difference from the original. `RR_STATS=1` counts the cases;
+`RR_ROUGH_BANK=1` and `RR_ROUGH_PAIRS=1` drop the bit-by-bit step (a hit wherever the spans
+meet), to see whether it is needed:
+
+| run | lines with sprites | a run between the first and last bit (in a hole) | spans met (not the bits) |
+|---|---|---|---|
+| attract mode | 1 164 849 | 86 228 (0) | 26 862 (70) |
+| PAL bot | 278 257 | 9 201 (96) | 4 108 (0) |
+| game 7, PAL | 536 802 | 24 494 (96) | 7 693 (0) |
+
+- The bank: spans are enough. With `RR_ROUGH_BANK` all runs stay identical to the original;
+  the runs that fell into a hole never changed a bit the DLI reads.
+- Sprites with each other: the bits are needed. With `RR_ROUGH_PAIRS` the bullet and the
+  tank's shell "hit" objects through their holes: the attract mode differs on 3 frames, the
+  NTSC bot run on 712 (an object destroyed that the original's bullet passed), game 7 on 2-4.
+  Two sprites' spans meet rarely (a few thousand lines in a run), so the bit-by-bit step costs
+  little.

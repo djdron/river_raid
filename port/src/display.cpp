@@ -28,6 +28,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include "river_draw.h"
 
 namespace rr {
@@ -183,9 +184,143 @@ private:
 		return m;
 	}
 
+	// One sprite on the scanline: its graphics bits, where it is, and the colour clocks from
+	// its first to its last set bit (left..right-1, not clipped to the line).
+	struct Span {
+		uint8_t bits = 0;
+		int count = 0, hpos = 0, width = 1;
+		int left = 0, right = 0;
+		bool on() const { return bits != 0; }
+	};
+	static Span spriteSpan(uint8_t bits, int count, uint8_t hpos, uint8_t size) {
+		Span sp;
+		sp.bits = bits; sp.count = count; sp.hpos = hpos;
+		sp.width = (size & 3) == 3 ? 4 : (size & 3) == 1 ? 2 : 1;
+		if (!bits) return sp;
+		int first = 0, last = count - 1;
+		while (!(bits & (1 << (count - 1 - first)))) first++;
+		while (!(bits & (1 << (count - 1 - last)))) last--;
+		sp.left = hpos - 32 + first * sp.width;
+		sp.right = hpos - 32 + (last + 1) * sp.width;
+		return sp;
+	}
+	// Does the sprite cover a clock of a..b-1? Its first and last set bits decide it when the
+	// run reaches past either of them; a run strictly between them may fall into a hole: then
+	// bit by bit.
+	static bool spanHits(const Span &sp, int a, int b, bool &exact) {
+		if (b <= sp.left || a >= sp.right) return false;
+		if (a <= sp.left || b >= sp.right) {
+			// the first or the last set bit is over the run, unless that clock is off the line
+			const int x = a <= sp.left ? sp.left : sp.right - 1;
+			if (x >= 0 && x < kClocks) return true;
+		}
+		exact = true;
+		static const bool rough = std::getenv("RR_ROUGH_BANK") != nullptr;   // (an experiment: spans only)
+		if (rough) return true;
+		for (int k = 0; k < sp.count; k++) {
+			if (!(sp.bits & (1 << (sp.count - 1 - k)))) continue;
+			const int from = std::max({sp.hpos - 32 + k * sp.width, a, 0});
+			const int to = std::min({sp.hpos - 32 + (k + 1) * sp.width, b, kClocks});
+			if (from < to) return true;
+		}
+		return false;
+	}
+	// Two sprites: their spans first, then bit by bit where they meet.
+	static bool spritesMeet(const Span &p, const Span &q, bool &exact) {
+		const int a = std::max({p.left, q.left, 0}), b = std::min({p.right, q.right, kClocks});
+		if (a >= b) return false;
+		exact = true;
+		static const bool rough = std::getenv("RR_ROUGH_PAIRS") != nullptr;   // (the same)
+		if (rough) return true;
+		return spriteMask(p.bits, p.count, uint8_t(p.hpos), p.width == 4 ? 3 : p.width == 2 ? 1 : 0) &
+			spriteMask(q.bits, q.count, uint8_t(q.hpos), q.width == 4 ? 3 : q.width == 2 ? 1 : 0);
+	}
+
+	// The scanline's playfield as runs of one colour (1 bank, 2 edge, 3 water): from the line
+	// without decoration, 5-9 runs (docs/DLI_REMOVAL.md).
+	struct Run { int a, b, colour; };
+	static int lineRuns(const uint8_t *src, Run out[kClocks]) {
+		int n = 0, prev = -1;
+		for (int p = 0; p < kClocks; p++) {
+			const int v = (src[p >> 2] >> (6 - 2 * (p & 3))) & 3;
+			if (v != prev) {
+				if (prev > 0) out[n - 1].b = p;     // the run going on ends here
+				if (v) out[n++] = Run{p, kClocks, v};
+				prev = v;
+			}
+		}
+		return n;
+	}
+
+	struct Stats {
+		long lines = 0, runTests = 0, runsInside = 0, runsInsideMissed = 0, pairs = 0, pairsMissed = 0;
+		~Stats() {
+			if (std::getenv("RR_STATS"))
+				std::fprintf(stderr, "collisions: %ld lines; sprite against a run %ld times, %ld of them a run between the first and last bit"
+					" (%ld of those in a hole); sprites' spans met %ld times (%ld of them not their bits)\n",
+					lines, runTests, runsInside, runsInsideMissed, pairs, pairsMissed);
+		}
+	};
+	static Stats &stats() { static Stats s; return s; }
+
+	// GTIA's collision detection for the scanline being drawn, by spans: each sprite's first
+	// and last set bit against the playfield's runs and against the other sprites, bit by bit
+	// only where a run lies between them or two spans meet.
+	void collideSpans() {
+		Span pl[4], ms[4];
+		bool any = false;
+		for (int n = 0; n < 4; n++) {
+			pl[n] = spriteSpan(p_[n], 8, hposP[n], sizeP[n]);
+			const uint8_t mb = uint8_t((m_ >> (2 * n)) & 3);
+			ms[n] = spriteSpan(mb, 2, hposM[n], uint8_t(sizeM >> (2 * n)));
+			any |= pl[n].on() || ms[n].on();
+		}
+		if (!any) return;
+		Stats &st = stats();
+		st.lines++;
+		Run runs[kClocks];
+		int nRuns = 0;
+		const int row = river(line_);
+		if (row >= 0 && row < kRiverLines && size_t(row) < screen_.size()) nRuns = lineRuns(screen_[size_t(row)].data(), runs);
+		auto playfieldBits = [&](const Span &sp) {
+			uint8_t bits = 0;
+			for (int i = 0; i < nRuns; i++) {
+				const uint8_t bit = uint8_t(1 << (runs[i].colour - 1));
+				if (bits & bit) continue;
+				bool exact = false;
+				const bool hit = spanHits(sp, runs[i].a, runs[i].b, exact);
+				st.runTests++;
+				if (exact) { st.runsInside++; if (!hit) st.runsInsideMissed++; }
+				if (hit) bits |= bit;
+			}
+			return bits;
+		};
+		auto meet = [&](const Span &p, const Span &q) {
+			bool exact = false;
+			const bool hit = spritesMeet(p, q, exact);
+			if (exact) { st.pairs++; if (!hit) st.pairsMissed++; }
+			return hit;
+		};
+		for (int n = 0; n < 4; n++) {
+			if (pl[n].on()) {
+				ppf[n] |= playfieldBits(pl[n]);
+				for (int k = 0; k < 4; k++)
+					if (k != n && pl[k].on() && meet(pl[n], pl[k])) ppl[n] |= uint8_t(1 << k);
+			}
+			if (ms[n].on()) {
+				mpf[n] |= playfieldBits(ms[n]);
+				for (int k = 0; k < 4; k++)
+					if (pl[k].on() && meet(ms[n], pl[k])) mpl[n] |= uint8_t(1 << k);
+			}
+		}
+	}
+
 	// GTIA's collision detection for the scanline being drawn: which sprites overlap the
-	// playfield colours and each other.
+	// playfield colours and each other. RR_COLLIDE=masks: pixel masks of the whole line (as
+	// before), otherwise by spans (collideSpans).
 	void collide() {
+		static const bool masks = std::getenv("RR_COLLIDE") && !std::strcmp(std::getenv("RR_COLLIDE"), "masks");
+		if (!masks) { collideSpans(); return; }
 		Mask pl[4], ms[4];
 		bool any = false;
 		for (int n = 0; n < 4; n++) {
