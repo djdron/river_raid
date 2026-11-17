@@ -838,96 +838,87 @@ void Game::displaySimple() {
 		default: bits = uint8_t((g.pm.missiles(l) >> 4) & 3); hpos = uint8_t(g.planeX + 4); break;    // M2
 		}
 	};
-	// Each sprite's box (scanlines): where the game put it (the shell 16 rows from shellY, the
-	// tank 11 from tankY, the plane 14 from $AA, the missile row missileY, the bullet 8 rows
-	// below bulletY), each object's rows as the loop writes them. RR_BOXES=scan: every
-	// scanline with graphics instead.
-	struct Box { int sprite, y0, y1; };
-	std::vector<Box> boxes;
-	boxes.reserve(32);
-	static const bool scanBoxes = std::getenv("RR_BOXES") && !std::strcmp(std::getenv("RR_BOXES"), "scan");
-	uint8_t cover[kLines] = {};   // the sprites with a box on each scanline (bit = sprite)
-	// The objects whose "touching the edge" bit is read (moveObjects: helicopters, balloons,
-	// ships turn round at the edge); the others' rows are not tested against the edge.
-	bool noEdge[kLines] = {};
-	auto addBox = [&](int sprite, int y0, int y1) {
-		y0 = std::max(y0, kFirstLine);
-		y1 = std::min(y1, kLines - 1);
-		if (y0 > y1) return;
-		boxes.push_back({sprite, y0, y1});
-		for (int l = y0; l <= y1; l++) cover[l] |= uint8_t(1 << sprite);
+	// The collisions without the scanlines' registers (docs/DLI_REMOVAL.md). Each sprite's rows
+	// are where the game put them: the shell 16 from shellY, the tank 11 from tankY, the plane
+	// 14 from $AA, the missile the row missileY, the bullet 8 below bulletY (nothing of them is
+	// anywhere else). The scanlines where each collision the DLI reads happens are worked out
+	// once, from those rows against the bank's runs and against each other, bit by bit; an
+	// object's against its rows where the loop writes them. A read sees the scanlines from the
+	// last HITCLR's to its own: so a collision counts if its scanline is in there.
+	auto pfAt = [&](int l) -> const Runs * {
+		const int r = l - kRiverFirstLine;
+		return r >= 0 && r < kRiverLines && size_t(r) < runLines.size() ? &runLines[size_t(r)] : nullptr;
 	};
-	if (scanBoxes) {
-		for (int sprite = 0; sprite < 6; sprite++) addBox(sprite, kFirstLine, 200);
-	} else {
-		addBox(0, s.shellY, s.shellY + 15);
-		addBox(1, s.tankY, s.tankY + 10);
-		addBox(2, 0xAA, 0xAA + 13);
-		if (s.missileY >= 0x1C) addBox(4, s.missileY, s.missileY);
-		if (g.bulletY > 1) {
-			const int row = std::max(g.bulletY - 1, 0x1B);
-			addBox(5, row + 1, row + 8);
-		}
+	struct Rows { int y0 = 0, y1 = -1; };   // scanlines y0..y1
+	auto box = [&](int y0, int y1) { Rows b; b.y0 = std::max(y0, kFirstLine); b.y1 = std::min(y1, kLines - 1); return b; };
+	const Rows shellBox = box(s.shellY, s.shellY + 15), tankBox = box(s.tankY, s.tankY + 10), planeBox = box(0xAA, 0xAA + 13);
+	Rows missileBox, bulletBox;
+	if (s.missileY >= 0x1C) missileBox = box(s.missileY, s.missileY);
+	if (g.bulletY > 1) {
+		const int row = std::max(g.bulletY - 1, 0x1B);
+		bulletBox = box(row + 1, row + 8);
 	}
-	// The collisions the DLI reads, by scanline, worked out as far as a read needs them: each
-	// sprite's row against the bank's runs; the pairs it reads (M2 with P3, P3 with P0, P2
-	// with P0, M0 with P2) where both have a box, bit by bit.
-	std::array<Beam::Regs, kLines> regs{};
-	int computed = kFirstLine - 1;
-	auto compute = [&](int upto) {
-		upto = std::min(upto, kLines - 1);
-		fill(upto);
-		for (; computed < upto; ) {
-			const int l = ++computed;
-			if (!cover[l]) continue;
-			uint8_t bits[6] = {}, hpos[6] = {}, size[6] = {};
-			int count[6] = {};
-			bool on[6] = {};
-			for (int sp = 0; sp < 6; sp++) {
-				if (!(cover[l] & (1 << sp))) continue;
-				spriteAt(sp, l, bits[sp], count[sp], hpos[sp], size[sp]);
-				on[sp] = bits[sp] != 0;
-			}
-			const int r = l - kRiverFirstLine;
-			const Runs *pf = r >= 0 && r < kRiverLines && size_t(r) < runLines.size() ? &runLines[size_t(r)] : nullptr;
-			Beam::Regs &rg = regs[size_t(l)];
-			for (int sp = 1; sp < 6; sp++) {
-				if (!on[sp]) continue;
-				// only what the DLI reads: P1PF, P3PF the edge, P2PF the bank, M0PF, M2PF either
-				static const uint8_t wanted[6] = {0, 2, 1, 2, 3, 3};
-				const uint8_t want = sp == 3 && noEdge[l] ? 0 : wanted[sp];
-				if (!want) continue;
-				const uint8_t hits = Beam::playfieldHits(bits[sp], count[sp], hpos[sp], size[sp], pf, want);
-				if (sp < 4) rg.ppf[sp] |= hits;
-				else rg.mpf[sp == 4 ? 0 : 2] |= hits;
-			}
-			static const int pairs[][2] = {{5, 3}, {3, 0}, {2, 0}, {4, 2}};   // (P2 with P3: planeTouches)
-			for (const auto &pr : pairs) {
-				const int a = pr[0], b = pr[1];
-				if (!on[a] || !on[b] || !Beam::spritesTouch(bits[a], count[a], hpos[a], size[a], bits[b], count[b], hpos[b], size[b])) continue;
-				if (a < 4) rg.ppl[a] |= uint8_t(1 << b);
-				else rg.mpl[a == 4 ? 0 : 2] |= uint8_t(1 << b);
-			}
+	// only what the DLI reads: P1PF the edge, P2PF the bank, M0PF and M2PF either; P2 with P0, M0 with P2
+	std::vector<int> tankEdge, planeBank, missileBank, bulletBank, planeShell, missilePlane;
+	auto pfLines = [&](int sprite, const Rows &b, uint8_t want, std::vector<int> &out) {
+		for (int l = b.y0; l <= b.y1; l++) {
+			uint8_t bits, hpos, size;
+			int count;
+			spriteAt(sprite, l, bits, count, hpos, size);
+			if (bits && (Beam::playfieldHits(bits, count, hpos, size, pfAt(l), want) & want)) out.push_back(l);
 		}
 	};
-	// A read sees every scanline from the last HITCLR's to `through`.
-	int cleared = kFirstLine;
-	Beam::Regs acc;
-	int accTo = cleared - 1;
-	auto seen = [&](int through) {
-		compute(through);
-		for (; accTo < through; accTo++) acc.add(regs[size_t(accTo + 1)]);
-		return acc;
+	auto pairLines = [&](int a, const Rows &ba, int b, const Rows &bb, std::vector<int> &out) {
+		for (int l = std::max(ba.y0, bb.y0); l <= std::min(ba.y1, bb.y1); l++) {
+			uint8_t bitsA, hposA, sizeA, bitsB, hposB, sizeB;
+			int countA, countB;
+			spriteAt(a, l, bitsA, countA, hposA, sizeA);
+			spriteAt(b, l, bitsB, countB, hposB, sizeB);
+			if (Beam::spritesTouch(bitsA, countA, hposA, sizeA, bitsB, countB, hposB, sizeB)) out.push_back(l);
+		}
 	};
-	auto clearAt = [&](int l) {
-		cleared = l;
-		acc = Beam::Regs();
-		accTo = l - 1;
+	pfLines(1, tankBox, 2, tankEdge);
+	pfLines(2, planeBox, 1, planeBank);
+	pfLines(4, missileBox, 3, missileBank);
+	pfLines(5, bulletBox, 3, bulletBank);
+	pairLines(2, planeBox, 0, shellBox, planeShell);
+	pairLines(4, missileBox, 2, planeBox, missilePlane);
+	int cleared = kFirstLine;   // the last HITCLR's scanline
+	auto seenIn = [&](const std::vector<int> &v, int through) {
+		for (int l : v)
+			if (l >= cleared && l <= through) return true;
+		return false;
 	};
-	auto setFlags = [&](int slot, const Beam::Regs &r) {
+	auto clearAt = [&](int l) { cleared = l; };
+	// Each object's rows as the loop writes them. The edge (P3PF) only for the kinds whose bit
+	// moveObjects reads: helicopters, balloons, ships.
+	struct ObjectRows { int slot, first; uint8_t x, size; bool edge; std::vector<uint8_t> rows; };
+	std::vector<ObjectRows> objects;
+	objects.reserve(kSlots + 1);
+	auto objectTouches = [&](int sprite, const Rows &b, const ObjectRows &o, int through) {
+		const int y0 = std::max({o.first, b.y0, cleared}), y1 = std::min({o.first + int(o.rows.size()) - 1, b.y1, through});
+		for (int l = y0; l <= y1; l++) {
+			uint8_t bits, hpos, size;
+			int count;
+			spriteAt(sprite, l, bits, count, hpos, size);
+			if (Beam::spritesTouch(bits, count, hpos, size, o.rows[size_t(l - o.first)], 8, o.x, o.size)) return true;
+		}
+		return false;
+	};
+	auto objectEdge = [&](const ObjectRows &o, int through) {
+		if (!o.edge) return false;
+		const int y0 = std::max(o.first, cleared), y1 = std::min(o.first + int(o.rows.size()) - 1, through);
+		for (int l = y0; l <= y1; l++) {
+			const uint8_t bits = o.rows[size_t(l - o.first)];
+			if (bits && (Beam::playfieldHits(bits, 8, o.x, o.size, pfAt(l), 2) & 2)) return true;
+		}
+		return false;
+	};
+	auto inProgress = [&](int slot) { return !objects.empty() && objects.back().slot == slot; };
+	auto setFlags = [&](int slot, bool touching) {
 		if (slot >= kSlots) return;
 		Slot &obj = s.slot[slot];
-		obj.flags = uint8_t((obj.flags & ~slotflag::kTouchingEdge) | ((r.ppf[3] >> 1) & slotflag::kTouchingEdge));
+		obj.flags = uint8_t((obj.flags & ~slotflag::kTouchingEdge) | (touching ? slotflag::kTouchingEdge : 0));
 	};
 
 	// The DLI's loop (B565-B664) by scanlines: X (`counter`) goes up by one at every WSYNC, so
@@ -938,20 +929,6 @@ void Game::displaySimple() {
 	int slot = s.firstSlot;
 	int current = slot;
 	bool endedAtB664 = false;
-	// each object's rows as the loop writes them, for the plane's collision with it
-	struct ObjectRows { int slot, first; uint8_t x, size; std::vector<uint8_t> rows; };
-	std::vector<ObjectRows> objects;
-	objects.reserve(kSlots + 1);
-	// The plane touched the object (A3E9): not from the DLI's P2PL but by boxes and bits, the
-	// plane's 14 rows from $AA against the object's rows where the loop wrote them. P2PL's bit
-	// for player 3, read after the object's rows (B60A) or at the river's end, sees only
-	// them since the HITCLR before them, so it is the same (docs/DLI_REMOVAL.md).
-	auto planeTouches = [&](const ObjectRows &o) {
-		const int y0 = std::max(o.first, 0xAA), y1 = std::min(o.first + int(o.rows.size()), 0xAA + 14);
-		for (int l = y0; l < y1; l++)
-			if (Beam::spritesTouch(g.pm.player(2, l), 8, g.planeX, 0, o.rows[size_t(l - o.first)], 8, o.x, o.size)) return true;
-		return false;
-	};
 	for (;;) {
 		current = slot;
 		bool end = false;
@@ -982,7 +959,7 @@ void Game::displaySimple() {
 		chunk(line(counter), 49 + (crosses(shapes, row) ? 1 : 0));   // B5B0-B5D1
 		bool wrapped = false;
 		const int firstRow = counter - 0x44;        // player 3's memory is indexed by X
-		objects.push_back({current, firstRow, sl.x, sl.size, {}});
+		objects.push_back({current, firstRow, sl.x, sl.size, sl.kind >= object::kHelicopter && sl.kind <= object::kShip, {}});
 		for (;;) {                                  // B5CB: a row a scanline
 			writeP3(counter, rom_.at(uint16_t(shapes + row)), line(counter));
 			objects.back().rows.push_back(rom_.at(uint16_t(shapes + row)));
@@ -992,26 +969,21 @@ void Game::displaySimple() {
 			if (!counter) { wrapped = true; break; }
 			if (--row < 0) break;
 		}
-		if (!scanBoxes) addBox(3, firstRow, (wrapped ? 0x100 : counter) - 0x44 - 1);
-		if (sl.kind < object::kHelicopter || sl.kind > object::kShip)
-			for (int l = std::max(firstRow, 0); l < std::min((wrapped ? 0x100 : counter) - 0x44, kLines); l++) noEdge[l] = true;
 		if (wrapped) break;
 		// B5E8: the object's collisions
 		const int e = counter;
-		const Beam::Regs m2pl = seen(line(e) - (bridge ? 0 : 1));
-		const bool bulletHit = m2pl.mpl[2] & 0x08;
+		const bool bulletHit = objectTouches(5, bulletBox, objects.back(), line(e) - (bridge ? 0 : 1));   // M2PL
 		if (bulletHit) g.hit.bulletHitObject = uint8_t(current);
 		if (bridge) chunk(line(e), 46 + (crosses(Rom::kRoadColours, 0) ? 1 : 0) + (crosses(colours, 0) ? 1 : 0) + (bulletHit ? 2 : 0));
 		int hits = 0;
 		if (bridge) from(bank, setBank, line(e) + 1, s.sectionBankColour);   // B5F3
-		else if (seen(line(e)).ppl[3] & 0x01) { g.hit.shellHitObject = uint8_t(current); hits++; }
+		else if (objectTouches(0, shellBox, objects.back(), line(e))) { g.hit.shellHitObject = uint8_t(current); hits++; }   // P3PL
 		counter = (counter + 1) & 0xFF;             // B60A
 		if (!counter) break;
 		{
-			const Beam::Regs p2pl = seen(line(counter) - 1);
-			if (p2pl.ppl[2] & 0x01) { g.hit.planeHitShell = uint8_t(current); hits++; }
-			if (planeTouches(objects.back())) { g.hit.planeHitObject = uint8_t(current); hits++; }
-			const Beam::Regs p3pf = seen(line(counter));
+			if (seenIn(planeShell, line(counter) - 1)) { g.hit.planeHitShell = uint8_t(current); hits++; }   // P2PL
+			if (objectTouches(2, planeBox, objects.back(), line(counter) - 1)) { g.hit.planeHitObject = uint8_t(current); hits++; }
+			const bool p3pf = objectEdge(objects.back(), line(counter));
 			chunk(line(counter), (bridge ? 43 : 44) + 2 * hits);   // B5F3-B61F
 			setFlags(current, p3pf);
 		}
@@ -1019,16 +991,16 @@ void Game::displaySimple() {
 		if (!counter) break;
 		{
 			const int l = line(counter);
-			const bool m0pl = seen(l - 1).mpl[0] & 0x04;
+			const bool m0pl = seenIn(missilePlane, l - 1);
 			if (m0pl) g.hit.missileHitPlane = uint8_t(current);
 			const bool late = afterDraw(l, 28 + (m0pl ? 2 : 0));       // B631
 			stats.m0pf++;
 			if (late) stats.m0pfLate++;
-			if (seen(late ? l : l - 1).mpf[0] & 0x03) g.hit.missileHitBank = uint8_t(current);
+			if (seenIn(missileBank, late ? l : l - 1)) g.hit.missileHitBank = uint8_t(current);
 			int stored = 0;
-			if (seen(l).ppf[1] & 0x02) { g.hit.tankAtEdge = uint8_t(current); stored++; }
-			if (seen(l).ppf[2] & 0x01) { g.hit.planeHitBank = uint8_t(current); stored++; }
-			if (seen(l).mpf[2] & 0x03) { g.hit.bulletHitBank = uint8_t(current); stored++; }
+			if (seenIn(tankEdge, l)) { g.hit.tankAtEdge = uint8_t(current); stored++; }
+			if (seenIn(planeBank, l)) { g.hit.planeHitBank = uint8_t(current); stored++; }
+			if (seenIn(bulletBank, l)) { g.hit.bulletHitBank = uint8_t(current); stored++; }
 			const bool clearLate = afterDraw(l + 1, 23 + 2 * stored);   // B65F
 			stats.clears++;
 			if (clearLate) stats.clearsLate++;
@@ -1043,17 +1015,18 @@ void Game::displaySimple() {
 	endLine = line(0x100);
 	const bool panelReads = current < kSlots && !endedAtB664;
 	if (panelReads) {
-		setFlags(current, seen(endLine + 1));
-		const Beam::Regs r = seen(endLine + 2);
-		if (r.mpl[0] & 0x04) g.hit.missileHitPlane = uint8_t(current);
-		if (r.mpf[0] & 0x03) g.hit.missileHitBank = uint8_t(current);
-		if (r.mpf[2] & 0x03) g.hit.bulletHitBank = uint8_t(current);
-		if (r.ppf[2] & 0x01) g.hit.planeHitBank = uint8_t(current);
-		if (r.ppl[2] & 0x01) g.hit.planeHitShell = uint8_t(current);
-		if (r.ppl[3] & 0x01) g.hit.shellHitObject = uint8_t(current);
-		if (!objects.empty() && objects.back().slot == current && planeTouches(objects.back())) g.hit.planeHitObject = uint8_t(current);
-		if (r.ppf[1] & 0x02) g.hit.tankAtEdge = uint8_t(current);
-		if (seen(endLine + 3).mpl[2] & 0x08) g.hit.bulletHitObject = uint8_t(current);
+		const bool rows = inProgress(current);
+		setFlags(current, rows && objectEdge(objects.back(), endLine + 1));
+		const int r = endLine + 2;
+		if (seenIn(missilePlane, r)) g.hit.missileHitPlane = uint8_t(current);
+		if (seenIn(missileBank, r)) g.hit.missileHitBank = uint8_t(current);
+		if (seenIn(bulletBank, r)) g.hit.bulletHitBank = uint8_t(current);
+		if (seenIn(planeBank, r)) g.hit.planeHitBank = uint8_t(current);
+		if (seenIn(planeShell, r)) g.hit.planeHitShell = uint8_t(current);
+		if (rows && objectTouches(0, shellBox, objects.back(), r)) g.hit.shellHitObject = uint8_t(current);
+		if (rows && objectTouches(2, planeBox, objects.back(), r)) g.hit.planeHitObject = uint8_t(current);
+		if (seenIn(tankEdge, r)) g.hit.tankAtEdge = uint8_t(current);
+		if (rows && objectTouches(5, bulletBox, objects.back(), endLine + 3)) g.hit.bulletHitObject = uint8_t(current);
 	}
 	// what is drawn on each scanline, up to the one the DLI last waits for
 	const int last = endLine + (panelReads ? 3 : 1);

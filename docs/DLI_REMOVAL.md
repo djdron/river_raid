@@ -214,3 +214,23 @@ the same in every frame of the original's runs above (~47 000 frames, 420 with t
 100 on NTSC and on PAL with `-wild`: 61 382 hits). Then `game_check` against the original: no
 difference; `RR_DISPLAY=check` (60 000 frames `-wild`, 60 000 from bridge 100 on PAL): nothing
 but the edge bit of the kinds that do not turn (above).
+
+### All the collisions without the scanlines' registers
+
+The rest of the reads go the same way. Each sprite's rows are where the game put them (the
+boxes above: nothing of them is anywhere else), so the scanlines where each collision the DLI
+reads happens are worked out once a frame: the tank's rows against the edge (P1PF), the
+plane's against the bank (P2PF), the missile's and the bullet's against either (M0PF, M2PF),
+the plane against the shell (P2PL) and the missile against the plane (M0PL), bit by bit. An
+object's collisions are worked out at its reads, against its rows where the loop wrote them:
+the bullet (M2PL, up to the scanline before the last row, a bridge's included), the shell
+(P3PL), the plane (P2PL), the edge (P3PF, only the kinds that turn). A read counts a
+collision if its scanline is between the last HITCLR's and its own, as the registers did. The
+DLI's loop, its cycles and HITCLR's scanlines stay (they decide those windows); the
+scanlines' registers (`compute`, `seen`, the boxes by scanline) are gone. One case differs:
+when the DLI falls a scanline behind, the rows written late are not fetched and the old ones
+show; the collisions are now with the new rows. That happened in none of the runs here.
+Checked: `game_check` against the original (all the runs above): no difference;
+`RR_DISPLAY=check` (60 000 frames `-wild`, 60 000 from bridge 100 on PAL, 300 000 from bridge
+100 on NTSC and 300 000 on PAL with `-wild`): nothing but the edge bit of the kinds that do
+not turn.
