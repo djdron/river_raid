@@ -57,6 +57,20 @@ uint8_t addBcd(uint8_t a, uint8_t b, int &carry) {
 
 }  // namespace
 
+Game::Runs Game::makeRuns(const uint8_t *line) {
+	Runs r;
+	int prev = 0;
+	for (int p = 0; p < kLineBytes * 4; p++) {
+		const int v = (line[p >> 2] >> (6 - 2 * (p & 3))) & 3;
+		if (v == prev) continue;
+		if (prev) r.b[r.n++] = uint8_t(p);
+		if (v) { r.a[r.n] = uint8_t(p); r.colour[r.n] = uint8_t(v); }
+		prev = v;
+	}
+	if (prev) r.b[r.n++] = uint8_t(kLineBytes * 4);
+	return r;
+}
+
 Game::Game(const Rom &rom) : gen(rom), rom_(rom) {
 	if (const char *e = std::getenv("RR_BANK_RUNS")) bankRuns = std::atoi(e) != 0;
 }
@@ -80,6 +94,7 @@ void Game::startAttract(bool pal) {
 	g = GameState();
 	screen.clear();
 	bankLines.clear();
+	runLines.clear();
 	lineStates.clear();
 	drawLogoAndNeedle();
 	for (int i = 0; i < kPanelBytes; i++) g.panel[i] = rom_.panelText(i);   // A0F0
@@ -182,6 +197,7 @@ void Game::load(const std::vector<uint8_t> &data) {
 	run.s = oldest;
 	screen.clear();
 	bankLines.clear();
+	runLines.clear();
 	lineStates.clear();
 	std::array<uint8_t, kLineBytes> line, bank;
 	for (int i = 0; i < lines; i++) {
@@ -189,6 +205,7 @@ void Game::load(const std::vector<uint8_t> &data) {
 		run.nextLine(line.data(), bank.data());
 		screen.insert(screen.begin(), line);
 		bankLines.insert(bankLines.begin(), bank);
+		runLines.insert(runLines.begin(), makeRuns(bankRuns ? bank.data() : line.data()));
 	}
 	scan = {};
 }
@@ -206,6 +223,8 @@ void Game::pushLine() {
 	if (screen.size() > 256) screen.pop_back();
 	bankLines.insert(bankLines.begin(), bank);
 	if (bankLines.size() > 256) bankLines.pop_back();
+	runLines.insert(runLines.begin(), makeRuns(bankRuns ? bank.data() : line.data()));
+	if (runLines.size() > 256) runLines.pop_back();
 	uint8_t topLo = uint8_t(g.screenTop), topHi = uint8_t(g.screenTop >> 8);
 	if (topLo < kLineBytes) topHi--;
 	topLo = uint8_t(topLo - kLineBytes);
@@ -459,6 +478,7 @@ void Game::reset(bool full) {
 		for (int row = 1; row < 0xBC; row++) g.pm.bytes[size_t(page * 0x100 + row)] = 0;
 	screen.clear();
 	bankLines.clear();
+	runLines.clear();
 	lineStates.clear();
 	g.screenOn = 0;                               // B101: colours off while clearing
 	busy_ = resetFrames();
@@ -1217,6 +1237,7 @@ void Game::powerOn(bool pal) {
 	g = GameState();
 	screen.clear();
 	bankLines.clear();
+	runLines.clear();
 	lineStates.clear();
 	for (int i = 0; i < kPanelBytes; i++) g.panel[i] = rom_.panelText(i);
 	// A15D (X = $09): zero page cleared, then a new game's reset

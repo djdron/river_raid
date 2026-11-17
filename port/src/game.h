@@ -155,6 +155,13 @@ public:
 	// The same lines without their decoration (houses, roads): what the collisions with the
 	// playfield look at when bankRuns is set (display.cpp). RR_BANK_RUNS=0: the screen itself.
 	std::vector<std::array<uint8_t, kLineBytes>> bankLines;
+	// The same lines as runs of one colour (made once, as each line enters; displaySimple)
+	struct Runs {
+		int n = 0;
+		uint8_t a[48], b[48], colour[48];   // pixels a..b-1 (0-191) of colour 1-3
+	};
+	std::vector<Runs> runLines;
+	static Runs makeRuns(const uint8_t *line);
 	bool bankRuns = true;
 	// If set: the generator's state before each line in `screen`, newest first, so screen
 	// memory can be made again from the oldest one (a small saved state, see compact()).

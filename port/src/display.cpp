@@ -22,6 +22,7 @@
 // So display() executes the DLI's instructions with their cycle counts (branches, page
 // crossings) and lets the scanlines happen in between.
 #include <algorithm>
+#include <chrono>
 #include <functional>
 
 #include "game.h"
@@ -279,7 +280,7 @@ public:
 	// GTIA's collision detection for one scanline, by spans: each sprite's first and last set
 	// bit against the playfield's runs (`playfield`: the line, nullptr outside the river) and
 	// against the other sprites, bit by bit only where a run lies between them or two spans meet.
-	static Regs collideLine(const Sprites &sp, const uint8_t *playfield) {
+	static Regs collideLine(const Sprites &sp, const Game::Runs *playfield) {
 		Regs r;
 		Span pl[4], ms[4];
 		bool any = false;
@@ -292,15 +293,14 @@ public:
 		if (!any) return r;
 		Stats &st = stats();
 		st.lines++;
-		Run runs[kClocks];
-		const int nRuns = playfield ? lineRuns(playfield, runs) : 0;
+		const int nRuns = playfield ? playfield->n : 0;
 		auto playfieldBits = [&](const Span &x) {
 			uint8_t bits = 0;
 			for (int i = 0; i < nRuns; i++) {
-				const uint8_t bit = uint8_t(1 << (runs[i].colour - 1));
+				const uint8_t bit = uint8_t(1 << (playfield->colour[i] - 1));
 				if (bits & bit) continue;
 				bool exact = false;
-				const bool hit = spanHits(x, runs[i].a, runs[i].b, exact);
+				const bool hit = spanHits(x, playfield->a[i], playfield->b[i], exact);
 				st.runTests++;
 				if (exact) { st.runsInside++; if (!hit) st.runsInsideMissed++; }
 				if (hit) bits |= bit;
@@ -341,6 +341,18 @@ public:
 		}
 		return hits;
 	}
+	static uint8_t playfieldHits(uint8_t bits, int count, uint8_t hpos, uint8_t size, const Game::Runs *runs) {
+		if (!bits || !runs) return 0;
+		const Span sp = spriteSpan(bits, count, hpos, size);
+		uint8_t hits = 0;
+		for (int i = 0; i < runs->n; i++) {
+			const uint8_t bit = uint8_t(1 << (runs->colour[i] - 1));
+			if (hits & bit) continue;
+			bool exact = false;
+			if (spanHits(sp, runs->a[i], runs->b[i], exact)) hits |= bit;
+		}
+		return hits;
+	}
 	// Two sprites on a scanline: their spans, then bit by bit.
 	static bool spritesTouch(uint8_t bitsA, int countA, uint8_t hposA, uint8_t sizeA, uint8_t bitsB, int countB, uint8_t hposB, uint8_t sizeB) {
 		if (!bitsA || !bitsB) return false;
@@ -354,7 +366,7 @@ private:
 		sp.m = m_;
 		sp.sizeM = sizeM;
 		const int row = river(line_);
-		const uint8_t *pf = row >= 0 && row < kRiverLines && size_t(row) < screen_.size() ? screen_[size_t(row)].data() : nullptr;
+		const Game::Runs *pf = row >= 0 && row < kRiverLines && size_t(row) < game_.runLines.size() ? &game_.runLines[size_t(row)] : nullptr;
 		const Regs r = collideLine(sp, pf);
 		for (int n = 0; n < 4; n++) { mpf[n] |= r.mpf[n]; ppf[n] |= r.ppf[n]; mpl[n] |= r.mpl[n]; ppl[n] |= r.ppl[n]; }
 	}
@@ -736,7 +748,13 @@ void Game::displaySimple() {
 	constexpr int kLastLine = 190;
 	// registers by scanline: a write from a scanline on
 	uint8_t hposP3[kLines], sizeP3[kLines], colourP3[kLines], bank[kLines];
-	auto from = [](uint8_t *a, int line, uint8_t v) { for (int l = std::max(line, 0); l < kLines; l++) a[l] = v; };
+	// (each write marks its first scanline; the values are carried down once, at the end)
+	bool setP3x[kLines] = {}, setSize[kLines] = {}, setColour[kLines] = {}, setBank[kLines] = {};
+	auto from = [&](uint8_t *a, int line, uint8_t v) {
+		if (line < 0 || line >= kLines) return;
+		a[line] = v;
+		(a == hposP3 ? setP3x : a == sizeP3 ? setSize : a == colourP3 ? setColour : setBank)[line] = true;
+	};
 	from(hposP3, 0, 0);                        // VBI (B411)
 	from(sizeP3, 0, s.slot[kSlots - 1].size);
 	from(colourP3, 0, 0);
@@ -770,6 +788,7 @@ void Game::displaySimple() {
 	enum What { M2PL, P3PL, P2PL, P3PF, M0PL, M0PF, M0PF_END, P1PF, P2PF, M2PF, CLEAR, FLAGS_END };
 	struct Read { What what; int through; int slot; };
 	std::vector<Read> reads;
+	reads.reserve(256);
 	auto slotY = [&](int n) -> uint8_t { return n < kSlots ? s.slot[n].y : 0xFF; };
 	int counter = 0x5D;
 	int slot = s.firstSlot;
@@ -848,6 +867,12 @@ void Game::displaySimple() {
 		reads.push_back({M2PL, endLine + 3, current});
 	}
 
+	for (int l = 1; l < kLines; l++) {
+		if (!setP3x[l]) hposP3[l] = hposP3[l - 1];
+		if (!setSize[l]) sizeP3[l] = sizeP3[l - 1];
+		if (!setColour[l]) colourP3[l] = colourP3[l - 1];
+		if (!setBank[l]) bank[l] = bank[l - 1];
+	}
 	// What GTIA draws on each scanline (P3: the rows the DLI wrote, its position and size by
 	// scanline; the other sprites as the main loop left them)
 	auto spriteAt = [&](int sprite, int l, uint8_t &bits, int &count, uint8_t &hpos, uint8_t &size) {
@@ -893,10 +918,9 @@ void Game::displaySimple() {
 	// The collisions the DLI reads, on the scanlines they happen: each sprite's rows against
 	// the bank's runs, and the pairs it reads where their boxes meet, bit by bit.
 	std::vector<Beam::Regs> regs(kLines);
-	const auto &pfLines = bankRuns ? bankLines : screen;
-	auto playfield = [&](int l) -> const uint8_t * {
+	auto playfield = [&](int l) -> const Runs * {
 		const int r = l - kRiverFirstLine;
-		return r >= 0 && r < kRiverLines && size_t(r) < pfLines.size() ? pfLines[size_t(r)].data() : nullptr;
+		return r >= 0 && r < kRiverLines && size_t(r) < runLines.size() ? &runLines[size_t(r)] : nullptr;
 	};
 	for (const Box &b : boxes) {
 		if (b.sprite == 0) continue;               // (P0PF is not read)
@@ -930,10 +954,18 @@ void Game::displaySimple() {
 			}
 		}
 	int cleared = kFirstLine;
+	// the reads of an object see more and more scanlines: the OR grows from one to the next
+	Beam::Regs acc;
+	int accTo = cleared - 1;
 	auto seen = [&](int through) {
-		Beam::Regs r;
-		for (int l = cleared; l <= std::min(through, kLastLine); l++) r.add(regs[size_t(l)]);
-		return r;
+		through = std::min(through, kLastLine);
+		if (through < accTo) {                     // (never: the reads go down the screen)
+			Beam::Regs r;
+			for (int l = cleared; l <= through; l++) r.add(regs[size_t(l)]);
+			return r;
+		}
+		for (; accTo < through; accTo++) acc.add(regs[size_t(accTo + 1)]);
+		return acc;
 	};
 	bool m0plHit = false;
 	int stored = 0;   // B645-B65E: hits stored before HITCLR
@@ -967,6 +999,8 @@ void Game::displaySimple() {
 		case M2PF: if (r.mpf[2] & 0x03) { g.hit.bulletHitBank = c; stored++; } break;
 		case CLEAR:
 			cleared = afterDraw(rd.through, 23 + 2 * stored) ? rd.through + 1 : rd.through;   // B65F
+			acc = Beam::Regs();
+			accTo = cleared - 1;
 			simpleStats().clears++;
 			if (cleared != rd.through) simpleStats().clearsLate++;
 			break;
@@ -976,6 +1010,21 @@ void Game::displaySimple() {
 
 void Game::display() {
 	static const char *mode = std::getenv("RR_DISPLAY");
+	// RR_TIME: the time display() takes, printed at the end
+	struct Timer {
+		bool on = std::getenv("RR_TIME") != nullptr;
+		double total = 0;
+		long frames = 0;
+		~Timer() { if (on && frames) std::fprintf(stderr, "display: %ld frames, %.2f us a frame\n", frames, total * 1e6 / double(frames)); }
+	};
+	static Timer timer;
+	if (timer.on && (!mode || !std::strcmp(mode, "simple") || !std::strcmp(mode, "beam"))) {
+		const auto t0 = std::chrono::steady_clock::now();
+		if (mode && !std::strcmp(mode, "beam")) displayBeam(); else displaySimple();
+		timer.total += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
+		timer.frames++;
+		return;
+	}
 	if (!mode || !std::strcmp(mode, "simple")) { displaySimple(); return; }
 	if (!std::strcmp(mode, "beam")) { displayBeam(); return; }
 	// check: both, from the same state; the beam's result is kept

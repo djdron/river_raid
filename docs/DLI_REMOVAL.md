@@ -121,3 +121,19 @@ NTSC and PAL, two players up to frame 2900): no difference from the beam in any 
 differences, game 7 on NTSC up to its game over). The river area drawn from it against the
 original's screens (`-screens`, 1289 frames of the attract mode, 1272 of game 7 on PAL from
 bridge 50): identical.
+
+### Speed (C++)
+
+`RR_TIME=1` prints the time `display()` takes a frame. Release build, best of 5 runs, and
+the instructions counted by callgrind (game 7 on PAL, 2000 frames):
+
+| | attract mode | game 7, PAL (from bridge 50) | instructions a frame |
+|---|---|---|---|
+| the beam (`RR_DISPLAY=beam`) | 8.5 us | 10.1 us | 101 500 |
+| displaySimple | 4.0 us | 4.0 us | 44 600 |
+
+About 2.3 times fewer instructions, 2-2.5 times faster. Both look at the playfield's runs
+made once as each line enters (`Game::runLines`, `makeRuns`), not at the line's pixels. Of
+the beam's time two thirds went to the collisions it works out on every scanline, one third
+to its cycles (`settle`). Most of what displaySimple has left is finding the sprites' boxes
+by looking down player-missile memory, which a port knows from the objects' positions.
