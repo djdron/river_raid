@@ -195,6 +195,11 @@ public:
 	// Parts of frame(), in order (frame() also handles the frames of a reset).
 	void prepare();
 	void display();
+	// displaySimple (the default) and displayBeam (RR_DISPLAY=beam): the same without and with
+	// the DLI's cycles (docs/DLI_REMOVAL.md); RR_DISPLAY=check runs both and prints where they
+	// differ.
+	void displaySimple();
+	void displayBeam();
 	void logic(const Input &input, const std::function<uint8_t()> &random);
 	void vbi(const std::function<uint8_t()> &random);
 	// For jumping ahead in the attract mode (river viewer): one frame of the river only. The

@@ -65,3 +65,59 @@ meet), to see whether it is needed:
   NTSC bot run on 712 (an object destroyed that the original's bullet passed), game 7 on 2-4.
   Two sprites' spans meet rarely (a few thousand lines in a run), so the bit-by-bit step costs
   little.
+
+## Step 3: the display without the DLI's cycles
+
+`Game::displaySimple` (`port/src/display.cpp`) is now the default; `RR_DISPLAY=beam` runs
+the cycle-by-cycle model as before, `RR_DISPLAY=check` runs both from the same state every
+frame and prints any difference in the collision results, the objects' flags, player-missile
+memory or what is drawn on each scanline.
+
+It follows the DLI's loop (B565-B664) in scanlines, not cycles. The 6502's X register counts
+scanlines: every STA WSYNC is followed by one INX, so while X = c the scanline being drawn
+is c - 69. For each slot:
+
+| what | scanline (S: X when the object's wait ends, E: X after its last row) |
+|---|---|
+| HPOSP3 = x | from S - 68 |
+| two blank rows in player 3 memory | S - 67, S - 66 |
+| SIZEP3 | from S - 66 |
+| shape row k (from the top row down), its COLPM3, the bridge's road colour | S - 65 + k |
+| the bank colour back (bridge) | from E - 68 |
+| read M2PL (bullet - object) | sees up to E - 70 (a bridge: E - 69) |
+| read P3PL (object - shell), P2PL (plane - shell, object) | up to E - 69 |
+| read P3PF (the object's "touching the edge" bit) | up to E - 68 |
+| read M0PL (missile - plane), M0PF (missile - bank) | up to E - 68 (M0PF: see below) |
+| read P1PF (tank), P2PF (plane - bank), M2PF (bullet - bank) | up to E - 67 |
+| HITCLR | the scanlines from E - 66 on count for the next object (see below) |
+
+An object whose rows are all above the scanline where its wait ends (it started too close
+under the one before) is skipped with no reads and no HITCLR. When X wraps to 0 the river
+ends; the panel part reads the collisions of the object in progress up to scanlines 188-190.
+
+Where the CPU is after a WSYNC (cycle 106) is fixed by the code, so every access falls on a
+known side of a scanline's draw (cycle 28) except two, decided by the cycles the next
+scanline's start takes (DMA, a display list instruction with or without an address) and by
+the hits stored just before them:
+
+- M0PF (B631) is read 28 cycles after the WSYNC, 30 when M0PL was a hit: after the draw on
+  a line whose start takes 8 cycles (with an address), so it sees one scanline more. On the
+  NTSC bot run: 1 499 times in 68 365.
+- HITCLR (B65F) comes 23 cycles after the WSYNC, 2 more for each of the three hits stored
+  before it: with all three, on a line with an address, it comes after the draw and that
+  scanline's collisions are lost. Never seen in the runs (0 of 285 623).
+
+Collisions: each sprite's box (the scanlines it has graphics on and the clocks they cover;
+player 3 a box per object, cut where its position or size changes). The playfield: each row
+of player 1 (tank), 2 (plane), 3 (objects) and missiles 0 and 2 against the runs of its
+scanline (step 2). The sprites with each other: only the pairs the DLI reads (bullet - object,
+object - shell, plane - shell, plane - object, missile - plane) whose boxes meet, bit by bit
+on the scanlines they share. What a read sees is the OR of the scanlines since the last
+HITCLR.
+
+Checked: `RR_DISPLAY=check` on all the runs above (attract mode, NTSC and PAL bots, game 7 on
+NTSC and PAL, two players up to frame 2900): no difference from the beam in any frame.
+`RR_DISPLAY=simple` against the original (`game_check`): the same results as the beam (no
+differences, game 7 on NTSC up to its game over). The river area drawn from it against the
+original's screens (`-screens`, 1289 frames of the attract mode, 1272 of game 7 on PAL from
+bridge 50): identical.
