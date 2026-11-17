@@ -163,6 +163,9 @@ public:
 	std::vector<Runs> runLines;
 	static Runs makeRuns(const uint8_t *line);
 	bool bankRuns = true;
+	// displaySimple (the default) does not write player 3's rows (the DLI's): diffWithRam
+	// skips them
+	bool simpleDisplay = true;
 	// If set: the generator's state before each line in `screen`, newest first, so screen
 	// memory can be made again from the oldest one (a small saved state, see compact()).
 	bool keepLineStates = false;
@@ -235,6 +238,15 @@ public:
 		uint8_t bankColour = 0;   // COLPF0
 	};
 	std::array<Scanline, 262> scan{};
+	// displaySimple draws the objects from their rows, not from player 3 by scanline (scan's
+	// p3 fields stay 0): each object's first scanline, position, size, rows and their colours
+	// (the first row on the first scanline), as the DLI's loop writes them.
+	struct DrawnObject {
+		int slot = 0, first = 0;
+		uint8_t x = 0, size = 0;
+		std::vector<uint8_t> rows, colours;
+	};
+	std::vector<DrawnObject> drawn;
 
 	// After display(): draws the river area (rows kRiverTop.. of the 384 x 240 screen buffer,
 	// see status_bar.h) as the original shows it this frame: playfield, objects, the tank,

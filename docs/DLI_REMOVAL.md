@@ -234,3 +234,20 @@ Checked: `game_check` against the original (all the runs above): no difference;
 `RR_DISPLAY=check` (60 000 frames `-wild`, 60 000 from bridge 100 on PAL, 300 000 from bridge
 100 on NTSC and 300 000 on PAL with `-wild`): nothing but the edge bit of the kinds that do
 not turn.
+
+### The objects drawn from their rows
+
+Nothing reads player 3's rows but GTIA: the game never does. So `displaySimple` no longer
+writes them, nor player 3's registers by scanline (HPOSP3, SIZEP3, the colours, the two blank
+rows above each object). What it leaves for drawing is `drawn`: each object's first scanline,
+position, size, rows and their colours, as the loop writes them, and the bank's colour by
+scanline (`scan`'s `bankColour`; its player 3 fields stay 0); `drawRiver` draws the objects
+from it. The loop itself stays as the schedule: which rows each object shows, where each read
+and HITCLR comes, the cycles. `diffWithRam` does not compare player 3's rows ($0F00-$0FBF)
+with `simpleDisplay`; `RR_DISPLAY=check` compares the two pictures instead of the scanlines.
+When the DLI falls behind, the original shows last frame's rows where the late ones go; the
+new rows are drawn here (in none of the runs). Checked: `game_check` against the original's
+state (all the runs above): no difference; against its screens (`-screens`, 1300 frames of
+the attract mode, 1500 of game 7 on PAL from bridge 50): the river area identical;
+`RR_DISPLAY=check` (60 000 frames `-wild`, 60 000 from bridge 100 on PAL): the pictures the
+same, nothing but the edge bit of the kinds that do not turn.

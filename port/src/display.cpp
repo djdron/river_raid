@@ -48,6 +48,7 @@ constexpr int kRefreshCycles = 9;
 
 // Player 3 memory ($0F00) less $44: indexed by the DLI's scanline counter.
 constexpr uint16_t kPlayer3Rows = 0x0EBC;
+constexpr size_t kPlayer3Memory = 0x0F00 - 0x0B00;   // (in PlayerMissile::bytes)
 
 static int g_debugKind = -1;   // RR_BANK_DEBUG: the kind of the object being drawn
 
@@ -448,6 +449,7 @@ bool crosses(uint16_t base, int index) { return ((base & 0xFF) + index) > 0xFF; 
 void Game::displayBeam() {
 	RiverState &s = gen.s;
 	scan = {};
+	drawn.clear();
 	// river rows whose display list instruction has a screen address: the top row and the
 	// rows where screen memory continues in the other 4 KB block ($2000-$2EFF, $3000-$3EFF)
 	bool lms[kRiverLines] = {};
@@ -714,6 +716,9 @@ void Game::drawRiver(uint8_t out[240][kRowWidth]) const {
 		}
 		// players over the playfield (PRIOR 1), player 0 on top
 		player(row, sc.p3, sc.p3x, sc.p3size, sc.p3colour);
+		for (const DrawnObject &o : drawn)                                   // (displaySimple: the objects)
+			if (line >= o.first && line < o.first + int(o.rows.size()))
+				player(row, o.rows[size_t(line - o.first)], o.x, o.size, o.colours[size_t(line - o.first)]);
 		const uint8_t planeColour = g.player ? 0x8E : 0x1E;                 // COLPM2 (B542)
 		player(row, g.pm.player(2, line), g.planeX, 0, planeColour);        // the plane
 		const uint8_t m2 = (g.pm.missiles(line) >> 4) & 0x03;               // its bullet
@@ -786,45 +791,24 @@ void Game::displaySimple() {
 
 	// Registers by scanline: each write marks its first scanline (they come in time order);
 	// the values are carried down to a scanline before anything looks at it.
-	uint8_t hposP3[kLines], sizeP3[kLines], colourP3[kLines], bank[kLines];
-	bool setP3x[kLines] = {}, setSize[kLines] = {}, setColour[kLines] = {}, setBank[kLines] = {};
+	uint8_t bank[kLines];
+	bool setBank[kLines] = {};
 	auto from = [&](uint8_t *a, bool *set, int l, uint8_t v) {
 		if (l < 0 || l >= kLines) return;
 		a[l] = v;
 		set[l] = true;
 	};
-	from(hposP3, setP3x, 0, 0);                         // VBI (B411)
-	from(sizeP3, setSize, 0, s.slot[kSlots - 1].size);
-	from(colourP3, setColour, 0, 0);
 	from(bank, setBank, 0, g.colourBank);
 	int filled = 0;
 	auto fill = [&](int upto) {
 		for (; filled < std::min(upto, kLines - 1); ) {
 			const int l = ++filled;
-			if (!setP3x[l]) hposP3[l] = hposP3[l - 1];
-			if (!setSize[l]) sizeP3[l] = sizeP3[l - 1];
-			if (!setColour[l]) colourP3[l] = colourP3[l - 1];
 			if (!setBank[l]) bank[l] = bank[l - 1];
 		}
 	};
 	int endLine = 187;   // the river's last scanline (X wraps to 0 on the next): 187 + slip
-	// Player 3's memory as GTIA fetches it at a scanline's start: a row the DLI writes on that
-	// scanline or later (once it has skipped one) shows there only in the next frame.
-	uint8_t p3before[256];
-	int p3written[256];
-	for (int i = 0; i < 256; i++) { p3before[i] = g.pm.player(3, i); p3written[i] = -1; }
-	auto writeP3 = [&](int c, uint8_t v, int when) {
-		const int i = (c - 0x44) & 0xFF;
-		if (p3written[i] < 0) p3written[i] = when;
-		g.pm.at(uint16_t(kPlayer3Rows + c)) = v;
-	};
-	auto p3At = [&](int l) {
-		const int i = l & 0xFF;
-		return p3written[i] >= l ? p3before[i] : g.pm.player(3, l);
-	};
-
-	// What GTIA draws: P3 from player-missile memory with the DLI's registers, the others
-	// as the main loop left them (P0, P1 and M0 at x 0 from the panel on).
+	// The other sprites as the main loop left them (P0, P1 and M0 at x 0 from the panel on);
+	// the objects are drawn from their rows (`drawn`), not from player 3's memory.
 	auto spriteAt = [&](int sprite, int l, uint8_t &bits, int &count, uint8_t &hpos, uint8_t &size) {
 		const bool panel = l >= endLine + 1;
 		count = sprite < 4 ? 8 : 2;
@@ -833,7 +817,6 @@ void Game::displaySimple() {
 		case 0: bits = g.pm.player(0, l); hpos = panel ? 0 : g.shellX; break;
 		case 1: bits = g.pm.player(1, l); hpos = panel ? 0 : s.tankX; break;
 		case 2: bits = g.pm.player(2, l); hpos = g.planeX; break;
-		case 3: bits = p3At(l); hpos = hposP3[l]; size = sizeP3[l]; break;
 		case 4: bits = uint8_t(g.pm.missiles(l) & 3); hpos = panel ? 0 : s.missileX; size = 1; break;      // M0 (SIZEM: double)
 		default: bits = uint8_t((g.pm.missiles(l) >> 4) & 3); hpos = uint8_t(g.planeX + 4); break;    // M2
 		}
@@ -892,7 +875,7 @@ void Game::displaySimple() {
 	auto clearAt = [&](int l) { cleared = l; };
 	// Each object's rows as the loop writes them. The edge (P3PF) only for the kinds whose bit
 	// moveObjects reads: helicopters, balloons, ships.
-	struct ObjectRows { int slot, first; uint8_t x, size; bool edge; std::vector<uint8_t> rows; };
+	struct ObjectRows { int slot, first; uint8_t x, size; bool edge; std::vector<uint8_t> rows, colours; };
 	std::vector<ObjectRows> objects;
 	objects.reserve(kSlots + 1);
 	auto objectTouches = [&](int sprite, const Rows &b, const ObjectRows &o, int through) {
@@ -941,16 +924,12 @@ void Game::displaySimple() {
 		counter = (counter + 1) & 0xFF;
 		if (!counter) break;
 		const Slot sl = slot < kSlots ? s.slot[slot] : Slot{};
-		from(hposP3, setP3x, line(counter), sl.x);  // B57D, before the scanline's draw
-		writeP3(counter, 0, line(counter));         // blank rows above the object
-		writeP3(counter + 1, 0, line(counter));
 		const uint8_t flags = sl.flags;
 		const bool facingLeft = flags & slotflag::kFacingLeft;
 		const bool bridge = flags & slotflag::kBridge;
 		const uint16_t shapes = rom_.shapeAddress(sl.kind + (facingLeft ? 0x10 : 0));
 		counter = (counter + 1) & 0xFF;
 		if (!counter) break;
-		from(sizeP3, setSize, line(counter) + 1, sl.size);   // B5A8, after it
 		const uint16_t colours = rom_.coloursAddress(sl.type);
 		int row = uint8_t(sl.y + rom_.objectHeight(sl.type) - start);
 		counter = (counter + 1) & 0xFF;
@@ -959,12 +938,11 @@ void Game::displaySimple() {
 		chunk(line(counter), 49 + (crosses(shapes, row) ? 1 : 0));   // B5B0-B5D1
 		bool wrapped = false;
 		const int firstRow = counter - 0x44;        // player 3's memory is indexed by X
-		objects.push_back({current, firstRow, sl.x, sl.size, sl.kind >= object::kHelicopter && sl.kind <= object::kShip, {}});
+		objects.push_back({current, firstRow, sl.x, sl.size, sl.kind >= object::kHelicopter && sl.kind <= object::kShip, {}, {}});
 		for (;;) {                                  // B5CB: a row a scanline
-			writeP3(counter, rom_.at(uint16_t(shapes + row)), line(counter));
 			objects.back().rows.push_back(rom_.at(uint16_t(shapes + row)));
+			objects.back().colours.push_back(rom_.at(uint16_t(colours + row)));
 			if (bridge) from(bank, setBank, line(counter) + 1, rom_.roadColour(row));
-			from(colourP3, setColour, line(counter) + 1, rom_.at(uint16_t(colours + row)));
 			counter = (counter + 1) & 0xFF;
 			if (!counter) { wrapped = true; break; }
 			if (--row < 0) break;
@@ -1033,16 +1011,15 @@ void Game::displaySimple() {
 	fill(last);
 	for (int l = kFirstLine; l <= last; l++) {
 		Scanline &sc = scan[size_t(l)];
-		sc.p3 = p3At(l);
-		sc.p3x = hposP3[l];
-		sc.p3size = sizeP3[l];
-		sc.p3colour = colourP3[l];
 		sc.bankColour = bank[l];
 	}
+	drawn.clear();
+	for (const ObjectRows &o : objects) drawn.push_back({o.slot, o.first, o.x, o.size, o.rows, o.colours});
 }
 
 void Game::display() {
 	static const char *mode = std::getenv("RR_DISPLAY");
+	simpleDisplay = !mode || !std::strcmp(mode, "simple");
 	// RR_TIME: the time display() takes, printed at the end
 	struct Timer {
 		bool on = std::getenv("RR_TIME") != nullptr;
@@ -1067,6 +1044,7 @@ void Game::display() {
 	const GameState g1 = g;
 	const RiverState s1 = gen.s;
 	const auto scan1 = scan;
+	const auto drawn1 = drawn;
 	g = g0;
 	gen.s = s0;
 	displayBeam();
@@ -1082,16 +1060,25 @@ void Game::display() {
 	cmp("missileHitPlane", g.hit.missileHitPlane, g1.hit.missileHitPlane);
 	cmp("missileHitBank", g.hit.missileHitBank, g1.hit.missileHitBank);
 	for (int i = 0; i < kSlots; i++) cmp(("flags" + std::to_string(i)).c_str(), gen.s.slot[i].flags, s1.slot[i].flags);
-	for (size_t i = 0; i < g.pm.bytes.size(); i++)
+	for (size_t i = 0; i < g.pm.bytes.size(); i++) {
+		if (i >= kPlayer3Memory && i < kPlayer3Memory + 0xC0) continue;   // (player 3's rows: only the beam writes them)
 		if (g.pm.bytes[i] != g1.pm.bytes[i]) { cmp(("pm" + std::to_string(i)).c_str(), g.pm.bytes[i], g1.pm.bytes[i]); break; }
-	for (size_t l = 0; l < scan.size(); l++) {
-		const Scanline &a = scan[l], &b = scan1[l];
-		if (a.p3 != b.p3 || a.p3x != b.p3x || a.p3size != b.p3size || a.p3colour != b.p3colour || a.bankColour != b.bankColour) {
-			d += " scan" + std::to_string(l) + " beam=" + std::to_string(a.p3) + "," + std::to_string(a.p3x) + "," + std::to_string(a.p3size) + "," +
-				std::to_string(a.p3colour) + "," + std::to_string(a.bankColour) + " simple=" + std::to_string(b.p3) + "," + std::to_string(b.p3x) + "," +
-				std::to_string(b.p3size) + "," + std::to_string(b.p3colour) + "," + std::to_string(b.bankColour);
-			break;
-		}
+	}
+	for (size_t l = 0; l < scan.size(); l++)
+		if (scan[l].bankColour != scan1[l].bankColour) { cmp(("bank" + std::to_string(l)).c_str(), scan[l].bankColour, scan1[l].bankColour); break; }
+	{   // the river as each draws it: the beam's player 3 by scanline, displaySimple's objects
+		static uint8_t pa[240][kRowWidth], pb[240][kRowWidth];
+		std::memset(pa, 0, sizeof pa);
+		std::memset(pb, 0, sizeof pb);
+		drawRiver(pa);
+		const auto scanBeam = scan;
+		scan = scan1;
+		drawn = drawn1;
+		drawRiver(pb);
+		scan = scanBeam;
+		drawn.clear();
+		for (int y = 0; y < 240; y++)
+			if (std::memcmp(pa[y], pb[y], kRowWidth)) { d += " picture row " + std::to_string(y); break; }
 	}
 	if (!d.empty()) std::fprintf(stderr, "display frame %u:%s\n", g.frameCount, d.c_str());
 }

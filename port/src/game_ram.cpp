@@ -122,7 +122,7 @@ std::vector<std::string> Game::diffWithRam(const uint8_t *orig) const {
 		diffs.push_back(b);
 	}
 	for (size_t i = 0; i < g.pm.bytes.size(); i++)
-		if (g.pm.bytes[i] != ram[0x0B00 + i]) {
+		if (g.pm.bytes[i] != ram[0x0B00 + i] && !(simpleDisplay && i >= 0x0400 && i < 0x04C0)) {   // (player 3's rows: the DLI's)
 			std::snprintf(b, sizeof b, "pm $%04zX: port=%02X orig=%02X", 0x0B00 + i, g.pm.bytes[i], ram[0x0B00 + i]);
 			diffs.push_back(b);
 		}
