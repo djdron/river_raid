@@ -847,6 +847,9 @@ void Game::displaySimple() {
 	boxes.reserve(32);
 	static const bool scanBoxes = std::getenv("RR_BOXES") && !std::strcmp(std::getenv("RR_BOXES"), "scan");
 	uint8_t cover[kLines] = {};   // the sprites with a box on each scanline (bit = sprite)
+	// The objects whose "touching the edge" bit is read (moveObjects: helicopters, balloons,
+	// ships turn round at the edge); the others' rows are not tested against the edge.
+	bool noEdge[kLines] = {};
 	auto addBox = [&](int sprite, int y0, int y1) {
 		y0 = std::max(y0, kFirstLine);
 		y1 = std::min(y1, kLines - 1);
@@ -892,7 +895,9 @@ void Game::displaySimple() {
 				if (!on[sp]) continue;
 				// only what the DLI reads: P1PF, P3PF the edge, P2PF the bank, M0PF, M2PF either
 				static const uint8_t wanted[6] = {0, 2, 1, 2, 3, 3};
-				const uint8_t hits = Beam::playfieldHits(bits[sp], count[sp], hpos[sp], size[sp], pf, wanted[sp]);
+				const uint8_t want = sp == 3 && noEdge[l] ? 0 : wanted[sp];
+				if (!want) continue;
+				const uint8_t hits = Beam::playfieldHits(bits[sp], count[sp], hpos[sp], size[sp], pf, want);
 				if (sp < 4) rg.ppf[sp] |= hits;
 				else rg.mpf[sp == 4 ? 0 : 2] |= hits;
 			}
@@ -972,6 +977,8 @@ void Game::displaySimple() {
 			if (--row < 0) break;
 		}
 		if (!scanBoxes) addBox(3, firstRow, (wrapped ? 0x100 : counter) - 0x44 - 1);
+		if (sl.kind < object::kHelicopter || sl.kind > object::kShip)
+			for (int l = std::max(firstRow, 0); l < std::min((wrapped ? 0x100 : counter) - 0x44, kLines); l++) noEdge[l] = true;
 		if (wrapped) break;
 		// B5E8: the object's collisions
 		const int e = counter;

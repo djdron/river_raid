@@ -189,3 +189,14 @@ bridge 100; up to bridge 392), NTSC and PAL, games 1, 2 (two players) and 7, and
 difference in any frame. Scanlines skipped: 0-8 a run. The late HITCLR (all three hits stored
 before it, on a line with a screen address) never happened, in these runs or any other: it
 is there from the code's cycles alone, not seen at work.
+
+### Only the objects that turn at the edge
+
+The "touching the edge" bit (P3PF) is read by moveObjects only for helicopters ($08-$0B),
+balloons ($0C) and ships ($0D): they turn round at the first contact. Jets fly straight,
+explosions stand still, bridges and depots stay put. `displaySimple` tests only those kinds'
+rows against the edge (`noEdge` marks the others' scanlines); the others' bit stays clear, and
+`game_check` does not compare it for them (`bankRuns`). Checked against the original: the
+attract mode (NTSC 2 262 and 5 961 frames, PAL 2 975), bot games on NTSC (up to their first
+game over, which the port does not model on NTSC), on PAL (5 975 and two players 7 775) and
+game 7 from bridge 50 on PAL (5 975): no difference.
