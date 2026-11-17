@@ -73,6 +73,11 @@ add_executable(game_check tools/game_check.cpp)
 target_link_libraries(game_check rrcore)
 target_compile_options(game_check PRIVATE ${RR_WARNINGS})
 
+# Timing display() over many frames with an autopilot (docs/DLI_REMOVAL.md).
+add_executable(display_bench tools/display_bench.cpp)
+target_link_libraries(display_bench rrcore)
+target_compile_options(display_bench PRIVATE ${RR_WARNINGS})
+
 # Compare the sound driver with the POKEY writes of the original (rr_oracle -vbi).
 add_executable(sound_check tools/sound_check.cpp)
 target_link_libraries(sound_check rrcore)

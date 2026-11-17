@@ -143,3 +143,42 @@ rows below `bulletY` (from row $1C), each object's rows as the DLI's loop wrote 
 of each scanline in a box are still read from player-missile memory. Same as the beam on
 every frame of every run: nothing outside these boxes (rows left in player 3's memory from
 earlier frames, say) ever made a collision the DLI reads.
+
+### Long runs: `display_bench`
+
+`port/build/display_bench <rom> <frames> [-pal] [-game N] [-seed N]` plays with an
+autopilot (it steers to the middle of the water ahead and keeps firing; the plane cannot crash
+and never runs out of fuel, so one game goes on for the whole run: 100 000 frames reach bridge
+98 in game 1, bridge 147 in game 7). With `RR_DISPLAY=check` it compares the two models on
+every frame, with `RR_TIME=1` it times `display()`.
+
+These runs found what the shorter ones never showed: the DLI sometimes falls a scanline
+behind. From one WSYNC to the next the code must fit before cycle 106 of the next scanline
+with that scanline's start and draw taken out (on a river line 6 or 8 + 57 cycles); three
+stretches can be longer:
+
+- B5B0-B5D1 (to the first row): 49 cycles, 50 when the first row's shape byte is on the next
+  page: too long on a line with a screen address.
+- the last row of a bridge to B5F3: 46 cycles, +1 for each table read across a page, +2 for
+  a bullet hit.
+- B5F3-B61F: 44 cycles (bridge 43), +2 for each of the hits stored there (shell, plane with
+  shell, plane with object).
+
+When it is too long, the STA WSYNC waits for the end of the next scanline: everything after
+it in that frame happens a scanline later (X = scanline + 68), the river's end and the panel's
+reads included, and a row of player 3 written on or after the scanline it is for shows there
+only in the next frame (GTIA has fetched the old one). displaySimple counts these skips
+(`RR_STATS`): 0-10 in 100 000 frames, all with the plane hitting things it would have crashed
+on; in a real game once in a long while. With them modelled, `RR_DISPLAY=check` gives no
+difference in 6 runs of 100 000 frames (games 1, 2, 3, 5, 7, 8, NTSC and PAL).
+
+Time of `display()`, best of 3, and instructions a frame (callgrind, 5000 frames):
+
+| | game 1, NTSC, 50 000 / 100 000 frames | game 7, PAL, 50 000 / 100 000 frames | instructions (game 1 / game 7) |
+|---|---|---|---|
+| the beam | 10.8 / 11.1 us | 10.5 / 9.5 us | 120 000 / 129 000 |
+| displaySimple | 5.1 / 4.8 us | 4.8 / 5.0 us | 65 000 / 69 000 |
+
+About twice as fast. Less than on the runs of the original above (3 times) because here the
+plane flies through objects and banks without crashing: far more collisions to work out a
+frame than a real game has.
