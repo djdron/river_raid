@@ -200,3 +200,17 @@ rows against the edge (`noEdge` marks the others' scanlines); the others' bit st
 attract mode (NTSC 2 262 and 5 961 frames, PAL 2 975), bot games on NTSC (up to their first
 game over, which the port does not model on NTSC), on PAL (5 975 and two players 7 775) and
 game 7 from bridge 50 on PAL (5 975): no difference.
+
+### The plane against an object: by boxes and bits
+
+P2PL's bit for player 3 is read after an object's rows (B60A) or at the river's end, and sees
+the scanlines since the HITCLR before them: only that object's rows, at its position and size.
+So "the plane touched the object" is worked out without the scanlines: the plane's 14 rows
+from $AA against the object's rows where the loop wrote them, bit by bit (`planeTouches`), at
+the same two places (the store's cycles count as before); the pair P2-P3 is gone from the
+scanlines' collisions. Measured first beside the DLI's value (`RR_GEO_CHECK`, since removed):
+the same in every frame of the original's runs above (~47 000 frames, 420 with the hit) and of
+`display_bench` (200 000 frames each with `-wild` on NTSC and game 7 on PAL, 300 000 from bridge
+100 on NTSC and on PAL with `-wild`: 61 382 hits). Then `game_check` against the original: no
+difference; `RR_DISPLAY=check` (60 000 frames `-wild`, 60 000 from bridge 100 on PAL): nothing
+but the edge bit of the kinds that do not turn (above).
