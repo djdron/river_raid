@@ -290,26 +290,30 @@ void RiverGen::startDecoration() {
 // $AA8C-$AB75: draw the line. Runs of whole bytes (bank, water, island) with 2-byte edge
 // pieces where they meet (from the table at $B800, chosen by the pixel within the byte), plus
 // a row of the decoration bitmap. Horizontal positions x are in pixels; 4 pixels per byte.
-void RiverGen::drawLine(uint8_t out[kLineBytes]) {
+void RiverGen::drawLine(uint8_t out[kLineBytes], uint8_t *bank) {
 	uint8_t buf[256] = {};
+	uint8_t plain[256] = {};                            // the same without decoration
 	int pos = 0;                                        // $B4: bytes written so far
 	const uint8_t bankFill = s.flashLines ? kFlashBytes : kBankBytes;   // sub $AFF4
 	// count bytes of one value; nothing when count is 0 or above $80 (a negative count)
 	auto fill = [&](uint8_t count, uint8_t value) {
 		if (count == 0 || count > 0x80) return;
-		for (int i = 0; i < count; i++) buf[(pos + i) & 0xFF] = value;
+		for (int i = 0; i < count; i++) buf[(pos + i) & 0xFF] = plain[(pos + i) & 0xFF] = value;
 		pos += count;
 	};
 	auto edgeIndex = [](uint8_t x) { return lo((x & 3) << 2); };   // pixel within the byte
 	auto edgePiece = [&](uint8_t piece) {               // sub $B03B
-		buf[pos & 0xFF] = rom_.edgePiece(piece);
-		buf[(pos + 1) & 0xFF] = rom_.edgePiece(lo(piece + 1));
+		buf[pos & 0xFF] = plain[pos & 0xFF] = rom_.edgePiece(piece);
+		buf[(pos + 1) & 0xFF] = plain[(pos + 1) & 0xFF] = rom_.edgePiece(lo(piece + 1));
 		pos += 2;
 	};
 	// bank edge pieces: the flashing set is $10 further
 	auto bankEdge = [&](uint8_t piece) { edgePiece(s.flashLines ? lo(piece + 0x10) : piece); };   // sub $B034
 	auto decoRow = [&]() {                              // sub $B01A
-		for (int i = s.decoWidth - 1; i >= 0; i--) buf[(pos + i) & 0xFF] = rom_.at(uint16_t(s.decoBitmap + i));
+		for (int i = s.decoWidth - 1; i >= 0; i--) {
+			buf[(pos + i) & 0xFF] = rom_.at(uint16_t(s.decoBitmap + i));
+			plain[(pos + i) & 0xFF] = bankFill;
+		}
 		s.decoBitmap = uint16_t(s.decoBitmap + s.decoWidth);
 		pos += s.decoWidth;
 	};
@@ -374,6 +378,7 @@ void RiverGen::drawLine(uint8_t out[kLineBytes]) {
 	}
 	fill(count, bankFill);
 	std::memcpy(out, buf, kLineBytes);
+	if (bank) std::memcpy(bank, plain, kLineBytes);
 }
 
 // $AB76-$ABF2: everything moves down one line; when the lowest slot leaves the screen the
@@ -694,12 +699,12 @@ void RiverGen::startGame(int gameNumber, bool pal) {
 	restoreCheckpoint();
 }
 
-void RiverGen::nextLine(uint8_t line[kLineBytes]) {
+void RiverGen::nextLine(uint8_t line[kLineBytes], uint8_t *bank) {
 	countLines();
 	changeIsland();
 	moveBank();
 	startDecoration();
-	drawLine(line);
+	drawLine(line, bank);
 	scrollObjects();
 	// $ABE1: the newest object still takes up the top lines (count 1..$80: above zero, signed)
 	if (s.enteringSlot < kNoSlot) {

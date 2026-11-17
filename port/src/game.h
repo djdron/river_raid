@@ -152,6 +152,10 @@ public:
 
 	// Lines currently in screen memory, newest first: the river area shows lines 0..159.
 	std::vector<std::array<uint8_t, kLineBytes>> screen;
+	// The same lines without their decoration (houses, roads): what the collisions with the
+	// playfield look at when bankRuns is set (display.cpp). RR_BANK_RUNS=0: the screen itself.
+	std::vector<std::array<uint8_t, kLineBytes>> bankLines;
+	bool bankRuns = true;
 	// If set: the generator's state before each line in `screen`, newest first, so screen
 	// memory can be made again from the oldest one (a small saved state, see compact()).
 	bool keepLineStates = false;

@@ -130,7 +130,9 @@ public:
 	void sectionCheckpoint();
 
 	// Generate one line; writes the bitmap into line[0..47].
-	void nextLine(uint8_t line[kLineBytes]);
+	// `bank`, if given, gets the line without its decoration (houses, roads): the bank fill
+	// where the decoration is drawn (for the collisions with the bank, display.cpp)
+	void nextLine(uint8_t line[kLineBytes], uint8_t *bank = nullptr);
 
 	// Load / compare with a 16 KB RAM image of the original ($0000-$3FFF).
 	// Where the games start. Games 1-8 have 4 starting points, 2 games each (one and two
@@ -167,7 +169,7 @@ private:
 	void moveBank();                          // $A826-$A96B
 	bool bankWouldHitObject(bool movingLeft) const;
 	void startDecoration();                   // $A96C-$A9D6
-	void drawLine(uint8_t line[kLineBytes]);  // $AA8C-$AB75
+	void drawLine(uint8_t line[kLineBytes], uint8_t *bank);  // $AA8C-$AB75
 	void scrollObjects();                     // $AB76-$ABF2
 	void placeObject();                       // $ABF3-$AD8D
 	uint8_t chooseEnemy();                    // $AC62-$AC8B

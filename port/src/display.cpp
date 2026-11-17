@@ -25,6 +25,9 @@
 #include <functional>
 
 #include "game.h"
+
+#include <cstdio>
+#include <cstdlib>
 #include "river_draw.h"
 
 namespace rr {
@@ -43,6 +46,8 @@ constexpr int kRefreshCycles = 9;
 
 // Player 3 memory ($0F00) less $44: indexed by the DLI's scanline counter.
 constexpr uint16_t kPlayer3Rows = 0x0EBC;
+
+static int g_debugKind = -1;   // RR_BANK_DEBUG: the kind of the object being drawn
 
 class Beam {
 public:
@@ -203,6 +208,29 @@ private:
 		auto playfieldBits = [&](const Mask &m) {
 			return uint8_t((m & pf[0] ? 1 : 0) | (m & pf[1] ? 2 : 0) | (m & pf[2] ? 4 : 0));
 		};
+		static const bool debug = std::getenv("RR_BANK_DEBUG") != nullptr;
+		if (debug && row >= 0 && row < kRiverLines && size_t(row) < game_.screen.size()) {
+			// where the lines with and without decoration give different collisions
+			Mask full[3];
+			const uint8_t *src = game_.screen[size_t(row)].data();
+			for (int p = 0; p < kClocks; p++) {
+				const int value = (src[p >> 2] >> (6 - 2 * (p & 3))) & 3;
+				if (value) full[value - 1].w[p >> 6] |= uint64_t(1) << (p & 63);
+			}
+			auto fullBits = [&](const Mask &m) {
+				return uint8_t((m & full[0] ? 1 : 0) | (m & full[1] ? 2 : 0) | (m & full[2] ? 4 : 0));
+			};
+			for (int n = 0; n < 4; n++) {
+				const uint8_t a = pl[n].empty() ? 0 : uint8_t(fullBits(pl[n]) & 3), b = pl[n].empty() ? 0 : uint8_t(playfieldBits(pl[n]) & 3);
+				const uint8_t c = ms[n].empty() ? 0 : uint8_t(fullBits(ms[n]) & 3), d = ms[n].empty() ? 0 : uint8_t(playfieldBits(ms[n]) & 3);
+				if (a != b || c != d) {
+					std::fprintf(stderr, "frame %u line %d row %d kind %d: %s%d full %d plain %d (hpos %d)\n  ", game_.g.frameCount, line_, row, g_debugKind,
+						a != b ? "P" : "M", n, a != b ? a : c, a != b ? b : d, a != b ? hposP[n] : hposM[n]);
+					for (int p = 0; p < kClocks; p++) std::fputc(".B=~"[(src[p >> 2] >> (6 - 2 * (p & 3))) & 3], stderr);
+					std::fputc('\n', stderr);
+				}
+			}
+		}
 		for (int n = 0; n < 4; n++) {
 			if (!pl[n].empty()) {
 				ppf[n] |= playfieldBits(pl[n]);
@@ -251,7 +279,7 @@ void Game::display() {
 	};
 	// The DLI starts on scanline 23 (the last blank line before the river); B500-B51D take
 	// it to about cycle 76.
-	Beam beam(*this, screen, 23, 76, lms, pal_, record);
+	Beam beam(*this, bankRuns ? bankLines : screen, 23, 76, lms, pal_, record);
 	bp = &beam;
 	beam.bankColour = g.colourBank;   // set by the VBI (sub $AFD0)
 	beam.hposP[3] = 0;                 // VBI (B411)
@@ -281,6 +309,7 @@ void Game::display() {
 	for (;;) {
 		beam.op(3);                                         // B565 STY $06
 		current = slot;
+		g_debugKind = current < kSlots ? s.slot[current].kind : -1;
 		// B567: wait for the scanline where the slot's object starts
 		bool end = false;
 		for (;;) {

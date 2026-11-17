@@ -1,6 +1,8 @@
 // River Raid game frame. See game.h. Addresses refer to the original cartridge code.
 #include "game.h"
 
+#include <cstdlib>
+
 #include <cstring>
 #include <type_traits>
 
@@ -55,7 +57,9 @@ uint8_t addBcd(uint8_t a, uint8_t b, int &carry) {
 
 }  // namespace
 
-Game::Game(const Rom &rom) : gen(rom), rom_(rom) {}
+Game::Game(const Rom &rom) : gen(rom), rom_(rom) {
+	if (const char *e = std::getenv("RR_BANK_RUNS")) bankRuns = std::atoi(e) != 0;
+}
 
 // sub $B0F1 leaves the rainbow under the logo (players 2 and 3, rows $DB-$E1) and the fuel
 // gauge needle (missile 1, rows $CC-$D5) in player-missile memory; on PAL (B133-B15C) 12 and 7
@@ -75,6 +79,7 @@ void Game::startAttract(bool pal) {
 	gen.startGame(1, pal);
 	g = GameState();
 	screen.clear();
+	bankLines.clear();
 	lineStates.clear();
 	drawLogoAndNeedle();
 	for (int i = 0; i < kPanelBytes; i++) g.panel[i] = rom_.panelText(i);   // A0F0
@@ -176,12 +181,14 @@ void Game::load(const std::vector<uint8_t> &data) {
 	RiverGen run = gen;
 	run.s = oldest;
 	screen.clear();
+	bankLines.clear();
 	lineStates.clear();
-	std::array<uint8_t, kLineBytes> line;
+	std::array<uint8_t, kLineBytes> line, bank;
 	for (int i = 0; i < lines; i++) {
 		if (keepLineStates) lineStates.insert(lineStates.begin(), run.s);
-		run.nextLine(line.data());
+		run.nextLine(line.data(), bank.data());
 		screen.insert(screen.begin(), line);
+		bankLines.insert(bankLines.begin(), bank);
 	}
 	scan = {};
 }
@@ -189,14 +196,16 @@ void Game::load(const std::vector<uint8_t> &data) {
 // A new river line goes above the others. Screen memory is a ring of two 80-line blocks,
 // $2000-$2EFF and $3000-$3EFF; the address of the top line moves up by one line.
 void Game::pushLine() {
-	std::array<uint8_t, kLineBytes> line;
+	std::array<uint8_t, kLineBytes> line, bank;
 	if (keepLineStates) {
 		lineStates.insert(lineStates.begin(), gen.s);
 		if (lineStates.size() > 256) lineStates.pop_back();
 	}
-	gen.nextLine(line.data());
+	gen.nextLine(line.data(), bank.data());
 	screen.insert(screen.begin(), line);
 	if (screen.size() > 256) screen.pop_back();
+	bankLines.insert(bankLines.begin(), bank);
+	if (bankLines.size() > 256) bankLines.pop_back();
 	uint8_t topLo = uint8_t(g.screenTop), topHi = uint8_t(g.screenTop >> 8);
 	if (topLo < kLineBytes) topHi--;
 	topLo = uint8_t(topLo - kLineBytes);
@@ -449,6 +458,7 @@ void Game::reset(bool full) {
 	for (int page = 0; page < 5; page++)
 		for (int row = 1; row < 0xBC; row++) g.pm.bytes[size_t(page * 0x100 + row)] = 0;
 	screen.clear();
+	bankLines.clear();
 	lineStates.clear();
 	g.screenOn = 0;                               // B101: colours off while clearing
 	busy_ = resetFrames();
@@ -1206,6 +1216,7 @@ void Game::powerOn(bool pal) {
 	gen.s.depotLevelLimit = pal ? 0x2F : 0x2E;
 	g = GameState();
 	screen.clear();
+	bankLines.clear();
 	lineStates.clear();
 	for (int i = 0; i < kPanelBytes; i++) g.panel[i] = rom_.panelText(i);
 	// A15D (X = $09): zero page cleared, then a new game's reset

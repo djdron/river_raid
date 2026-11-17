@@ -92,7 +92,15 @@ void Game::saveToRam(uint8_t *ram) const {
 	ram[0x3F05] = uint8_t(g.screenTop >> 8);
 }
 
-std::vector<std::string> Game::diffWithRam(const uint8_t *ram) const {
+std::vector<std::string> Game::diffWithRam(const uint8_t *orig) const {
+	// bankRuns: the collisions do not see the decoration (houses, roads), which only jets fly
+	// over; a jet's "touching the edge" bit is never read (moveObjects), so it is not compared
+	std::vector<uint8_t> copy(orig, orig + 0x4000);
+	if (bankRuns)
+		for (int i = 0; i < kSlots; i++)
+			if (gen.s.slot[i].kind == object::kJet)
+				copy[size_t(0x42 + i)] = uint8_t((copy[size_t(0x42 + i)] & ~slotflag::kTouchingEdge) | (gen.s.slot[i].flags & slotflag::kTouchingEdge));
+	const uint8_t *ram = copy.data();
 	std::vector<std::string> diffs = gen.diffWithRam(ram, true);
 	char b[96];
 	for (auto &fd : gameFields(*this))
