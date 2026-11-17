@@ -182,3 +182,10 @@ Time of `display()`, best of 3, and instructions a frame (callgrind, 5000 frames
 About twice as fast. Less than on the runs of the original above (3 times) because here the
 plane flies through objects and banks without crashing: far more collisions to work out a
 frame than a real game has.
+
+Longer still: 12 runs of 300 000 frames (3.6 million), `-bridge 100` (the game starts at
+bridge 100; up to bridge 392), NTSC and PAL, games 1, 2 (two players) and 7, and with
+`-wild` (the autopilot steers at random, over the banks too: up to bridge 70-159). No
+difference in any frame. Scanlines skipped: 0-8 a run. The late HITCLR (all three hits stored
+before it, on a line with a screen address) never happened, in these runs or any other: it
+is there from the code's cycles alone, not seen at work.

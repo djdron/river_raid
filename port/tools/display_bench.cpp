@@ -1,9 +1,11 @@
 // Runs the game for many frames with a simple autopilot, for timing display() (RR_TIME=1,
 // RR_DISPLAY=beam / simple; docs/DLI_REMOVAL.md).
 //
-// usage: display_bench <rom> <frames> [-pal] [-game N] [-seed N]
+// usage: display_bench <rom> <frames> [-pal] [-game N] [-seed N] [-bridge N] [-wild]
 //   -game N: game N of the menu (7: one player from bridge 50), chosen with SELECT in the
-//   attract mode; after a game over the next one starts the same way.
+//   attract mode; after a game over the next one starts the same way. -bridge N: the game
+//   starts at bridge N of the river (as river_raid -bridge). -wild: the autopilot steers at
+//   random instead (over the banks too: more collisions of every kind).
 // The autopilot steers to the middle of the water ahead of the plane and keeps firing; the
 // plane cannot crash and never runs out of fuel.
 #include <cstdio>
@@ -20,7 +22,7 @@ using namespace rr;
 
 int main(int argc, char **argv) {
 	if (argc < 3) {
-		std::fprintf(stderr, "usage: %s <rom> <frames> [-pal] [-game N] [-seed N]\n", argv[0]);
+		std::fprintf(stderr, "usage: %s <rom> <frames> [-pal] [-game N] [-seed N] [-bridge N] [-wild]\n", argv[0]);
 		return 2;
 	}
 	Rom rom;
@@ -29,14 +31,19 @@ int main(int argc, char **argv) {
 	bool pal = false;
 	int game = 1;
 	uint32_t seed = 1;
+	int bridge = 0;
+	bool wild = false;
 	for (int i = 3; i < argc; i++) {
 		if (!std::strcmp(argv[i], "-pal")) pal = true;
 		else if (!std::strcmp(argv[i], "-game") && i + 1 < argc) game = std::atoi(argv[++i]);
 		else if (!std::strcmp(argv[i], "-seed") && i + 1 < argc) seed = uint32_t(std::atol(argv[++i]));
+		else if (!std::strcmp(argv[i], "-bridge") && i + 1 < argc) bridge = std::atoi(argv[++i]);
+		else if (!std::strcmp(argv[i], "-wild")) wild = true;
 	}
 	const TvSystem tv = tvSystem(pal);
 	PokeyRandom random(seed, tv);
 	Game g(rom);
+	if (bridge) g.gen.setRiver(0, bridge);
 	g.startAttract(pal);
 	// the plane does not crash and never runs out of fuel (as rr_oracle -ghost): the collision
 	// results that would end it are dropped after the display, so the game goes on for long
@@ -69,6 +76,11 @@ int main(int argc, char **argv) {
 					const int d = px < a ? a - px : px > b ? px - b : 0;
 					if (d < best) { best = d; target = (a + b) / 2; }
 				}
+			}
+			if (wild) {                               // a new direction every 16 frames
+				uint32_t h = uint32_t(f >> 4) * 2654435761u ^ seed;
+				h ^= h >> 15;
+				target = px + int(h % 3) * 40 - 40;
 			}
 			uint8_t stick = 0x0F;
 			if (target < px - 3) stick &= uint8_t(~0x04);
