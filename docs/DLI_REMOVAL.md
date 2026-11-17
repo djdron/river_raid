@@ -130,10 +130,16 @@ the instructions counted by callgrind (game 7 on PAL, 2000 frames):
 | | attract mode | game 7, PAL (from bridge 50) | instructions a frame |
 |---|---|---|---|
 | the beam (`RR_DISPLAY=beam`) | 8.5 us | 10.1 us | 101 500 |
-| displaySimple | 4.0 us | 4.0 us | 44 600 |
+| displaySimple, boxes found in player-missile memory (`RR_BOXES=scan`) | 4.0 us | 4.0 us | 40 600 |
+| displaySimple, boxes from the game's positions | 3.1 us | 3.7 us | 34 200 |
 
-About 2.3 times fewer instructions, 2-2.5 times faster. Both look at the playfield's runs
+About 3 times fewer instructions, 2.5-3 times faster. Both look at the playfield's runs
 made once as each line enters (`Game::runLines`, `makeRuns`), not at the line's pixels. Of
 the beam's time two thirds went to the collisions it works out on every scanline, one third
-to its cycles (`settle`). Most of what displaySimple has left is finding the sprites' boxes
-by looking down player-missile memory, which a port knows from the objects' positions.
+to its cycles (`settle`). The sprites' boxes come from where the game put them (the default; `RR_BOXES=scan` looks
+down player-missile memory as before): the shell 16 rows from `shellY`, the tank 11 from
+`tankY`, the plane 14 from row $AA, the helicopter's missile the row `missileY`, the bullet 8
+rows below `bulletY` (from row $1C), each object's rows as the DLI's loop wrote them; the bits
+of each scanline in a box are still read from player-missile memory. Same as the beam on
+every frame of every run: nothing outside these boxes (rows left in player 3's memory from
+earlier frames, say) ever made a collision the DLI reads.

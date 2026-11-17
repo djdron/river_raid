@@ -789,6 +789,7 @@ void Game::displaySimple() {
 	struct Read { What what; int through; int slot; };
 	std::vector<Read> reads;
 	reads.reserve(256);
+	std::vector<std::pair<int, int>> objectRows;   // the scanlines of each object's rows
 	auto slotY = [&](int n) -> uint8_t { return n < kSlots ? s.slot[n].y : 0xFF; };
 	int counter = 0x5D;
 	int slot = s.firstSlot;
@@ -822,12 +823,14 @@ void Game::displaySimple() {
 		if (!counter) break;
 		if (row >= 0x80) { slot = current + 1; continue; }
 		bool wrapped = false;
+		const int firstRowLine = line(counter) + 1;
+		objectRows.push_back({firstRowLine, firstRowLine + row});
 		for (;;) {                                  // B5CB: a row a scanline
 			g.pm.at(uint16_t(kPlayer3Rows + counter)) = rom_.at(uint16_t(shapes + row));
 			if (flags & slotflag::kBridge) from(bank, line(counter) + 1, rom_.roadColour(row));
 			from(colourP3, line(counter) + 1, rom_.at(uint16_t(colours + row)));
 			counter = (counter + 1) & 0xFF;
-			if (!counter) { wrapped = true; break; }
+			if (!counter) { wrapped = true; objectRows.back().second = 0xFF - 68; break; }   // (the last row: X = $FF)
 			if (--row < 0) break;
 		}
 		if (wrapped) break;
@@ -897,22 +900,47 @@ void Game::displaySimple() {
 		sc.p3colour = colourP3[l];
 		sc.bankColour = bank[l];
 	}
-	// Each sprite's box: the scanlines it has graphics on and the clocks they cover. P3 is cut
-	// into boxes where its position or size changes (an object each).
+	// Each sprite's box: the scanlines it has graphics on and the clocks it can cover, from
+	// where the game put it: the shell (16 rows from shellY), the tank (11 from tankY), the
+	// plane (14 from $AA), the helicopter's missile (row missileY), the bullet (8 rows below
+	// bulletY), each object's rows as the DLI wrote them. RR_BOXES=scan: found by looking down
+	// player-missile memory instead.
 	struct Box { int sprite, y0, y1, x0, x1; };
 	std::vector<Box> boxes;
-	for (int sprite = 0; sprite < 6; sprite++) {
-		for (int l = kFirstLine; l <= kLastLine; l++) {
-			uint8_t bits, hpos, size; int count;
-			spriteAt(sprite, l, bits, count, hpos, size);
-			if (!bits) continue;
-			const int w = (size & 3) == 3 ? 4 : (size & 3) == 1 ? 2 : 1;
-			const int x0 = hpos - 32, x1 = hpos - 32 + count * w;
-			Box *b = boxes.empty() ? nullptr : &boxes.back();
-			const bool joins = b && b->sprite == sprite && b->y1 == l - 1 &&
-				(sprite != 3 || (hposP3[l] == hposP3[l - 1] && sizeP3[l] == sizeP3[l - 1]));
-			if (joins) { b->y1 = l; b->x0 = std::min(b->x0, x0); b->x1 = std::max(b->x1, x1); }
-			else boxes.push_back({sprite, l, l, x0, x1});
+	static const bool scanBoxes = std::getenv("RR_BOXES") && !std::strcmp(std::getenv("RR_BOXES"), "scan");
+	auto addBox = [&](int sprite, int y0, int y1) {
+		y0 = std::max(y0, kFirstLine);
+		y1 = std::min(y1, sprite == 2 || sprite == 3 || sprite == 5 ? kLastLine : endLine);   // (at x 0 below)
+		if (y0 > y1) return;
+		uint8_t bits, hpos, size; int count;
+		spriteAt(sprite, y0, bits, count, hpos, size);
+		const int w = (size & 3) == 3 ? 4 : (size & 3) == 1 ? 2 : 1;
+		boxes.push_back({sprite, y0, y1, hpos - 32, hpos - 32 + count * w});
+	};
+	if (!scanBoxes) {
+		addBox(0, s.shellY, s.shellY + 15);
+		addBox(1, s.tankY, s.tankY + 10);
+		addBox(2, 0xAA, 0xAA + 13);
+		for (const auto &r : objectRows) addBox(3, r.first, r.second);
+		if (s.missileY >= 0x1C) addBox(4, s.missileY, s.missileY);
+		if (g.bulletY > 1) {
+			const int row = std::max(g.bulletY - 1, 0x1B);
+			addBox(5, row + 1, row + 8);
+		}
+	} else {
+		for (int sprite = 0; sprite < 6; sprite++) {
+			for (int l = kFirstLine; l <= kLastLine; l++) {
+				uint8_t bits, hpos, size; int count;
+				spriteAt(sprite, l, bits, count, hpos, size);
+				if (!bits) continue;
+				const int w = (size & 3) == 3 ? 4 : (size & 3) == 1 ? 2 : 1;
+				const int x0 = hpos - 32, x1 = hpos - 32 + count * w;
+				Box *b = boxes.empty() ? nullptr : &boxes.back();
+				const bool joins = b && b->sprite == sprite && b->y1 == l - 1 &&
+					(sprite != 3 || (hposP3[l] == hposP3[l - 1] && sizeP3[l] == sizeP3[l - 1]));
+				if (joins) { b->y1 = l; b->x0 = std::min(b->x0, x0); b->x1 = std::max(b->x1, x1); }
+				else boxes.push_back({sprite, l, l, x0, x1});
+			}
 		}
 	}
 	// The collisions the DLI reads, on the scanlines they happen: each sprite's rows against
