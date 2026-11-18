@@ -1060,7 +1060,29 @@ void Game::displaySimple() {
 		flag(9, edgeDiff);
 		flag(10, set(h.bulletHitObject) != set(g.hit.bulletHitObject) || set(h.planeHitObject) != set(g.hit.planeHitObject) ||
 			set(h.shellHitObject) != set(g.hit.shellHitObject));
-		if (d) gs.differ++;
+		if (d) {
+			gs.differ++;
+			// RR_GEOMCHECK=2: each such frame (its number counted from 1), what differs and where
+			if (std::atoi(std::getenv("RR_GEOMCHECK")) == 2) {
+				std::fprintf(stderr, "geomcheck frame %ld:", gs.frames);
+				auto show = [&](const char *name, uint8_t reads, uint8_t geo) {
+					if (reads != geo) std::fprintf(stderr, " %s reads=%02X geometry=%02X", name, reads, geo);
+				};
+				show("bulletHitObject", g.hit.bulletHitObject, h.bulletHitObject);
+				show("planeHitObject", g.hit.planeHitObject, h.planeHitObject);
+				show("shellHitObject", g.hit.shellHitObject, h.shellHitObject);
+				if (set(h.planeHitBank) != set(g.hit.planeHitBank)) show("planeHitBank", g.hit.planeHitBank, h.planeHitBank);
+				if (set(h.bulletHitBank) != set(g.hit.bulletHitBank)) show("bulletHitBank", g.hit.bulletHitBank, h.bulletHitBank);
+				if (set(h.tankAtEdge) != set(g.hit.tankAtEdge)) show("tankAtEdge", g.hit.tankAtEdge, h.tankAtEdge);
+				if (set(h.planeHitShell) != set(g.hit.planeHitShell)) show("planeHitShell", g.hit.planeHitShell, h.planeHitShell);
+				if (set(h.missileHitPlane) != set(g.hit.missileHitPlane)) show("missileHitPlane", g.hit.missileHitPlane, h.missileHitPlane);
+				if (set(h.missileHitBank) != set(g.hit.missileHitBank)) show("missileHitBank", g.hit.missileHitBank, h.missileHitBank);
+				std::fprintf(stderr, " | bullet %d-%d x=%d, plane x=%d, tank y=%d x=%d", bulletBox.y0, bulletBox.y1, g.planeX + 4, g.planeX, s.tankY, s.tankX);
+				for (const ObjectRows &o : objects)
+					std::fprintf(stderr, " [slot %d rows %d-%d x=%d]", o.slot, o.first, o.first + int(o.rows.size()) - 1, o.x);
+				std::fprintf(stderr, "\n");
+			}
+		}
 	}
 	// what is drawn on each scanline, up to the one the DLI last waits for
 	const int last = endLine + (panelReads ? 3 : 1);
