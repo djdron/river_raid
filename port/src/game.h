@@ -210,6 +210,9 @@ public:
 	// differ.
 	void displaySimple();
 	void displayBeam();
+	// displayGeometry (RR_DISPLAY=geometry, the default on the dli_removed branch): the objects
+	// where the DLI's loop puts them, the collisions as plain geometry, no cycles and no reads
+	void displayGeometry();
 	void logic(const Input &input, const std::function<uint8_t()> &random);
 	void vbi(const std::function<uint8_t()> &random);
 	// For jumping ahead in the attract mode (river viewer): one frame of the river only. The

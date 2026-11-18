@@ -1095,9 +1095,174 @@ void Game::displaySimple() {
 	for (const ObjectRows &o : objects) drawn.push_back({o.slot, o.first, o.x, o.size, o.rows, o.colours});
 }
 
+// The display without the DLI's reads (RR_DISPLAY=geometry, the default on this branch): the
+// objects where the DLI's loop puts them (its counter X only: it waits for each slot's y, the
+// rows a scanline each, the scanline drawn while X = c is c - 69), but no cycles (the DLI
+// never falls behind) and no collision registers read between HITCLRs: the collisions are
+// plain geometry, each where the sprites' and the objects' rows touch at all. An object hit
+// is the last such object in the loop's order (as the stores overwrite each other); the
+// shell is not tested against a bridge (the loop never reads P3PL for one). The others (bank,
+// edge, plane and shell, missile and plane) hold slot 0 when they happen anywhere on the
+// sprites' rows. An object's edge bit (helicopters, balloons, ships) from all its rows.
+void Game::displayGeometry() {
+	RiverState &s = gen.s;
+	scan = {};
+	g.hit = Collisions();
+	constexpr int kLines = 262;
+	constexpr int kFirstLine = 24;
+	uint8_t bank[kLines];
+	bool setBank[kLines] = {};
+	auto from = [&](int l, uint8_t v) {
+		if (l < 0 || l >= kLines) return;
+		bank[l] = v;
+		setBank[l] = true;
+	};
+	from(0, g.colourBank);
+	const int endLine = 187;   // the river's last scanline
+	auto spriteAt = [&](int sprite, int l, uint8_t &bits, int &count, uint8_t &hpos, uint8_t &size) {
+		const bool panel = l >= endLine + 1;
+		count = sprite < 4 ? 8 : 2;
+		size = 0;
+		switch (sprite) {
+		case 0: bits = g.pm.player(0, l); hpos = panel ? 0 : g.shellX; break;
+		case 1: bits = g.pm.player(1, l); hpos = panel ? 0 : s.tankX; break;
+		case 2: bits = g.pm.player(2, l); hpos = g.planeX; break;
+		case 4: bits = uint8_t(g.pm.missiles(l) & 3); hpos = panel ? 0 : s.missileX; size = 1; break;
+		default: bits = uint8_t((g.pm.missiles(l) >> 4) & 3); hpos = uint8_t(g.planeX + 4); break;
+		}
+	};
+	auto pfAt = [&](int l) -> const Runs * {
+		const int r = l - kRiverFirstLine;
+		return r >= 0 && r < kRiverLines && size_t(r) < runLines.size() ? &runLines[size_t(r)] : nullptr;
+	};
+	struct Rows { int y0 = 0, y1 = -1; };
+	auto box = [&](int y0, int y1) { Rows b; b.y0 = std::max(y0, kFirstLine); b.y1 = std::min(y1, kLines - 1); return b; };
+	const Rows shellBox = box(s.shellY, s.shellY + 15), tankBox = box(s.tankY, s.tankY + 10), planeBox = box(0xAA, 0xAA + 13);
+	Rows missileBox, bulletBox;
+	if (s.missileY >= 0x1C) missileBox = box(s.missileY, s.missileY);
+	if (g.bulletY > 1) {
+		const int row = std::max(g.bulletY - 1, 0x1B);
+		bulletBox = box(row + 1, row + 8);
+	}
+	auto pfAny = [&](int sprite, const Rows &b, uint8_t want) {
+		for (int l = b.y0; l <= b.y1; l++) {
+			uint8_t bits, hpos, size;
+			int count;
+			spriteAt(sprite, l, bits, count, hpos, size);
+			if (bits && (Beam::playfieldHits(bits, count, hpos, size, pfAt(l), want) & want)) return true;
+		}
+		return false;
+	};
+	auto pairAny = [&](int a, const Rows &ba, int b, const Rows &bb) {
+		for (int l = std::max(ba.y0, bb.y0); l <= std::min(ba.y1, bb.y1); l++) {
+			uint8_t bitsA, hposA, sizeA, bitsB, hposB, sizeB;
+			int countA, countB;
+			spriteAt(a, l, bitsA, countA, hposA, sizeA);
+			spriteAt(b, l, bitsB, countB, hposB, sizeB);
+			if (Beam::spritesTouch(bitsA, countA, hposA, sizeA, bitsB, countB, hposB, sizeB)) return true;
+		}
+		return false;
+	};
+	if (pfAny(1, tankBox, 2)) g.hit.tankAtEdge = 0;
+	if (pfAny(2, planeBox, 1)) g.hit.planeHitBank = 0;
+	if (pfAny(4, missileBox, 3)) g.hit.missileHitBank = 0;
+	if (pfAny(5, bulletBox, 3)) g.hit.bulletHitBank = 0;
+	if (pairAny(2, planeBox, 0, shellBox)) g.hit.planeHitShell = 0;
+	if (pairAny(4, missileBox, 2, planeBox)) g.hit.missileHitPlane = 0;
+
+	struct ObjectRows { int slot, first; uint8_t x, size; bool edge, bridge; std::vector<uint8_t> rows, colours; };
+	std::vector<ObjectRows> objects;
+	objects.reserve(kSlots + 1);
+	auto touches = [&](int sprite, const Rows &b, const ObjectRows &o) {
+		const int y0 = std::max(o.first, b.y0), y1 = std::min(o.first + int(o.rows.size()) - 1, b.y1);
+		for (int l = y0; l <= y1; l++) {
+			uint8_t bits, hpos, size;
+			int count;
+			spriteAt(sprite, l, bits, count, hpos, size);
+			if (Beam::spritesTouch(bits, count, hpos, size, o.rows[size_t(l - o.first)], 8, o.x, o.size)) return true;
+		}
+		return false;
+	};
+	auto edgeOf = [&](const ObjectRows &o) {
+		if (!o.edge) return false;
+		for (size_t i = 0; i < o.rows.size(); i++) {
+			const uint8_t bits = o.rows[i];
+			if (bits && (Beam::playfieldHits(bits, 8, o.x, o.size, pfAt(o.first + int(i)), 2) & 2)) return true;
+		}
+		return false;
+	};
+
+	// The DLI's loop (B565-B664) by its counter X only
+	auto slotY = [&](int n) -> uint8_t { return n < kSlots ? s.slot[n].y : 0xFF; };
+	auto line = [&](int c) { return c - 69; };
+	int counter = 0x5D;
+	int slot = s.firstSlot;
+	for (;;) {
+		const int current = slot;
+		bool end = false;
+		while (counter < slotY(slot)) {
+			counter = (counter + 1) & 0xFF;
+			if (!counter) { end = true; break; }
+		}
+		if (end) break;
+		const int start = counter;
+		counter = (counter + 1) & 0xFF;
+		if (!counter) break;
+		const Slot sl = slot < kSlots ? s.slot[slot] : Slot{};
+		const bool facingLeft = sl.flags & slotflag::kFacingLeft;
+		const bool bridge = sl.flags & slotflag::kBridge;
+		const uint16_t shapes = rom_.shapeAddress(sl.kind + (facingLeft ? 0x10 : 0));
+		counter = (counter + 1) & 0xFF;
+		if (!counter) break;
+		const uint16_t colours = rom_.coloursAddress(sl.type);
+		int row = uint8_t(sl.y + rom_.objectHeight(sl.type) - start);
+		counter = (counter + 1) & 0xFF;
+		if (!counter) break;
+		if (row >= 0x80) { slot = current + 1; continue; }
+		bool wrapped = false;
+		objects.push_back({current, counter - 0x44, sl.x, sl.size, sl.kind >= object::kHelicopter && sl.kind <= object::kShip, bridge, {}, {}});
+		for (;;) {
+			objects.back().rows.push_back(rom_.at(uint16_t(shapes + row)));
+			objects.back().colours.push_back(rom_.at(uint16_t(colours + row)));
+			if (bridge) from(line(counter) + 1, rom_.roadColour(row));
+			counter = (counter + 1) & 0xFF;
+			if (!counter) { wrapped = true; break; }
+			if (--row < 0) break;
+		}
+		if (wrapped) break;
+		if (bridge) from(line(counter) + 1, s.sectionBankColour);
+		slot = current + 1;
+		// B60A-B664: the reads and HITCLR take 3 more scanlines
+		for (int k = 0; k < 3 && counter; k++) counter = (counter + 1) & 0xFF;
+		if (!counter) break;
+	}
+	for (const ObjectRows &o : objects) {
+		const uint8_t n = uint8_t(o.slot);
+		if (touches(5, bulletBox, o)) g.hit.bulletHitObject = n;
+		if (!o.bridge && touches(0, shellBox, o)) g.hit.shellHitObject = n;
+		if (touches(2, planeBox, o)) g.hit.planeHitObject = n;
+		if (o.slot < kSlots) {
+			Slot &obj = s.slot[size_t(o.slot)];
+			obj.flags = uint8_t((obj.flags & ~slotflag::kTouchingEdge) | (edgeOf(o) ? slotflag::kTouchingEdge : 0));
+		}
+	}
+	// the bank colour of each scanline
+	const int last = endLine + 3;
+	for (int l = 1; l <= last; l++)
+		if (!setBank[l]) bank[l] = bank[l - 1];
+	for (int l = kFirstLine; l <= last; l++) scan[size_t(l)].bankColour = bank[l];
+	drawn.clear();
+	for (const ObjectRows &o : objects) drawn.push_back({o.slot, o.first, o.x, o.size, o.rows, o.colours});
+}
+
 void Game::display() {
 	static const char *mode = std::getenv("RR_DISPLAY");
-	simpleDisplay = !mode || !std::strcmp(mode, "simple");
+	if (!mode || !std::strcmp(mode, "geometry")) {   // (the default on this branch)
+		simpleDisplay = true;
+		displayGeometry();
+		return;
+	}
+	simpleDisplay = !std::strcmp(mode, "simple");
 	// RR_TIME: the time display() takes, printed at the end
 	struct Timer {
 		bool on = std::getenv("RR_TIME") != nullptr;
@@ -1106,14 +1271,14 @@ void Game::display() {
 		~Timer() { if (on && frames) std::fprintf(stderr, "display: %ld frames, %.2f us a frame\n", frames, total * 1e6 / double(frames)); }
 	};
 	static Timer timer;
-	if (timer.on && (!mode || !std::strcmp(mode, "simple") || !std::strcmp(mode, "beam"))) {
+	if (timer.on && (!std::strcmp(mode, "simple") || !std::strcmp(mode, "beam"))) {
 		const auto t0 = std::chrono::steady_clock::now();
-		if (mode && !std::strcmp(mode, "beam")) displayBeam(); else displaySimple();
+		if (!std::strcmp(mode, "beam")) displayBeam(); else displaySimple();
 		timer.total += std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
 		timer.frames++;
 		return;
 	}
-	if (!mode || !std::strcmp(mode, "simple")) { displaySimple(); return; }
+	if (!std::strcmp(mode, "simple")) { displaySimple(); return; }
 	if (!std::strcmp(mode, "beam")) { displayBeam(); return; }
 	// check: both, from the same state; the beam's result is kept
 	const GameState g0 = g;
