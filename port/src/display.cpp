@@ -1095,15 +1095,15 @@ void Game::displaySimple() {
 	for (const ObjectRows &o : objects) drawn.push_back({o.slot, o.first, o.x, o.size, o.rows, o.colours});
 }
 
-// The display without the DLI's reads (RR_DISPLAY=geometry, the default on this branch): the
-// objects where the DLI's loop puts them (its counter X only: it waits for each slot's y, the
-// rows a scanline each, the scanline drawn while X = c is c - 69), but no cycles (the DLI
-// never falls behind) and no collision registers read between HITCLRs: the collisions are
-// plain geometry, each where the sprites' and the objects' rows touch at all. An object hit
-// is the last such object in the loop's order (as the stores overwrite each other); the
-// shell is not tested against a bridge (the loop never reads P3PL for one). The others (bank,
-// edge, plane and shell, missile and plane) hold slot 0 when they happen anywhere on the
-// sprites' rows. An object's edge bit (helicopters, balloons, ships) from all its rows.
+// The display without the DLI (RR_DISPLAY=geometry, the default on this branch): each object
+// at its own slot's y, cut to the river; the collisions as plain geometry, each where the
+// sprites' and the objects' rows touch at all (boxes first, then the dots). An object hit is
+// the last such object down the screen (as the original's stores overwrite each other); the
+// shell is not tested against a bridge. The others (bank, edge, plane and shell, missile and
+// plane) hold slot 0 when they happen anywhere on the sprites' rows. An object's edge bit
+// (helicopters, balloons, ships) from all its rows. Placed so, the objects are where the
+// DLI's loop put them (checked over 120 000 frames against its counter: the loop never fell
+// behind an object, so only the river's top and end cut them).
 void Game::displayGeometry() {
 	RiverState &s = gen.s;
 	scan = {};
@@ -1192,50 +1192,32 @@ void Game::displayGeometry() {
 		return false;
 	};
 
-	// The DLI's loop (B565-B664) by its counter X only
-	auto slotY = [&](int n) -> uint8_t { return n < kSlots ? s.slot[n].y : 0xFF; };
-	auto line = [&](int c) { return c - 69; };
-	int counter = 0x5D;
-	int slot = s.firstSlot;
-	for (;;) {
-		const int current = slot;
-		bool end = false;
-		while (counter < slotY(slot)) {
-			counter = (counter + 1) & 0xFF;
-			if (!counter) { end = true; break; }
+	// Each object at its own y: its rows from scanline y + 3 - 69 down (row `height` first, as
+	// the shape tables keep them bottom up), cut at the river's top (scanline 24 + 3: what was
+	// the DLI's first wait, X = $5D) and at its end (X past 255)
+	auto place = [&](std::vector<ObjectRows> &out) {
+		for (int n = s.firstSlot; n < kSlots; n++) {
+			const Slot &sl = s.slot[size_t(n)];
+			const int start = std::max<int>(sl.y, 0x5D);
+			const int row = uint8_t(sl.y + rom_.objectHeight(sl.type) - start);
+			if (row >= 0x80) continue;
+			const int x0 = start + 3;
+			if (x0 > 0xFF) break;
+			const bool facingLeft = sl.flags & slotflag::kFacingLeft;
+			const bool bridge = sl.flags & slotflag::kBridge;
+			const uint16_t shapes = rom_.shapeAddress(sl.kind + (facingLeft ? 0x10 : 0));
+			const uint16_t colours = rom_.coloursAddress(sl.type);
+			const int count = std::min(row + 1, 0x100 - x0);
+			out.push_back({n, x0 - 0x44, sl.x, sl.size, sl.kind >= object::kHelicopter && sl.kind <= object::kShip, bridge, {}, {}});
+			for (int k = 0; k < count; k++) {
+				out.back().rows.push_back(rom_.at(uint16_t(shapes + row - k)));
+				out.back().colours.push_back(rom_.at(uint16_t(colours + row - k)));
+				if (bridge && &out == &objects) from(x0 + k - 69 + 1, rom_.roadColour(row - k));
+			}
+			if (bridge && &out == &objects && x0 + count <= 0xFF) from(x0 + count - 69 + 1, s.sectionBankColour);
 		}
-		if (end) break;
-		const int start = counter;
-		counter = (counter + 1) & 0xFF;
-		if (!counter) break;
-		const Slot sl = slot < kSlots ? s.slot[slot] : Slot{};
-		const bool facingLeft = sl.flags & slotflag::kFacingLeft;
-		const bool bridge = sl.flags & slotflag::kBridge;
-		const uint16_t shapes = rom_.shapeAddress(sl.kind + (facingLeft ? 0x10 : 0));
-		counter = (counter + 1) & 0xFF;
-		if (!counter) break;
-		const uint16_t colours = rom_.coloursAddress(sl.type);
-		int row = uint8_t(sl.y + rom_.objectHeight(sl.type) - start);
-		counter = (counter + 1) & 0xFF;
-		if (!counter) break;
-		if (row >= 0x80) { slot = current + 1; continue; }
-		bool wrapped = false;
-		objects.push_back({current, counter - 0x44, sl.x, sl.size, sl.kind >= object::kHelicopter && sl.kind <= object::kShip, bridge, {}, {}});
-		for (;;) {
-			objects.back().rows.push_back(rom_.at(uint16_t(shapes + row)));
-			objects.back().colours.push_back(rom_.at(uint16_t(colours + row)));
-			if (bridge) from(line(counter) + 1, rom_.roadColour(row));
-			counter = (counter + 1) & 0xFF;
-			if (!counter) { wrapped = true; break; }
-			if (--row < 0) break;
-		}
-		if (wrapped) break;
-		if (bridge) from(line(counter) + 1, s.sectionBankColour);
-		slot = current + 1;
-		// B60A-B664: the reads and HITCLR take 3 more scanlines
-		for (int k = 0; k < 3 && counter; k++) counter = (counter + 1) & 0xFF;
-		if (!counter) break;
-	}
+	};
+	place(objects);
 	for (const ObjectRows &o : objects) {
 		const uint8_t n = uint8_t(o.slot);
 		if (touches(5, bulletBox, o)) g.hit.bulletHitObject = n;
