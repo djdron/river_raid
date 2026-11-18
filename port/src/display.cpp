@@ -1006,6 +1006,62 @@ void Game::displaySimple() {
 		if (seenIn(tankEdge, r)) g.hit.tankAtEdge = uint8_t(current);
 		if (rows && objectTouches(5, bulletBox, objects.back(), endLine + 3)) g.hit.bulletHitObject = uint8_t(current);
 	}
+	// RR_GEOMCHECK: the collisions as plain geometry, without the DLI's reads (no windows from
+	// one HITCLR to a read, no cycles): an object hit if its rows touch at all (the last such
+	// object in the loop's order, as the stores overwrite each other), the others if they touch
+	// anywhere on their rows; counted where that differs from the reads above (printed at exit)
+	static const bool geomCheck = std::getenv("RR_GEOMCHECK") != nullptr;
+	if (geomCheck) {
+		struct GeomStats {
+			long frames = 0, differ = 0, n[11] = {};
+			~GeomStats() {
+				static const char *names[11] = {"bulletHitBank", "planeHitBank", "bulletHitObject", "planeHitObject", "planeHitShell",
+					"shellHitObject", "tankAtEdge", "missileHitPlane", "missileHitBank", "edge flags", "any object hit"};
+				std::fprintf(stderr, "geomcheck: %ld frames, %ld differ (%.3f%%)\n", frames, differ, frames ? 100.0 * double(differ) / double(frames) : 0.0);
+				for (int i = 0; i < 11; i++) if (n[i]) std::fprintf(stderr, "  %-16s %ld\n", names[i], n[i]);
+			}
+		};
+		static GeomStats gs;
+		gs.frames++;
+		cleared = kFirstLine;
+		Collisions h;
+		for (const ObjectRows &o : objects) {
+			const uint8_t sl = uint8_t(o.slot);
+			const bool isBridge = sl < kSlots && (s.slot[sl].flags & slotflag::kBridge);
+			if (objectTouches(5, bulletBox, o, kLines - 1)) h.bulletHitObject = sl;
+			if (!isBridge && objectTouches(0, shellBox, o, kLines - 1)) h.shellHitObject = sl;
+			if (objectTouches(2, planeBox, o, kLines - 1)) h.planeHitObject = sl;
+		}
+		auto any = [](const std::vector<int> &v) { return v.empty() ? uint8_t(0xFF) : uint8_t(0); };
+		h.bulletHitBank = any(bulletBank);
+		h.planeHitBank = any(planeBank);
+		h.planeHitShell = any(planeShell);
+		h.tankAtEdge = any(tankEdge);
+		h.missileHitPlane = any(missilePlane);
+		h.missileHitBank = any(missileBank);
+		auto set = [](uint8_t v) { return !(v & 0x80); };
+		bool d = false;
+		auto flag = [&](int i, bool differs) { if (differs) { gs.n[i]++; d = true; } };
+		flag(0, set(h.bulletHitBank) != set(g.hit.bulletHitBank));
+		flag(1, set(h.planeHitBank) != set(g.hit.planeHitBank));
+		flag(2, h.bulletHitObject != g.hit.bulletHitObject);
+		flag(3, h.planeHitObject != g.hit.planeHitObject);
+		flag(4, set(h.planeHitShell) != set(g.hit.planeHitShell));
+		flag(5, h.shellHitObject != g.hit.shellHitObject);
+		flag(6, set(h.tankAtEdge) != set(g.hit.tankAtEdge));
+		flag(7, set(h.missileHitPlane) != set(g.hit.missileHitPlane));
+		flag(8, set(h.missileHitBank) != set(g.hit.missileHitBank));
+		bool edgeDiff = false;
+		for (const ObjectRows &o : objects)
+			if (o.slot < kSlots && o.edge) {
+				const bool geo = objectEdge(o, kLines - 1);
+				if (geo != bool(s.slot[size_t(o.slot)].flags & slotflag::kTouchingEdge)) edgeDiff = true;
+			}
+		flag(9, edgeDiff);
+		flag(10, set(h.bulletHitObject) != set(g.hit.bulletHitObject) || set(h.planeHitObject) != set(g.hit.planeHitObject) ||
+			set(h.shellHitObject) != set(g.hit.shellHitObject));
+		if (d) gs.differ++;
+	}
 	// what is drawn on each scanline, up to the one the DLI last waits for
 	const int last = endLine + (panelReads ? 3 : 1);
 	fill(last);
