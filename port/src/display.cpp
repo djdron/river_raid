@@ -355,15 +355,22 @@ public:
 		}
 		return hits;
 	}
-	// An object's row against a scanline's edge, as the Next's display tests it: the row's
-	// first and last dots (its span) against each run of edge pixels, no bit by bit (a run
-	// between them counts even when it falls into a hole of the row).
-	static bool edgeTouches(uint8_t bits, int count, uint8_t hpos, uint8_t size, const Game::Runs *runs) {
-		if (!bits || !runs) return false;
+	// A sprite's or an object's row against a scanline's playfield, as the Next's display tests
+	// it: the row's first and last dots (its span) against each run of the colours wanted (bit
+	// 0 bank, 1 edge), no bit by bit (a run between them counts even when it falls into a hole
+	// of the row). The colours touched.
+	static uint8_t spanTouches(uint8_t bits, int count, uint8_t hpos, uint8_t size, const Game::Runs *runs, uint8_t wanted) {
+		if (!bits || !runs) return 0;
 		const Span sp = spriteSpan(bits, count, hpos, size);
-		for (int i = 0; i < runs->n; i++)
-			if (runs->colour[i] == 2 && runs->b[i] > sp.left && runs->a[i] < sp.right) return true;
-		return false;
+		uint8_t hits = 0;
+		for (int i = 0; i < runs->n; i++) {
+			const uint8_t bit = uint8_t(1 << (runs->colour[i] - 1));
+			if ((wanted & bit) && runs->b[i] > sp.left && runs->a[i] < sp.right) hits |= bit;
+		}
+		return hits;
+	}
+	static bool edgeTouches(uint8_t bits, int count, uint8_t hpos, uint8_t size, const Game::Runs *runs) {
+		return spanTouches(bits, count, hpos, size, runs, 2) != 0;
 	}
 	// Two sprites on a scanline: their spans, then bit by bit.
 	static bool spritesTouch(uint8_t bitsA, int countA, uint8_t hposA, uint8_t sizeA, uint8_t bitsB, int countB, uint8_t hposB, uint8_t sizeB) {
@@ -1113,7 +1120,8 @@ void Game::displaySimple() {
 // plane) hold slot 0 when they happen anywhere on the sprites' rows. An object's edge bit
 // (helicopters, balloons, ships) from all its rows, each row by its first and last dots
 // against the line's edge runs (edgeTouches: no bit by bit, so a run in a hole of a row
-// counts, unlike the original's bit-by-bit GTIA test). Placed so, the objects are where the
+// counts, unlike the original's bit-by-bit GTIA test); the other sprites against the bank and
+// the edge (tank, plane, missile, bullet) the same way, by their rows' ends (spanTouches). Placed so, the objects are where the
 // DLI's loop put them (checked over 120 000 frames against its counter: the loop never fell
 // behind an object, so only the river's top and end cut them).
 void Game::displayGeometry() {
@@ -1161,7 +1169,7 @@ void Game::displayGeometry() {
 			uint8_t bits, hpos, size;
 			int count;
 			spriteAt(sprite, l, bits, count, hpos, size);
-			if (bits && (Beam::playfieldHits(bits, count, hpos, size, pfAt(l), want) & want)) return true;
+			if (Beam::spanTouches(bits, count, hpos, size, pfAt(l), want)) return true;
 		}
 		return false;
 	};
