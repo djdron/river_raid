@@ -355,6 +355,16 @@ public:
 		}
 		return hits;
 	}
+	// An object's row against a scanline's edge, as the Next's display tests it: the row's
+	// first and last dots (its span) against each run of edge pixels, no bit by bit (a run
+	// between them counts even when it falls into a hole of the row).
+	static bool edgeTouches(uint8_t bits, int count, uint8_t hpos, uint8_t size, const Game::Runs *runs) {
+		if (!bits || !runs) return false;
+		const Span sp = spriteSpan(bits, count, hpos, size);
+		for (int i = 0; i < runs->n; i++)
+			if (runs->colour[i] == 2 && runs->b[i] > sp.left && runs->a[i] < sp.right) return true;
+		return false;
+	}
 	// Two sprites on a scanline: their spans, then bit by bit.
 	static bool spritesTouch(uint8_t bitsA, int countA, uint8_t hposA, uint8_t sizeA, uint8_t bitsB, int countB, uint8_t hposB, uint8_t sizeB) {
 		if (!bitsA || !bitsB) return false;
@@ -1101,7 +1111,9 @@ void Game::displaySimple() {
 // the last such object down the screen (as the original's stores overwrite each other); the
 // shell is not tested against a bridge. The others (bank, edge, plane and shell, missile and
 // plane) hold slot 0 when they happen anywhere on the sprites' rows. An object's edge bit
-// (helicopters, balloons, ships) from all its rows. Placed so, the objects are where the
+// (helicopters, balloons, ships) from all its rows, each row by its first and last dots
+// against the line's edge runs (edgeTouches: no bit by bit, so a run in a hole of a row
+// counts, unlike the original's bit-by-bit GTIA test). Placed so, the objects are where the
 // DLI's loop put them (checked over 120 000 frames against its counter: the loop never fell
 // behind an object, so only the river's top and end cut them).
 void Game::displayGeometry() {
@@ -1183,12 +1195,11 @@ void Game::displayGeometry() {
 		}
 		return false;
 	};
+	// (the edge: each row's first and last dots against the line's edge runs, edgeTouches)
 	auto edgeOf = [&](const ObjectRows &o) {
 		if (!o.edge) return false;
-		for (size_t i = 0; i < o.rows.size(); i++) {
-			const uint8_t bits = o.rows[i];
-			if (bits && (Beam::playfieldHits(bits, 8, o.x, o.size, pfAt(o.first + int(i)), 2) & 2)) return true;
-		}
+		for (size_t i = 0; i < o.rows.size(); i++)
+			if (Beam::edgeTouches(o.rows[i], 8, o.x, o.size, pfAt(o.first + int(i)))) return true;
 		return false;
 	};
 
