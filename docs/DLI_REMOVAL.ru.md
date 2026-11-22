@@ -1,6 +1,6 @@
 # Эксперименты: игра без модели DLI
 
-[English](DLI_REMOVAL.md) | Русский | [Українська](DLI_REMOVAL.uk.md)
+[English](DLI_REMOVAL.md) | Русский | [Українська](DLI_REMOVAL.uk.md) | [Deutsch](DLI_REMOVAL.de.md)
 
 Ветки `dli_removal` и `dli_removed`. Цель — упрощённый вывод для портов на медленные машины
 (ZX Spectrum Next, TS-Conf): спрайты рисуются готовыми картинками в своих координатах,
