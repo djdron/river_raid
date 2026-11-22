@@ -1,10 +1,15 @@
 # Experiments: the game without the DLI model
 
-Branch `dli_removal`. The goal is a simpler display for ports to slow machines (the ZX
-Spectrum Next): sprites drawn as ready pictures at their positions, collisions worked out per
-object, no scanline-by-scanline model of the display list interrupt, while the game stays the
-same as the original's frame by frame. Each step is checked against the original
-(`rr_oracle` on libatari800, `game_check`).
+English | [Русский](DLI_REMOVAL.ru.md)
+
+Branches `dli_removal` and `dli_removed`. The goal is a simpler display for ports to slow
+machines (the ZX Spectrum Next, TS-Conf): sprites drawn as ready pictures at their positions,
+collisions worked out per object, no scanline-by-scanline model of the display list interrupt.
+On `dli_removal` the game stays the same as the original's frame by frame, and each step is
+checked against the original (`rr_oracle` on libatari800, `game_check`). `dli_removed` goes one
+step further: no DLI at all, the collisions as plain geometry, which differs from the original
+on a few frames in a thousand (the last part, "Branch `dli_removed`"). The ZX ports
+([river_raid_zx](https://github.com/djdron/river_raid_zx)) follow `dli_removed`.
 
 ## Step 1: collisions with the bank on lines without decoration
 
@@ -251,3 +256,79 @@ state (all the runs above): no difference; against its screens (`-screens`, 1300
 the attract mode, 1500 of game 7 on PAL from bridge 50): the river area identical;
 `RR_DISPLAY=check` (60 000 frames `-wild`, 60 000 from bridge 100 on PAL): the pictures the
 same, nothing but the edge bit of the kinds that do not turn.
+
+### RR_GEOMCHECK: plain geometry beside the reads
+
+Before going further, a measurement: with `RR_GEOMCHECK` set, `displaySimple` also works out
+each frame's collisions without the DLI's reads, with no window from a HITCLR to a read and no
+cycles. An object is hit if its rows touch the sprite's at all (the last such object in the
+loop's order, as the stores overwrite each other); the other collisions count if they happen
+anywhere on the sprites' rows; an object's edge bit comes from all its rows. The reads'
+results are kept; the frames where the geometry decides otherwise are counted by field and
+printed at exit. `RR_GEOMCHECK=2` also prints each such frame: its number, what differs, the
+bullet's, plane's and tank's places and each object's rows.
+
+The result: 0.01-0.25% of frames differ, depending on the run, and always the same way: a
+touch the reads see a frame later or not at all. The bullet on an object's last row (M2PL is
+read before that row is drawn), the plane's or the tank's rows below the last read of the
+frame. Nothing the geometry sees is a touch that did not happen on the screen.
+
+## Branch `dli_removed`: `displayGeometry`
+
+On this branch `Game::displayGeometry` (`port/src/display.cpp`) is the default
+(`RR_DISPLAY=geometry`); `RR_DISPLAY=simple`, `beam` and `check` stay as above. It has no DLI
+in it: no loop over the slots in scanlines, no cycles, no HITCLR, no reads. It is what the ZX
+ports do, in C++, and the reference they are checked against frame by frame.
+
+### The collisions as plain geometry
+
+Each collision counts where the sprites' and the objects' rows touch at all, boxes first,
+then the dots (the RR_GEOMCHECK rule above). An object hit is the last such object down the
+screen, as the original's stores overwrite each other; the shell is not tested against a
+bridge. The bank, edge, plane-shell and missile-plane collisions hold slot 0 when they happen
+anywhere on the sprites' rows. The sprites' rows are the boxes from the game's positions
+(step 3: the shell 16 rows from `shellY`, the tank 11 from `tankY`, the plane 14 from $AA, the
+missile the row `missileY`, the bullet 8 rows below `bulletY`).
+
+So the game is no longer the original's in every frame: on the frames RR_GEOMCHECK counts
+(0.01-0.25%) a bullet hits an object or a plane hits the bank a frame earlier, or a touch the
+original missed counts. `game_check` against the original is for `RR_DISPLAY=simple`; with the
+default it reports those frames.
+
+### Each object at its slot's y
+
+The objects are placed straight from their slots, without the DLI's counter walk: rows from
+scanline y - 65 down, where the DLI drew them (the bottom row of the shape table first, as the
+tables keep them bottom up), cut at the river's top (scanline 28: the DLI's first wait was
+X = $5D) and at its end (X past 255). The bridge's road colours come from those rows, the section's bank
+colour after the last. Checked over 120 000 frames (`display_bench` from the start, from
+bridge 60 on PAL, `-wild`, game 7) against the counter walk it replaced: the same objects,
+rows and colours in every frame. The loop never fell behind an object, so only the river's top
+and end cut them.
+
+### The edge by a row's first and last dots
+
+An object's edge bit (P3PF: helicopters, balloons, ships turn at the edge) comes from each of
+its rows as a span, its first dot to its last, against the line's runs of edge pixels
+(`Beam::edgeTouches`), without looking dot by dot: a run inside a hole of a row counts, unlike
+the original's bit-by-bit test in GTIA. The Next tests it so: per line the edge's runs, per row
+its two ends. Over 20 000 frames of the bot's games (more than 100 touches) the result was
+never different from the dot-by-dot test.
+
+### The other sprites against the bank and the edge the same way
+
+`Beam::spanTouches`: a row's first and last dots against the line's runs of the colours wanted
+(bank, edge, or either); `edgeTouches` is it with the edge. The tank against the edge, the
+plane against the bank, the missile and the bullet against either (`pfAny`) use it too, so
+every collision with the playfield is one test: the row's two ends against the line's runs.
+The sprites with each other (the bullet, shell and plane against an object, the plane and the
+shell, the missile and the plane) stay bit by bit: step 2 showed the holes matter there.
+
+### What it costs and what it is for
+
+The display is now three loops: the sprites' boxes against the runs of their lines, the pairs
+of sprites where their boxes meet, the objects placed from their slots and tested against the
+bullet, the shell and the plane. No scanline is walked that holds nothing. On the Next the
+same work (`display_simple.asm`, `display_hits.asm` in river_raid_zx) takes 45 000-62 000
+cycles of its 567 000 a frame at 28 MHz; its CODE.md and NOTES.md have the numbers routine by
+routine.
