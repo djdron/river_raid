@@ -251,3 +251,26 @@ state (all the runs above): no difference; against its screens (`-screens`, 1300
 the attract mode, 1500 of game 7 on PAL from bridge 50): the river area identical;
 `RR_DISPLAY=check` (60 000 frames `-wild`, 60 000 from bridge 100 on PAL): the pictures the
 same, nothing but the edge bit of the kinds that do not turn.
+
+### RR_GEOMCHECK: plain geometry beside the reads
+
+A measurement before going further: with `RR_GEOMCHECK` set, `displaySimple` also works out
+each frame's collisions without the DLI's reads, with no window from a HITCLR to a read and no
+cycles. An object is hit if its rows touch the sprite's at all (the last such object in the
+loop's order, as the stores overwrite each other); the other collisions count if they happen
+anywhere on the sprites' rows; an object's edge bit comes from all its rows. The reads'
+results are kept, so the game does not change; the frames where the geometry decides otherwise
+are counted by field (bulletHitBank, planeHitBank, bulletHitObject, planeHitObject,
+planeHitShell, shellHitObject, tankAtEdge, missileHitPlane, missileHitBank, the edge flags)
+and printed at exit. `RR_GEOMCHECK=2` also prints each such frame: its number, what differs
+(the reads' value and the geometry's), the bullet's, plane's and tank's places and each
+object's rows. For example: `RR_GEOMCHECK=1 port/build/display_bench rom/River_Raid.rom 100000`.
+
+The result: 0.01-0.25% of frames differ, depending on the run, and always the same way: a
+touch the reads see a frame later or not at all. The bullet on an object's last row (M2PL is
+read before that row is drawn), the plane's or the tank's rows below the last read of the
+frame. Nothing the geometry sees is a touch that did not happen on the screen.
+
+That made the next step: the branch `dli_removed` drops the DLI altogether and takes the
+geometry as the game's collisions (`Game::displayGeometry`, its default), accepting those
+frames; its copy of this document goes on from here.
