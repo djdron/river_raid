@@ -24,6 +24,7 @@ River Raid（Activision、Atari 800、1983、作者 Carol Shaw）の C++ 移植�
 | `port/` | C++ 移植：ゲーム、川のビューア、照合ツール。[port/README.ja.md](port/README.ja.md) を参照（ビルド、オプション、キー、内容、検証） |
 | [docs/HOW_IT_WORKS.ja.md](docs/HOW_IT_WORKS.ja.md) | ゲームのしくみ、誰でも読める解説：川、敵、橋、衝突、なぜ難しくなるか |
 | [docs/NOTES.ja.md](docs/NOTES.ja.md) | アドレス付きの調査結果 |
+| [docs/DLI_REMOVAL.ja.md](docs/DLI_REMOVAL.ja.md) | 実験：DLI モデルなしの表示（ブランチ `dli_removal`、`dli_removed`） |
 | `disasm/river_raid_a8.asm` | ヘッダー付きの完全な逆アセンブル（エントリーポイント、フレーム、変数） |
 | `tools/dis6502.py` | 逆アセンブラ：`python dis6502.py <rom> <out.asm> B500 B2A5 B485` |
 | `tools/check_lfsr.py`、`tools/verify_trace.py` | 文書化した規則を基準の記録で確認する |
@@ -38,7 +39,7 @@ River Raid（Activision、Atari 800、1983、作者 Carol Shaw）の C++ 移植�
 3. **スタート地点。**ゲーム 1–8 は同じ川の橋 1/5/20/50 から始まります。テーブル $B494–$B4A8 にはそこでの LFSR、岸、レベル、橋のカウンターが入っており、ゲーム 1 のスタートから生成器を走らせるとちょうどその値になります。移植版は `-seed N`（別の川）と `-bridge N`（任意の橋からスタート）のために、生成器を走らせて同じテーブルを埋めます。
 4. **難しさ。**レベル（= 向かっている橋、80 まで、その後は 79/80 を交互に）が、乱数と比べるしきい値を動かします：ブロック途中の敵、レベル 46 まで（PAL では 47）補給所が減る、気球はレベル 3 から、ジェット機は 5 から、岸の戦車は 7 から、ミサイルヘリは 13 から、カーブが大きくなる。表は [docs/HOW_IT_WORKS.ja.md](docs/HOW_IT_WORKS.ja.md) にあります。
 5. **RANDOM（$D20A）。**ゲームロジックが読むのは A205 だけです：16 フレームごとにランダムなスロット（0–10）が目覚めます（`$42,X` のビット $40）。B362/B3D0：サウンド用のノイズ。値は読み取ったときの CPU サイクルで決まります。移植版はこのカウンターをモデル化し（`src/pokey_random.h`）、実際の電源投入と同じく時計から始めます。`-random N` で実行を繰り返せます。
-6. **衝突**は GTIA の衝突レジスタから来ます。DLI が各物体の帯の後にそれを読みます。読み取りのラインでの接触が数えられるかどうかはサイクルで決まります。移植版は DLI をサイクルを数えて実行します（`src/display.cpp`、atari800 のサイクル単位ではないタイミング）。
+6. **衝突**は GTIA の衝突レジスタから来ます。DLI が各物体の帯の後にそれを読みます。読み取りのラインでの接触が数えられるかどうかはサイクルで決まります。移植版は DLI をサイクルを数えて実行します（`src/display.cpp`、atari800 のサイクル単位ではないタイミング）。`dli_removed` ブランチには DLI がありません。衝突は単純な幾何です（下記）。
 7. **PAL/NTSC。**両方に 1 つのカートリッジ：PAL ビット（$D014 → $BF）が、ディスプレイリストの種類（$B77A）と補給所の上限（$CB = $2E/$2F）を選びます。1 フレームあたりのゲームロジックは同じなので、PAL ではゲーム全体が 1 秒 50 フレームで、約 17% 遅く動きます。違うのはフレーム内の CPU 時間に左右される部分だけです：電源投入からデモモードまでが 38 ではなく 25 フレーム、sub $B0F1 のメモリ消去が 13 ではなく 8 フレーム、ゲームオーバーでは VBI が sub $B21A より先に来ます。移植版の `-pal` はこのすべてを再現します（`rr_oracle -pal` と照合済み、[port/README.ja.md](port/README.ja.md) を参照）。イギリスのカセット版（`.cas`、2 ファイル：ローダーは $0A00、ゲームは $1000–$31FF）は同じコードを RAM に移したもので、コピープロテクトが違い、流れる文字に「1982, 1983, 1984」と出ます。
 8. **フォント**は OS ROM からコピーされます（$E000/$E100/$E300）。移植版は AltirraOS のフォントを内蔵し、`-os` で Atari のフォントを読み込みます。
 9. **基準実行。**atari800 は POKEY を時計から始めます。`rr_oracle -seed`（標準 0）で実行がバイト単位で同一になります。atari800 のビルドは `-Werror` で ULONG の再定義のため失敗します。`build.sh` は `CFLAGS="-g -O2 -DNETSIO"` でビルドします。確認した atari800 のコミット：98cc2dc。
@@ -54,6 +55,9 @@ River Raid（Activision、Atari 800、1983、作者 Carol Shaw）の C++ 移植�
 - CI：`.github/workflows/uwp.yml` が `port/` を変えるプッシュのたびに windows-latest で UWP アプリを（ROM なしで）ビルドします。わかるのはコンパイルとパッケージ化ができることだけです。フォークだけの変更では動きません。
 - Visual Studio 2026 で Windows 11（拡大率 175%）と Dev Mode の Xbox Series S で、SDL2 と SDL3 の両方で試しました。
 - Xbox では：誰かがサインインしている必要があります（そうでないと Visual Studio が 0x8004090a を報告）。Dev Home で App type を Game にします。アプリの起動中に押し続けたボタンはアプリに届かないので、PAL はゲームの中で選びます（Back + Start）。Dev Home の Launch with parameters（Use custom protocol）では最初の空白より後ろが捨てられるので、空白は `%20` と書きます：`riverraid:-pal%20-bridge%20100`。PC ではリンク（Win+R）と Visual Studio の Command Line Arguments は空白をそのまま受け付けます。
+
+## ブランチ `dli_removed`
+このブランチ（`dli_removal` から分岐）には DLI がありません。`Game::displayGeometry` は各物体をそのスロットの y に置き、衝突を単純な幾何として計算します。スプライトと物体の行が少しでも触れればそこで衝突です。岸と縁は、行の最初と最後の点をその行のランと比べます。ここではこれが既定です（`RR_DISPLAY=geometry`）。`RR_DISPLAY=simple` は読み取りのある DLI のループで元のゲームと同じ、`beam` はサイクルのモデル、`check` は両方です。ゲームはフレームの 0.01–0.25% で元のゲームと違います（元のゲームが 1 フレーム遅れて見る、または見ない接触）。そのため元のゲームとの `game_check` は `RR_DISPLAY=simple` で実行します。`RR_DISPLAY=simple RR_GEOMCHECK=1` は幾何と読み取りが違うフレームを数えます（`=2` で各フレームを表示）。ZX Spectrum Next と TS-Conf の移植（[river_raid_zx](https://github.com/djdron/river_raid_zx)）はこの表示の上に作られ、フレームごとにこれと比べて検証されます。各段階とその検証：[docs/DLI_REMOVAL.ja.md](docs/DLI_REMOVAL.ja.md)。
 
 ## 方法
 規則は逆アセンブルから読み取り、その後で基準の記録で確認します（`tools/verify_trace.py`、次に C++ の照合ツール）。記録だけでは、どこを見ればよいかを探すのにしか使いません。動作を変えないはずの変更（名前の変更、構成の見直し）は `port/tools/equivalence` で古いコミットと比べます：差分 0 が必要で、さらに [port/README.ja.md](port/README.ja.md) の「検証」のすべての確認を通ること。
