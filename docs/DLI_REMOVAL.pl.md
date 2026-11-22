@@ -1,6 +1,6 @@
 # Eksperymenty: gra bez modelu DLI
 
-[English](DLI_REMOVAL.md) | [Русский](DLI_REMOVAL.ru.md) | [Українська](DLI_REMOVAL.uk.md) | [Deutsch](DLI_REMOVAL.de.md) | Polski | [Italiano](DLI_REMOVAL.it.md)
+[English](DLI_REMOVAL.md) | [Русский](DLI_REMOVAL.ru.md) | [Українська](DLI_REMOVAL.uk.md) | [Deutsch](DLI_REMOVAL.de.md) | Polski | [Italiano](DLI_REMOVAL.it.md) | [Español](DLI_REMOVAL.es.md)
 
 Gałęzie `dli_removal` i `dli_removed`. Celem jest prostsze wyświetlanie dla portów na wolne
 maszyny (ZX Spectrum Next, TS-Conf): sprite'y rysowane jako gotowe obrazki w swoich pozycjach,
