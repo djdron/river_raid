@@ -1,6 +1,6 @@
 # 实验：去掉 DLI 模型的游戏
 
-[English](DLI_REMOVAL.md) | [Русский](DLI_REMOVAL.ru.md) | [Українська](DLI_REMOVAL.uk.md) | [Deutsch](DLI_REMOVAL.de.md) | [Polski](DLI_REMOVAL.pl.md) | [Italiano](DLI_REMOVAL.it.md) | [Español](DLI_REMOVAL.es.md) | 中文
+[English](DLI_REMOVAL.md) | [Русский](DLI_REMOVAL.ru.md) | [Українська](DLI_REMOVAL.uk.md) | [Deutsch](DLI_REMOVAL.de.md) | [Polski](DLI_REMOVAL.pl.md) | [Italiano](DLI_REMOVAL.it.md) | [Español](DLI_REMOVAL.es.md) | 中文 | [日本語](DLI_REMOVAL.ja.md)
 
 分支 `dli_removal` 和 `dli_removed`。目标是为慢速机器上的移植版（ZX Spectrum Next、TS-Conf）做一个更简单
 的显示：精灵作为现成的图像画在各自的位置上，碰撞按物体计算，不再逐扫描线地模拟显示列表中断（DLI）。在

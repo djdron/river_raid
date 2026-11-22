@@ -1,6 +1,6 @@
 # Esperimenti: il gioco senza il modello del DLI
 
-[English](DLI_REMOVAL.md) | [Русский](DLI_REMOVAL.ru.md) | [Українська](DLI_REMOVAL.uk.md) | [Deutsch](DLI_REMOVAL.de.md) | [Polski](DLI_REMOVAL.pl.md) | Italiano | [Español](DLI_REMOVAL.es.md) | [中文](DLI_REMOVAL.zh.md)
+[English](DLI_REMOVAL.md) | [Русский](DLI_REMOVAL.ru.md) | [Українська](DLI_REMOVAL.uk.md) | [Deutsch](DLI_REMOVAL.de.md) | [Polski](DLI_REMOVAL.pl.md) | Italiano | [Español](DLI_REMOVAL.es.md) | [中文](DLI_REMOVAL.zh.md) | [日本語](DLI_REMOVAL.ja.md)
 
 Branch `dli_removal` e `dli_removed`. Lo scopo è una visualizzazione più semplice per i port su
 macchine lente (ZX Spectrum Next, TS-Conf): sprite disegnati come immagini pronte nelle loro
