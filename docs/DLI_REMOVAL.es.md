@@ -1,6 +1,6 @@
 # Experimentos: el juego sin el modelo del DLI
 
-[English](DLI_REMOVAL.md) | [Русский](DLI_REMOVAL.ru.md) | [Українська](DLI_REMOVAL.uk.md) | [Deutsch](DLI_REMOVAL.de.md) | [Polski](DLI_REMOVAL.pl.md) | [Italiano](DLI_REMOVAL.it.md) | Español
+[English](DLI_REMOVAL.md) | [Русский](DLI_REMOVAL.ru.md) | [Українська](DLI_REMOVAL.uk.md) | [Deutsch](DLI_REMOVAL.de.md) | [Polski](DLI_REMOVAL.pl.md) | [Italiano](DLI_REMOVAL.it.md) | Español | [中文](DLI_REMOVAL.zh.md)
 
 Ramas `dli_removal` y `dli_removed`. El objetivo es una visualización más sencilla para los ports
 a máquinas lentas (ZX Spectrum Next, TS-Conf): sprites dibujados como imágenes listas en sus
