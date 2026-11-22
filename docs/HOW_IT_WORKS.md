@@ -125,6 +125,91 @@ random; on even levels next to one bank or the other, or beside the island
 
 Every 10 000 points gives an extra plane, up to 9.
 
+## One new line, step by step
+
+All of the above happens one line at a time. At normal speed the river moves down one line per
+frame, and a new line appears at the top of the screen. The game does not keep a picture of
+the river anywhere: it keeps a handful of numbers (where the left bank is, how wide the water
+is, where it is in the block) and builds each line from them. For every new line it does the
+same things, always in the same order:
+
+1. **Count.** The line's number within its block goes up by one. After 32 lines a new block
+   begins; after two blocks a new section, which gets its width; after 16 sections the stretch
+   ends in a bridge, and the level goes up by one.
+2. **Stir the random numbers.** The 24-bit register takes one step, so the next decisions use
+   new bits. On the straight run-up to a bridge it stands still: that part is always the same.
+3. **Change the width.** If the section asked for another width, the land inside the banks (or
+   the island) grows or shrinks by one dot on this line, by two when the change is big. That is
+   why a narrowing never comes as a step but as a slope.
+4. **Move the left bank.** One dot left, one dot right, or stay (the rules are in "The banks").
+5. **Perhaps start a house.** At the first line of a block, if one bit of the random numbers is
+   set, a decoration begins (except on the run-up to a bridge).
+6. **Draw the line.** The numbers become 192 dots of land, edge and water.
+7. **Every 16 lines, bring in an object** at the top.
+
+### Where the water is
+
+Think of the 192 dots of a line as land, with a 128-dot-wide strip that starts at the left
+bank: the river's corridor. The left bank wanders, and the whole corridor moves with it, so
+the right bank follows the left one. Inside the corridor the game puts land on both sides by
+the same amount (or, when there is an island, the same amount of land in its middle):
+
+| what | land inside the corridor, each side | water |
+|---|---|---|
+| odd levels, every section | 28 dots | 72 dots |
+| even levels, width 2…15 (at most 8 below level 9) | 8 to 60 dots | 112 down to 8 dots |
+| the section before a bridge | 54 dots | 20 dots |
+| a section where an island opens or closes | none | all 128 dots; then the island grows in the middle |
+
+The left bank's own limits: on levels 1 and 2 between dots 28 and 36 (the river barely
+moves), on even levels and on odd levels up to 9 between 25 and 40, on odd levels 11 to 19
+between 13 and 52, and on odd levels from 21 on almost anywhere (1 to 64).
+
+### The edge of the water
+
+The Atari draws this screen in bytes of 4 dots. Most of a line is whole bytes of land or water,
+but the shore can fall on any dot. So the cartridge has small ready pictures of an edge, two
+bytes each, one for every place of the shore within a byte, for the left shore, the right one
+and an island's. A line is put together like a row of tiles: bytes of land, an edge piece,
+bytes of water (an island: edge, land, edge), an edge piece, bytes of land to the end. The
+edge pieces add a thin line of a third colour where water meets land; it is the colour the
+ships and helicopters turn at.
+
+### Houses, trees and mountains
+
+At the start of a block, about one time in two (one bit of the random numbers), a decoration
+begins on a bank. Which picture, how wide and how far from the screen's edge come from small
+tables in the cartridge, chosen by the river's width (on odd levels sometimes by a random
+number instead); on an island only when it is wide enough. The side is chosen by another random
+bit and swapped if the bank on that side is too narrow; on odd levels from 11 on the left bank
+also keeps away from that side while the decoration is drawn, so that it fits. The picture is
+drawn one row per line, copied byte by byte into the land, so it scrolls in from the top like
+the river. It is only scenery.
+
+### Where objects start
+
+Every 16 lines, if the previous object has fully entered, a new one is put into the next free
+band at the top (the screen has 11 bands, see "Enemies, fuel and bridges"). Its position across
+the river is measured from the left bank:
+
+- **odd levels:** anywhere on the water, from a random number, facing left or right at random;
+- **even levels:** close to one bank or the other, or beside the island, and facing the water:
+  near the left bank it faces right, near the right one left. On a bank side it keeps a little
+  distance from the shore, more for wide objects (ships, bridges);
+- if the river is too narrow there is nothing to place (only jets still come, they fly over
+  land), and where it is narrow a ship becomes a helicopter;
+- a fuel depot always faces right; a bridge always sits across the run-up, which is the same
+  shape every time.
+
+The new object's rows enter one line at a time, like everything else. While it is still
+entering, the bank checks every step against it, so it never walks into the object.
+
+From level 7, about one time in four, a **tank** is also put on the bank when a helicopter,
+balloon, ship or fuel depot enters at a block's start, in the middle sections of a stretch:
+on the road along the bank (or on an island), facing the river, at a place worked out from the
+river's width and from where a house stands. At the start of a bridge's run-up, if no tank is
+about, one is put on the bridge itself, ready to drive across.
+
 ## Movement
 
 Objects do not move by themselves at first: every 16 pictures one random band is "woken up"

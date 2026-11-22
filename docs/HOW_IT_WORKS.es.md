@@ -126,6 +126,97 @@ hacia el lado contrario a la orilla más cercana.
 
 Cada 10 000 puntos se gana un avión extra, hasta 9.
 
+## Una línea nueva, paso a paso
+
+Todo lo anterior ocurre una línea cada vez. A velocidad normal el río baja una línea por
+fotograma, y arriba de la pantalla aparece una línea nueva. El juego no guarda en ninguna parte
+una imagen del río: tiene un puñado de números (dónde está la orilla izquierda, qué ancho tiene
+el agua, en qué línea del bloque va) y con ellos construye cada línea. Para cada línea nueva
+hace lo mismo, siempre en el mismo orden:
+
+1. **Cuenta.** El número de la línea dentro de su bloque sube en uno. Tras 32 líneas empieza un
+   bloque nuevo; tras dos bloques una sección nueva, que recibe su ancho; tras 16 secciones el
+   tramo termina en un puente, y el nivel sube en uno.
+2. **Remueve los números aleatorios.** El registro de 24 bits da un paso, así que las
+   decisiones siguientes usan bits nuevos. En la recta que lleva a un puente se queda quieto:
+   esa parte es siempre igual.
+3. **Cambia el ancho.** Si la sección pidió otro ancho, la tierra entre las orillas (o la isla)
+   crece o mengua un punto en esta línea, dos cuando el cambio es grande. Por eso un
+   estrechamiento nunca llega como un escalón sino como una pendiente.
+4. **Mueve la orilla izquierda.** Un punto a la izquierda, uno a la derecha o se queda (las
+   reglas están en «Las orillas»).
+5. **Quizá empieza una casa.** En la primera línea de un bloque, si un bit de los números
+   aleatorios está activo, empieza una decoración (salvo en la recta de un puente).
+6. **Dibuja la línea.** Los números se convierten en 192 puntos de tierra, borde y agua.
+7. **Cada 16 líneas mete un objeto** arriba.
+
+### Dónde está el agua
+
+Imagine los 192 puntos de una línea como tierra, con una franja de 128 puntos de ancho que empieza
+en la orilla izquierda: el cauce del río. La orilla izquierda vaga, y todo el cauce con ella,
+así que la orilla derecha sigue a la izquierda. Dentro del cauce el juego pone la misma tierra a
+cada lado (o, cuando hay una isla, la misma cantidad de tierra en su centro):
+
+| qué | tierra en el cauce, por lado | agua |
+|---|---|---|
+| niveles impares, cada sección | 28 puntos | 72 puntos |
+| niveles pares, ancho 2…15 (como mucho 8 por debajo del nivel 9) | de 8 a 60 puntos | de 112 hasta 8 puntos |
+| la sección antes de un puente | 54 puntos | 20 puntos |
+| una sección en la que una isla se abre o se cierra | nada | los 128 puntos; luego la isla crece en el centro |
+
+Los límites propios de la orilla izquierda: en los niveles 1 y 2 entre los puntos 28 y 36 (el
+río apenas se mueve), en los niveles pares y en los impares hasta el 9 entre 25 y 40, en los
+impares del 11 al 19 entre 13 y 52, y en los impares desde el 21 casi en cualquier parte (de 1 a
+64).
+
+### El borde del agua
+
+El Atari dibuja esta pantalla en bytes de 4 puntos. La mayor parte de una línea son bytes enteros
+de tierra o de agua, pero la orilla puede caer en cualquier punto. Por eso el cartucho tiene
+pequeñas imágenes ya hechas de un borde, de dos bytes cada una, una para cada posición de la
+orilla dentro de un byte, para la orilla izquierda, la derecha y una isla. Una línea se arma como
+una fila de baldosas: bytes de tierra, una pieza de borde, bytes de agua (una isla: borde,
+tierra, borde), una pieza de borde, bytes de tierra hasta el final. Las piezas de borde añaden
+una línea fina de un tercer color donde el agua se encuentra con la tierra; es el color en el que
+dan la vuelta barcos y helicópteros.
+
+### Casas, árboles y montañas
+
+Al comienzo de un bloque, más o menos una vez de cada dos (un bit de los números aleatorios),
+empieza una decoración en una orilla. Qué imagen, qué ancho y a qué distancia del borde de la
+pantalla salen de pequeñas tablas del cartucho, elegidas por el ancho del río (en los niveles
+impares a veces por un número aleatorio en su lugar); en una isla solo si es lo bastante ancha.
+El lado lo elige otro bit aleatorio, y se cambia si la orilla de ese lado es demasiado estrecha;
+en los niveles impares desde el 11 la orilla izquierda, mientras se dibuja la decoración, además
+se mantiene lejos de ese lado para que quepa. La imagen se dibuja una fila por línea, copiada
+byte a byte en la tierra, así que entra desde arriba como el río. Es solo paisaje.
+
+### Dónde empiezan los objetos
+
+Cada 16 líneas, si el objeto anterior ha entrado del todo, uno nuevo va a la siguiente franja
+libre de arriba (la pantalla tiene 11 franjas, ver «Enemigos, combustible y puentes»). Su
+posición a lo ancho del río se mide desde la orilla izquierda:
+
+- **niveles impares:** en cualquier parte del agua, según un número aleatorio, mirando a la
+  izquierda o a la derecha al azar;
+- **niveles pares:** junto a una orilla u otra, o al lado de la isla, mirando al agua: junto a
+  la orilla izquierda mira a la derecha, junto a la derecha a la izquierda. En una orilla guarda
+  algo de distancia, más los objetos anchos (barcos, puentes);
+- si el río es demasiado estrecho no hay nada que poner (solo siguen llegando los aviones, que
+  vuelan sobre tierra), y donde es estrecho un barco se convierte en helicóptero;
+- un depósito de combustible siempre mira a la derecha; un puente siempre cruza la recta, que
+  tiene siempre la misma forma.
+
+Las filas del objeto nuevo entran una línea cada vez, como todo lo demás. Mientras sigue
+entrando, la orilla comprueba cada paso contra él, así que nunca se mete en él.
+
+Desde el nivel 7, más o menos una vez de cada cuatro, también se pone un **tanque** en la orilla
+cuando al comienzo de un bloque entra un helicóptero, un globo, un barco o un depósito de
+combustible, en las secciones centrales de un tramo: en la carretera a lo largo de la orilla (o
+en una isla), mirando al río, en un sitio calculado por el ancho del río y por dónde hay una
+casa. Al comienzo de la recta de un puente, si no hay ningún tanque, se pone uno sobre el propio
+puente, listo para cruzarlo.
+
 ## Movimiento
 
 Al principio los objetos no se mueven solos: cada 16 imágenes una franja al azar se "despierta"

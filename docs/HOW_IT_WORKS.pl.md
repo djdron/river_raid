@@ -123,6 +123,91 @@ stronę od bliższego brzegu.
 
 Każde 10 000 punktów daje dodatkowy samolot, do 9.
 
+## Jedna nowa linia, krok po kroku
+
+Wszystko powyższe dzieje się po jednej linii naraz. Przy zwykłej prędkości rzeka przesuwa się w
+dół o jedną linię na klatkę, a na górze ekranu pojawia się nowa linia. Obrazu rzeki gra nigdzie
+nie trzyma: ma garść liczb (gdzie jest lewy brzeg, jak szeroka jest woda, która to linia w
+bloku) i z nich buduje każdą linię. Dla każdej nowej linii robi to samo, zawsze w tej samej
+kolejności:
+
+1. **Liczy.** Numer linii w bloku rośnie o jeden. Po 32 liniach zaczyna się nowy blok; po dwóch
+   blokach nowy odcinek, który dostaje swoją szerokość; po 16 odcinkach fragment kończy się
+   mostem, a poziom rośnie o jeden.
+2. **Miesza liczby losowe.** 24-bitowy rejestr robi jeden krok, więc następne decyzje biorą
+   nowe bity. Na prostym podejściu do mostu stoi w miejscu: ta część jest zawsze taka sama.
+3. **Zmienia szerokość.** Jeśli odcinek zażądał innej szerokości, ląd między brzegami (albo
+   wyspa) rośnie lub maleje o jeden punkt w tej linii, o dwa przy dużej zmianie. Dlatego zwężenie
+   nigdy nie jest stopniem, tylko zboczem.
+4. **Przesuwa lewy brzeg.** O punkt w lewo, o punkt w prawo albo stoi (zasady w „Brzegach”).
+5. **Może zacząć dom.** W pierwszej linii bloku, jeśli jeden bit liczb losowych jest ustawiony,
+   zaczyna się dekoracja (poza podejściem do mostu).
+6. **Rysuje linię.** Liczby zamieniają się w 192 punkty lądu, krawędzi i wody.
+7. **Co 16 linii wprowadza obiekt** na górze.
+
+### Gdzie jest woda
+
+Wyobraź sobie 192 punkty linii jako ląd, a w nim pas szeroki na 128 punktów, który zaczyna się
+od lewego brzegu: koryto rzeki. Lewy brzeg wędruje, a całe koryto razem z nim, więc prawy brzeg
+idzie za lewym. Wewnątrz koryta gra kładzie po równo lądu z obu stron (albo, gdy jest wyspa,
+tyle samo lądu w jego środek):
+
+| co | ląd w korycie, z każdej strony | woda |
+|---|---|---|
+| poziomy nieparzyste, każdy odcinek | 28 punktów | 72 punkty |
+| poziomy parzyste, szerokość 2…15 (najwyżej 8 poniżej poziomu 9) | od 8 do 60 punktów | od 112 do 8 punktów |
+| odcinek przed mostem | 54 punkty | 20 punktów |
+| odcinek, w którym wyspa się zaczyna lub kończy | brak | całe 128 punktów; potem wyspa rośnie pośrodku |
+
+Własne granice lewego brzegu: na poziomach 1 i 2 między punktami 28 i 36 (rzeka prawie się nie
+rusza), na poziomach parzystych i nieparzystych do 9 między 25 a 40, na nieparzystych od 11 do
+19 między 13 a 52, a na nieparzystych od 21 prawie wszędzie (od 1 do 64).
+
+### Krawędź wody
+
+Atari rysuje ten ekran bajtami po 4 punkty. Większość linii to całe bajty lądu lub wody, ale
+brzeg może wypaść na dowolnym punkcie. Dlatego w kartridżu są małe gotowe obrazki krawędzi, po
+dwa bajty, na każde położenie brzegu w bajcie, dla lewego brzegu, prawego i wyspy. Linia
+składa się jak rząd płytek: bajty lądu, kawałek krawędzi, bajty wody (wyspa: krawędź, ląd,
+krawędź), kawałek krawędzi, bajty lądu do końca. Kawałki krawędzi dodają cienką linię trzeciego
+koloru tam, gdzie woda styka się z lądem; od tego koloru zawracają statki i helikoptery.
+
+### Domy, drzewa i góry
+
+Na początku bloku mniej więcej co drugi raz (jeden bit liczb losowych) na brzegu zaczyna się
+dekoracja. Jaki obrazek, jak szeroki i jak daleko od krawędzi ekranu, pochodzi z małych tabel w
+kartridżu, wybranych według szerokości rzeki (na poziomach nieparzystych czasem zamiast tego
+według liczby losowej); na wyspie tylko wtedy, gdy jest dość szeroka. Stronę wybiera kolejny
+losowy bit, zamieniany, gdy brzeg z tej strony jest za wąski; na poziomach nieparzystych od 11
+lewy brzeg, dopóki dekoracja jest rysowana, trzyma się też z dala od tej strony, żeby się
+zmieściła. Obrazek rysuje się po rzędzie na linię, kopiowany bajt po bajcie do lądu, więc
+wjeżdża z góry razem z rzeką. To tylko krajobraz.
+
+### Gdzie zaczynają się obiekty
+
+Co 16 linii, jeśli poprzedni obiekt całkiem już wjechał, nowy trafia do następnego wolnego pasa
+na górze (ekran ma 11 pasów, zob. „Wrogowie, paliwo i mosty”). Jego położenie w poprzek rzeki
+liczy się od lewego brzegu:
+
+- **poziomy nieparzyste:** gdziekolwiek na wodzie, według liczby losowej, zwrócony w lewo lub w
+  prawo losowo;
+- **poziomy parzyste:** przy jednym lub drugim brzegu albo obok wyspy, zwrócony ku wodzie: przy
+  lewym brzegu patrzy w prawo, przy prawym w lewo. Przy brzegu trzyma się trochę z dala, szerokie
+  obiekty (statki, mosty) dalej;
+- jeśli rzeka jest za wąska, nie ma czego postawić (przylatują już tylko odrzutowce, latają nad
+  lądem), a gdzie jest wąska, statek staje się helikopterem;
+- skład paliwa zawsze patrzy w prawo; most zawsze leży w poprzek podejścia, które za każdym razem
+  ma ten sam kształt.
+
+Rzędy nowego obiektu wjeżdżają po jednej linii, jak wszystko inne. Dopóki jeszcze wjeżdża, brzeg
+sprawdza z nim każdy swój krok, więc nigdy na niego nie wchodzi.
+
+Od poziomu 7 mniej więcej co czwarty raz na brzegu stawia się też **czołg**, gdy na początku
+bloku wjeżdża helikopter, balon, statek lub skład paliwa, w środkowych odcinkach fragmentu: na
+drodze wzdłuż brzegu (albo na wyspie), zwrócony ku rzece, w miejscu wyliczonym z szerokości
+rzeki i z tego, gdzie stoi dom. Na początku podejścia do mostu, jeśli czołgu nie ma, stawia się
+go na samym moście, gotowego do przejazdu.
+
 ## Ruch
 
 Na początku obiekty same się nie ruszają: co 16 obrazów losowy pas zostaje „obudzony” (`mainLoop`)

@@ -127,6 +127,96 @@ näheren Ufer weg.
 
 Alle 10 000 Punkte gibt es ein zusätzliches Flugzeug, bis zu 9.
 
+## Eine neue Zeile, Schritt für Schritt
+
+Alles oben Beschriebene geschieht Zeile für Zeile. Bei normaler Geschwindigkeit rückt der Fluss
+um eine Zeile pro Bild nach unten, und oben auf dem Bildschirm erscheint eine neue Zeile. Ein
+Bild des Flusses hält das Spiel nirgends: es hat eine Handvoll Zahlen (wo das linke Ufer ist,
+wie breit das Wasser ist, die wievielte Zeile im Block), und baut jede Zeile daraus. Für jede
+neue Zeile tut es dasselbe, immer in derselben Reihenfolge:
+
+1. **Zählen.** Die Nummer der Zeile im Block steigt um eins. Nach 32 Zeilen beginnt ein neuer
+   Block; nach zwei Blöcken ein neuer Abschnitt, der seine Breite bekommt; nach 16 Abschnitten
+   endet die Strecke mit einer Brücke, und der Level steigt um eins.
+2. **Die Zufallszahlen umrühren.** Das 24-Bit-Register macht einen Schritt, so dass die
+   nächsten Entscheidungen neue Bits nehmen. Auf der geraden Anfahrt zu einer Brücke steht es
+   still: dieser Teil ist immer gleich.
+3. **Die Breite ändern.** Hat der Abschnitt eine andere Breite verlangt, wächst oder schrumpft
+   das Land innerhalb der Ufer (oder die Insel) auf dieser Zeile um einen Punkt, um zwei bei
+   einer großen Änderung. Deshalb kommt eine Verengung nie als Stufe, sondern als Schräge.
+4. **Das linke Ufer bewegen.** Einen Punkt nach links, einen nach rechts oder stehen bleiben
+   (die Regeln stehen unter „Die Ufer“).
+5. **Vielleicht ein Haus beginnen.** In der ersten Zeile eines Blocks beginnt eine Dekoration,
+   wenn ein Bit der Zufallszahlen gesetzt ist (außer auf der Anfahrt zu einer Brücke).
+6. **Die Zeile zeichnen.** Aus den Zahlen werden 192 Punkte Land, Rand und Wasser.
+7. **Alle 16 Zeilen ein Objekt bringen,** oben.
+
+### Wo das Wasser ist
+
+Stellen Sie sich die 192 Punkte einer Zeile als Land vor, mit einem 128 Punkte breiten Streifen,
+der am linken Ufer beginnt: das Flussbett. Das linke Ufer wandert, und das ganze Flussbett
+wandert mit, deshalb folgt das rechte Ufer dem linken. Innerhalb des Flussbetts legt das Spiel
+auf beiden Seiten gleich viel Land hin (oder, wenn es eine Insel gibt, genauso viel Land in
+deren Mitte):
+
+| was | Land im Flussbett, je Seite | Wasser |
+|---|---|---|
+| ungerade Level, jeder Abschnitt | 28 Punkte | 72 Punkte |
+| gerade Level, Breite 2…15 (höchstens 8 unter Level 9) | 8 bis 60 Punkte | 112 bis hinunter zu 8 Punkte |
+| der Abschnitt vor einer Brücke | 54 Punkte | 20 Punkte |
+| ein Abschnitt, in dem eine Insel beginnt oder endet | keins | alle 128 Punkte; dann wächst die Insel in der Mitte |
+
+Die eigenen Grenzen des linken Ufers: auf Level 1 und 2 zwischen Punkt 28 und 36 (der Fluss
+bewegt sich kaum), auf geraden Leveln und auf ungeraden bis 9 zwischen 25 und 40, auf
+ungeraden von 11 bis 19 zwischen 13 und 52, und auf ungeraden ab 21 fast überall (1 bis 64).
+
+### Der Rand des Wassers
+
+Der Atari zeichnet diesen Bildschirm in Bytes zu 4 Punkten. Der größte Teil einer Zeile sind
+ganze Bytes Land oder Wasser, aber das Ufer kann auf jeden Punkt fallen. Deshalb hat das Modul
+kleine fertige Bilder eines Randes, je zwei Bytes, eines für jede Lage des Ufers innerhalb eines
+Bytes, für das linke Ufer, das rechte und eine Insel. Eine Zeile wird wie eine Reihe Fliesen
+zusammengesetzt: Bytes Land, ein Randstück, Bytes Wasser (eine Insel: Rand, Land, Rand), ein
+Randstück, Bytes Land bis zum Ende. Die Randstücke fügen eine dünne Linie in einer dritten Farbe
+ein, wo Wasser auf Land trifft; an dieser Farbe drehen Schiffe und Hubschrauber um.
+
+### Häuser, Bäume und Berge
+
+Am Anfang eines Blocks beginnt etwa jedes zweite Mal (ein Bit der Zufallszahlen) eine
+Dekoration an einem Ufer. Welches Bild, wie breit und wie weit vom Bildschirmrand, kommt aus
+kleinen Tabellen im Modul, gewählt nach der Breite des Flusses (auf ungeraden Leveln manchmal
+stattdessen nach einer Zufallszahl); auf einer Insel nur, wenn sie breit genug ist. Die Seite
+wählt ein weiteres Zufallsbit, getauscht, wenn das Ufer dort zu schmal ist; auf ungeraden
+Leveln ab 11 hält sich das linke Ufer, solange die Dekoration gezeichnet wird, außerdem von
+dieser Seite fern, damit sie passt. Das Bild wird eine Reihe pro Zeile gezeichnet, Byte für
+Byte ins Land kopiert, und rollt so von oben herein wie der Fluss. Es ist nur Landschaft.
+
+### Wo Objekte beginnen
+
+Alle 16 Zeilen, wenn das vorige Objekt ganz hereingekommen ist, kommt ein neues in das nächste
+freie Band oben (der Bildschirm hat 11 Bänder, siehe „Gegner, Treibstoff und Brücken“). Seine
+Lage quer über den Fluss wird vom linken Ufer aus gemessen:
+
+- **ungerade Level:** irgendwo auf dem Wasser, nach einer Zufallszahl, zufällig nach links
+  oder rechts gewandt;
+- **gerade Level:** nahe am einen oder anderen Ufer oder neben der Insel, dem Wasser
+  zugewandt: am linken Ufer schaut es nach rechts, am rechten nach links. An einem Ufer hält es
+  etwas Abstand, breite Objekte (Schiffe, Brücken) mehr;
+- ist der Fluss zu schmal, gibt es nichts zu setzen (nur Jets kommen noch, sie fliegen über
+  Land), und wo er schmal ist, wird aus einem Schiff ein Hubschrauber;
+- ein Treibstofflager schaut immer nach rechts; eine Brücke liegt immer quer über der Anfahrt,
+  die jedes Mal dieselbe Form hat.
+
+Die Reihen des neuen Objekts kommen Zeile für Zeile herein, wie alles andere. Solange es noch
+hereinkommt, prüft das Ufer jeden Schritt gegen es, so dass es nie hineinläuft.
+
+Ab Level 7 wird etwa jedes vierte Mal auch ein **Panzer** ans Ufer gestellt, wenn am Anfang
+eines Blocks ein Hubschrauber, ein Ballon, ein Schiff oder ein Treibstofflager hereinkommt, in
+den mittleren Abschnitten einer Strecke: auf die Straße am Ufer (oder auf eine Insel), dem Fluss
+zugewandt, an eine Stelle, die aus der Breite des Flusses und dem Platz eines Hauses berechnet
+wird. Am Anfang der Anfahrt zu einer Brücke wird, wenn kein Panzer da ist, einer auf die Brücke
+selbst gestellt, bereit hinüberzufahren.
+
 ## Bewegung
 
 Anfangs bewegen sich die Objekte nicht von selbst: Alle 16 Bilder wird ein zufälliger Streifen
