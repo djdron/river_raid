@@ -1211,9 +1211,10 @@ void Game::displayGeometry() {
 		return false;
 	};
 
-	// Each object at its own y: its rows from scanline y + 3 - 69 down (row `height` first, as
-	// the shape tables keep them bottom up), cut at the river's top (scanline 24 + 3: what was
-	// the DLI's first wait, X = $5D) and at its end (X past 255)
+	// Each object at its own y: its rows from scanline y - 65 down (x0 = y + 3; row k, written
+	// while X = x0 + k, shows on scanline x0 + k - 68; row `height` first, as the shape tables
+	// keep them bottom up), cut at the river's top (scanline 28: the DLI's first wait was
+	// X = $5D) and at its end (X past 255)
 	auto place = [&](std::vector<ObjectRows> &out) {
 		for (int n = s.firstSlot; n < kSlots; n++) {
 			const Slot &sl = s.slot[size_t(n)];
