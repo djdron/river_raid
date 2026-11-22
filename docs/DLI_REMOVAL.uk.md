@@ -1,6 +1,6 @@
 # Експерименти: гра без моделі DLI
 
-[English](DLI_REMOVAL.md) | [Русский](DLI_REMOVAL.ru.md) | Українська | [Deutsch](DLI_REMOVAL.de.md) | [Polski](DLI_REMOVAL.pl.md)
+[English](DLI_REMOVAL.md) | [Русский](DLI_REMOVAL.ru.md) | Українська | [Deutsch](DLI_REMOVAL.de.md) | [Polski](DLI_REMOVAL.pl.md) | [Italiano](DLI_REMOVAL.it.md)
 
 Гілки `dli_removal` і `dli_removed`. Мета — простіше виведення для портів на повільні машини
 (ZX Spectrum Next, TS-Conf): спрайти малюються готовими картинками у своїх координатах,
