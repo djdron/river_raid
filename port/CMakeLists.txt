@@ -78,6 +78,11 @@ add_executable(display_bench tools/display_bench.cpp)
 target_link_libraries(display_bench rrcore)
 target_compile_options(display_bench PRIVATE ${RR_WARNINGS})
 
+# The number types of src/fixed.h against the code they replace, on every input.
+add_executable(fixed_check tools/fixed_check.cpp)
+target_include_directories(fixed_check PRIVATE src)
+target_compile_options(fixed_check PRIVATE ${RR_WARNINGS})
+
 # One line per frame of what the game does, for comparing two versions of the port
 # (tools/trace/compare.sh, docs/OOP.md).
 add_executable(game_trace tools/game_trace.cpp)

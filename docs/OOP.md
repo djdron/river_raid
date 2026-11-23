@@ -1,0 +1,74 @@
+# The object-oriented rewrite (branch `oop`)
+
+English | [Русский](OOP.ru.md)
+
+Branch `oop`, from `dli_removed`. The goal: the port's game as objects with names (the river,
+the plane, its bullet, the tank and its shell, the helicopter's missile, the ships, helicopters,
+jets, balloons, fuel depots, bridges and explosions in their slots, the players and the panel,
+the sound), instead of the original's RAM laid out by address, while the game plays exactly as
+on `dli_removed`, frame by frame and bit by bit. The ZX Spectrum ports follow `dli_removed` and
+are checked against it; `oop` is a rewrite of the same game, not a new one.
+
+## The rules
+
+- **The same game.** Every frame the same state, the same sound registers, the same picture as
+  `dli_removed`. No float: positions, speeds, fuel and timers stay bytes that wrap round, with
+  their fraction bytes; score, bridges and high scores stay BCD. The quirks stay too: the order
+  of things in a frame, the slots and their order, an object turning into another, how many
+  times RANDOM is read and when, the reset frames, the two players' swap.
+- **Checked after every step** with `tools/trace/compare.sh` (below): all runs the same, or the
+  step is not done.
+- **One thing at a time**, each its own commit: a new type or class first wraps the state as it
+  is, then the code moves into it, then the old state goes.
+- **The original's RAM stays reachable**: `saveToRam` / `loadFromRam` / `diffWithRam`
+  (`game_ram.cpp`) keep the original's layout, for `game_check` and for the ZX ports' checks
+  (`nxcheck`, `tscheck`), whatever the classes keep inside.
+
+## The checks
+
+`port/tools/game_trace` writes one line per frame of what the game does, by name: the plane,
+bullet, tank, shell, missile, every slot, score, lives, the other player, high scores, the river
+generator, the sound registers, the collision results and a hash of the picture (river and
+panel). It plays with the autopilot of `display_bench`; without `-ghost` the plane crashes and
+runs out of fuel, so lives, respawns and game overs are in the runs.
+
+`port/tools/trace/runs.txt` lists 17 runs, 700 000 frames: the attract mode, games 1-8 on NTSC
+and PAL, two players, `-wild` (steering at random, over the banks too), long `-ghost` runs from
+bridges 60 and 100. `golden.txt` holds the hash of each run's lines as `dli_removed` plays them,
+made at the commit in `REFERENCE`.
+
+```
+port/tools/trace/compare.sh <rom> [build dir] [runs...]
+```
+
+plays them (~2 minutes) and compares. On a difference it builds the `REFERENCE` commit in a
+temporary worktree, plays the run there too and prints the first frame that differs, both
+lines. `tools/fixed_check` tests the number types (below) on every input against the code they
+replace.
+
+## Done
+
+1. `game_trace`, the runs, the reference.
+2. `PokeyRandom` without its ~1 MB of tables: a jump of n cycles of the counter is linear over
+   GF(2), so it is made of 17 maps (2^k steps, 1.2 KB), and the lengths the game uses are kept
+   as maps read 4 bits at a time, as the ZX Spectrum ports do (5 lookups a read). Checked
+   against the old class on 6 million reads.
+3. The display only as geometry: the DLI's models (`displayBeam`, `displaySimple`, the
+   `RR_DISPLAY` modes, `RR_GEOMCHECK`, the `Beam` class, the experiments' switches) are gone
+   from this branch; they stay on `dli_removal`. `display.cpp`: 276 lines instead of 1331.
+4. `src/fixed.h`: `Fixed8` (a byte and its fraction byte, add / sub with the carry), `Bcd<N>`
+   (BCD counters: add with the carry up, the original's comparison), `addBcd`.
+
+## Next
+
+5. The bullet, then the plane (position and its fraction, speed, fuel, frame, steering).
+6. The tank and its shell; the helicopter's missile.
+7. The objects in the slots: one class per kind of behaviour (ship, helicopter, jet, balloon,
+   fuel depot, bridge, explosion), with their animation, movement and turning at the edge, an
+   object turning into another when hit.
+8. The players: score, bridges, lives, the other player, high scores; the panel.
+9. The sound driver.
+10. The river: the generator, screen lines, runs.
+11. The sprites' rows from the shapes instead of player-missile memory (with what sharing that
+    memory does: the bullet's rows clear the missile's).
+12. `GameState` and `RiverState` gone, the RAM export written from the classes; the documents.
