@@ -161,6 +161,11 @@ sostituiscono.
     partita, pannello e modalità dimostrativa si danno una volta; `showOtherScore` è diventato
     `player2Score`, con il perché stampa i punti di chi ha il turno ($63-$65), come fa sub
     $B068.
+23. Velocità: le righe di un oggetto sullo schermo (`DrawnObject`) sono array di dimensione
+    fissa (al massimo $80 righe) in un vettore che conserva la sua capacità, invece di due
+    vettori di byte rifatti per ogni oggetto a ogni fotogramma. Un fotogramma ora non alloca
+    nulla: il 44% di istruzioni in meno, e `display_bench` (1 000 000 di fotogrammi) è più
+    veloce di `dli_removed` dell'8–17%, mentre prima era più lento del 25%.
 
 ## Prossimi passi
 

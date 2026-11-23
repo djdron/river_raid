@@ -231,11 +231,16 @@ private:
 	};
 	std::array<Scanline, 262> scan_{};
 	// ... and each object's first scanline, position, size, rows and their colours (the first
-	// row on the first scanline).
+	// row on the first scanline). Fixed arrays, so that a frame allocates nothing: an object has
+	// at most $80 rows (display.cpp). The vector keeps its capacity from frame to frame.
 	struct DrawnObject {
+		static constexpr int kMaxRows = 0x80;
 		int slot = 0, first = 0;
 		uint8_t x = 0, size = 0;
-		std::vector<uint8_t> rows, colours;
+		bool edge = false;        // tested against the river's edge (turnsAtEdge)
+		bool bridge = false;
+		int count = 0;            // rows
+		std::array<uint8_t, kMaxRows> rows{}, colours{};
 	};
 	std::vector<DrawnObject> drawn_;
 	// A sprite's graphics bits on a scanline: 0 the shell, 1 the tank, 2 the plane (players,

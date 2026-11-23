@@ -47,6 +47,7 @@ port/tools/trace/compare.sh <rom> [build dir] [runs...]
 20. 主机（`console.h`、`console.cpp`）：`Console` 保存帧计数、演示模式的标志和计时器、空闲时间、暂停、SELECT 的延迟、`powerOnDone` 和 `screenOn`，带有 `keys`（A19E-A1F5：有无操作、暂停、关屏）、`attractTimerTick`（A2F5）、`countFrame`（VBI 的计数，`skipFrame` 也用）和 `selectRepeat`（A699）。在一帧的顺序把它们和其他事情交织在一起的地方（新游戏、选择游戏、游戏结束、PAL 上游戏结束前的 VBI），仍由 `Game` 自己设置字段。字节相同、顺序相同，所以存档不变；暂停、SELECT、OPTION、START 和关屏已在 390 000 帧带这些按键的运行中与前一个提交对照。
 21. 主循环按原版顺序分成有名字的步骤，不移动任何东西：`mainLoop` 依次是 `console_.keys`（A19E-A1F5）、`wakeObject`（A1FF）、`driveTank`（A21B）、`moveObjects`（A26C）、`attractTimerRunsOut`（A2F5）、`readStick`（A312）、`updatePlane`（A33F）；重生后从这里继续的 `mainLoopEnd` 依次是 `moveMissile`（A5B7）、`moveShell`（A607）、`consoleKeys`（A673）、`scroll`（A6DE）。开始重置的步骤返回 true，循环在那里停下，与以前相同。最后全部 17 段录制相同，在启用 sanitizer 的构建上也一样。
 22. 小清理。`game.h` 中只有河道查看器和工具才用的内容（`frame()` 的各部分、`skipFrame` 和 `SkipState`、`attractSound`、`playSound`、`stayAwake`、`ghost`、RAM 映像、`setPokey`）集中到游戏自身接口之后的一个块里；`resetState` 和 `eachState` 改为私有。查看器演示模式的声音设置合成一个 `AttractSound`（sound.h）。`game_internal.h` 改用 `namespace rr::game_detail` 和 `inline constexpr`，不再在头文件里用匿名命名空间。面板上的对局数字是 `Scoreboard`（match.h），对局、面板和演示模式只传一次；`showOtherScore` 改名为 `player2Score`，并说明它为什么打印轮到的那位玩家的分数（$63-$65）——sub $B068 就是这样做的。
+23. 速度：屏幕上物体的各行（`DrawnObject`）改为固定大小的数组（最多 $80 行），放在一个保留容量的 vector 中，不再每帧为每个物体重新创建两个字节 vector。现在一帧不做任何内存分配：指令减少 44%，`display_bench`（1 000 000 帧）比 `dli_removed` 快 8–17%，此前则慢 25%。
 
 ## 接下来
 

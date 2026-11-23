@@ -150,6 +150,10 @@ replace.
     (match.h), given the match, the panel and the attract mode once; `showOtherScore` became
     `player2Score`, with why it prints the score of the player whose turn it is ($63-$65), as
     sub $B068 does.
+23. Speed: an object's rows on the screen (`DrawnObject`) are fixed arrays (at most $80 rows) in
+    a vector that keeps its capacity, instead of two byte vectors made again for every object
+    every frame. A frame allocates nothing now: 44% fewer instructions, and `display_bench` (1
+    000 000 frames) is 8-17% faster than `dli_removed`, where it had been 25% slower.
 
 ## Next
 

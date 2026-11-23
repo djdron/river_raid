@@ -158,11 +158,11 @@ void Game::display() {
 	if (pairAny(2, planeBox, 0, shellBox)) hit_.planeHitShell = 0;
 	if (pairAny(4, missileBox, 2, planeBox)) hit_.missileHitPlane = 0;
 
-	struct ObjectRows { int slot, first; uint8_t x, size; bool edge, bridge; std::vector<uint8_t> rows, colours; };
-	std::vector<ObjectRows> objects;
-	objects.reserve(kSlots + 1);
+	using ObjectRows = DrawnObject;
+	std::vector<ObjectRows> &objects = drawn_;   // this frame's, kept for drawRiver()
+	objects.clear();
 	auto touches = [&](int sprite, const Rows &b, const ObjectRows &o) {
-		const int y0 = std::max(o.first, b.y0), y1 = std::min(o.first + int(o.rows.size()) - 1, b.y1);
+		const int y0 = std::max(o.first, b.y0), y1 = std::min(o.first + o.count - 1, b.y1);
 		for (int l = y0; l <= y1; l++) {
 			uint8_t bits, hpos, size;
 			int count;
@@ -174,8 +174,8 @@ void Game::display() {
 	// (the edge: each row's first and last dots against the line's edge runs, edgeTouches)
 	auto edgeOf = [&](const ObjectRows &o) {
 		if (!o.edge) return false;
-		for (size_t i = 0; i < o.rows.size(); i++)
-			if (edgeTouches(o.rows[i], 8, o.x, o.size, pfAt(o.first + int(i)))) return true;
+		for (int i = 0; i < o.count; i++)
+			if (edgeTouches(o.rows[size_t(i)], 8, o.x, o.size, pfAt(o.first + i))) return true;
 		return false;
 	};
 
@@ -196,10 +196,18 @@ void Game::display() {
 			const uint16_t shapes = rom_.shapeAddress(sl.kind + (facingLeft ? 0x10 : 0));
 			const uint16_t colours = rom_.coloursAddress(sl.type);
 			const int count = std::min(row + 1, 0x100 - x0);
-			out.push_back({n, x0 - 0x44, sl.x, sl.size, objectKind(sl.kind).turnsAtEdge(), bridge, {}, {}});
+			out.emplace_back();
+			ObjectRows &o = out.back();
+			o.slot = n;
+			o.first = x0 - 0x44;
+			o.x = sl.x;
+			o.size = sl.size;
+			o.edge = objectKind(sl.kind).turnsAtEdge();
+			o.bridge = bridge;
+			o.count = count;
 			for (int k = 0; k < count; k++) {
-				out.back().rows.push_back(rom_.at(uint16_t(shapes + row - k)));
-				out.back().colours.push_back(rom_.at(uint16_t(colours + row - k)));
+				o.rows[size_t(k)] = rom_.at(uint16_t(shapes + row - k));
+				o.colours[size_t(k)] = rom_.at(uint16_t(colours + row - k));
 				if (bridge && &out == &objects) from(x0 + k - 69 + 1, rom_.roadColour(row - k));
 			}
 			if (bridge && &out == &objects && x0 + count <= 0xFF) from(x0 + count - 69 + 1, s.sectionBankColour);
@@ -221,8 +229,6 @@ void Game::display() {
 	for (int l = 1; l <= last; l++)
 		if (!setBank[l]) bank[l] = bank[l - 1];
 	for (int l = kFirstLine; l <= last; l++) scan_[size_t(l)].bankColour = bank[l];
-	drawn_.clear();
-	for (const ObjectRows &o : objects) drawn_.push_back({o.slot, o.first, o.x, o.size, o.rows, o.colours});
 }
 
 // The sprites' rows from their state: each shape from the ROM at its row (as the original
@@ -273,7 +279,7 @@ void Game::drawRiver(uint8_t out[240][kRowWidth]) const {
 		}
 		// players over the playfield (PRIOR 1), player 0 on top
 		for (const DrawnObject &o : drawn_)                                   // the objects
-			if (line >= o.first && line < o.first + int(o.rows.size()))
+			if (line >= o.first && line < o.first + o.count)
 				sprite(row, o.rows[size_t(line - o.first)], o.x, o.size, o.colours[size_t(line - o.first)]);
 		const uint8_t planeColour = match_.player ? 0x8E : 0x1E;                 // COLPM2 (B542)
 		sprite(row, spriteRow(2, line), plane_.x, 0, planeColour);         // the plane

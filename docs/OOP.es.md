@@ -163,6 +163,11 @@ código que sustituyen.
     la partida, el panel y el modo de demostración una vez; `showOtherScore` pasó a ser
     `player2Score`, con el porqué de que imprima los puntos de quien tiene el turno ($63-$65),
     como hace sub $B068.
+23. Velocidad: las filas de un objeto en la pantalla (`DrawnObject`) son arrays de tamaño fijo
+    (como mucho $80 filas) en un vector que conserva su capacidad, en lugar de dos vectores de
+    bytes rehechos para cada objeto en cada fotograma. Un fotograma ya no reserva memoria: un 44
+    % menos de instrucciones, y `display_bench` (1 000 000 de fotogramas) es un 8–17 % más
+    rápido que `dli_removed`, cuando antes era un 25 % más lento.
 
 ## Lo siguiente
 

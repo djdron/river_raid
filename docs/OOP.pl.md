@@ -149,6 +149,11 @@ zastępują.
     `Scoreboard` (match.h), któremu partię, panel i tryb demonstracyjny podaje się raz;
     `showOtherScore` stał się `player2Score`, z wyjaśnieniem, dlaczego wypisuje punkty tego,
     czyja jest kolej ($63-$65) — tak robi sub $B068.
+23. Szybkość: wiersze obiektu na ekranie (`DrawnObject`) to tablice o stałym rozmiarze (najwyżej
+    $80 wierszy) w wektorze, który zachowuje pojemność, zamiast dwóch wektorów bajtów tworzonych
+    od nowa dla każdego obiektu w każdej klatce. Klatka niczego teraz nie przydziela: o 44%
+    mniej instrukcji, a `display_bench` (1 000 000 klatek) jest o 8–17% szybszy niż
+    `dli_removed`, choć wcześniej był o 25% wolniejszy.
 
 ## Dalej
 

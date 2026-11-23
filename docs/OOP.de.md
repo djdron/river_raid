@@ -165,6 +165,11 @@ den sie ersetzen.
     Statusleiste und Demo-Modus einmal gegeben werden; aus `showOtherScore` wurde
     `player2Score`, mit der Erklärung, warum es die Punkte dessen druckt, der dran ist
     ($63-$65), wie sub $B068.
+23. Tempo: Die Zeilen eines Objekts auf dem Bildschirm (`DrawnObject`) sind Felder fester Größe
+    (höchstens $80 Zeilen) in einem Vektor, der seine Kapazität behält, statt zwei
+    Byte-Vektoren, die jedes Bild für jedes Objekt neu angelegt wurden. Ein Bild reserviert
+    jetzt keinen Speicher: 44 % weniger Befehle, und `display_bench` (1 000 000 Bilder) ist 8–17
+    % schneller als `dli_removed`, wo es vorher 25 % langsamer war.
 
 ## Als Nächstes
 
