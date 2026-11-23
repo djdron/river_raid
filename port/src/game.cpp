@@ -11,12 +11,6 @@ namespace {
 
 inline uint8_t lo(int v) { return uint8_t(v & 0xFF); }
 
-// Player-missile memory: missiles, then players 0-3, one byte per scanline.
-constexpr uint16_t kMissileMemory = 0x0B00;
-constexpr uint16_t kShellMemory = 0x0C00;      // player 0: the tank shell
-constexpr uint16_t kTankMemory = 0x0D00;       // player 1: the tank on the road
-constexpr uint16_t kPlaneMemory = 0x0EAA;      // player 2 from row $AA: the plane
-constexpr uint8_t kMissile0 = 0x03;            // the helicopter's missile
 
 // the plane's states
 constexpr uint8_t kFlying = Plane::kFlying, kWaiting = Plane::kWaiting, kLifeLost = Plane::kLifeLost;
@@ -69,18 +63,6 @@ Game::Runs Game::makeRuns(const uint8_t *line) {
 
 Game::Game(const Rom &rom) : gen(rom), rom_(rom) {}
 
-// sub $B0F1 leaves the rainbow under the logo (players 2 and 3, rows $DB-$E1) and the fuel
-// gauge needle (missile 1, rows $CC-$D5) in player-missile memory; on PAL (B133-B15C) 12 and 7
-// rows lower, as the panel is there (status_bar.h).
-void Game::drawLogoAndNeedle() {
-	const int logo = pal_ ? 0xE7 : 0xDB, needle = pal_ ? 0xD3 : 0xCC;
-	for (int i = 0; i < 7; i++) {
-		g.pm.at(uint16_t(0x0E00 + logo + i)) = 0xFF;
-		g.pm.at(uint16_t(0x0F00 + logo + i)) = 0xFC;
-	}
-	for (int i = 0; i < 10; i++) g.pm.at(uint16_t(kMissileMemory + needle + i)) = 0x0C;
-}
-
 void Game::startAttract(bool pal) {
 	pal_ = pal;
 	gen.s = RiverState();
@@ -90,7 +72,6 @@ void Game::startAttract(bool pal) {
 	bankLines.clear();
 	runLines.clear();
 	lineStates.clear();
-	drawLogoAndNeedle();
 	for (int i = 0; i < kPanelBytes; i++) g.panel[i] = rom_.panelText(i);   // A0F0
 	// the attract mode's new game: B0F1 with X = $29, AF80, then the respawn (A36E-A3E3) which
 	// in the attract mode ends with sub $B21A; then frame 38
@@ -246,37 +227,20 @@ void Game::frame(const Input &input, const std::function<uint8_t()> &random) {
 	vbi(random);
 }
 
-// AE99-AF38, at the top of the frame: the shapes of the tank (player 1), the helicopter
-// missile (missile 0), the tank shell (player 0) and the plane (player 2) into player-missile
-// memory; then lives, bridges and score into the panel.
+// AE99-AF38, at the top of the frame: the sprites shown again (the original copies the tank's,
+// the shell's and the plane's shapes into player-missile memory, and the missile's row); the
+// tank and the shell gone once they have scrolled below the screen; then lives, bridges and
+// score into the panel.
 void Game::prepare() {
 	RiverState &s = gen.s;
-	auto copyShape = [&](uint16_t shape, uint16_t dest, int rows) {   // sub $B00F
-		for (int row = rows - 1; row >= 0; row--) g.pm.at(uint16_t(dest + row)) = rom_.at(uint16_t(shape + row));
-	};
-	// the tank: gone once it has scrolled below the screen
-	const uint8_t tankY = s.tankY;
+	g.spritesShown = true;
 	if (s.tankY >= 0xBC) s.tankKind = s.tankY = 0;
-	copyShape(rom_.tankShape(s.tankKind), uint16_t(kTankMemory + tankY), 11);
 	g.shellColour = rom_.shellColour(g.frameCount >> 3);
-	// the helicopter's missile: one row of missile 0, the two rows above it cleared
-	if (s.missileY >= 0x1C) {
-		const uint16_t row = uint16_t(kMissileMemory + s.missileY);
-		g.pm.at(uint16_t(row - 2)) &= ~kMissile0;
-		g.pm.at(uint16_t(row - 1)) &= ~kMissile0;
-		uint8_t bits = g.pm.at(row) & ~kMissile0;
-		if (s.missileX) bits |= kMissile0;
-		g.pm.at(row) = bits;
-	}
-	// the tank shell: gone below the screen
-	const uint8_t shellY = s.shellY;
 	if (s.shellY >= 0xBC) {
 		s.shellTimer = 0xFF;
 		g.shellFrame = 0;
 		s.shellY = 0;
 	}
-	copyShape(rom_.shellShape(g.shellFrame), uint16_t(kShellMemory + shellY), 16);
-	copyShape(rom_.planeShape(g.plane.frame), kPlaneMemory, 14);
 	// AF3A-AF58: lives, bridges and score into the panel
 	if (g.attractTimer == 0) showLives();
 	showBridges();
@@ -467,16 +431,14 @@ void Game::reset(bool full) {
 	g.bridgeFlash = 0;
 	g.shellFrame = g.shellX = g.shellXFrac = 0;
 	g.crashPitch = 0;   // $052C ($0500-$05FF cleared)
-	// player-missile memory rows 1-$BB cleared, screen memory cleared
-	for (int page = 0; page < 5; page++)
-		for (int row = 1; row < 0xBC; row++) g.pm.bytes[size_t(page * 0x100 + row)] = 0;
+	// player-missile memory rows 1-$BB cleared (the sprites gone until prepare()), screen memory cleared
+	g.spritesShown = false;
 	screen.clear();
 	bankLines.clear();
 	runLines.clear();
 	lineStates.clear();
 	g.screenOn = 0;                               // B101: colours off while clearing
 	busy_ = resetFrames();
-	drawLogoAndNeedle();
 }
 
 // sub $AF80: one- or two-player markers in the panel and the starting point of the game.
@@ -1063,13 +1025,12 @@ void Game::gameOverScreen() {
 
 // B204-B220: the bullet and the helicopter's missile go.
 void Game::removePlaneThings() {
-	g.bullet.remove(g.pm);
+	g.bullet.remove();
 	gen.s.shooterSlot = kNoSlot;
-	g.pm.at(uint16_t(kMissileMemory + gen.s.missileY)) &= ~kMissile0;
 }
 
 // A5AA-A5B4: the bullet to row y.
-void Game::moveBullet(int y) { g.bullet.moveTo(g.pm, y); }
+void Game::moveBullet(int y) { g.bullet.moveTo(y); }
 
 // sub $B247: two-player game: the other player's turn.
 void Game::swapPlayers() {

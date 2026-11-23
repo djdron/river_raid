@@ -71,7 +71,6 @@ void Game::loadFromRam(const uint8_t *ram) {
 	gen.loadFromRam(ram);
 	for (auto &f : gameFields(*this)) *f.second = ram[f.first.second];
 	for (auto &a : gameArrays(*this)) std::memcpy(std::get<2>(a), ram + std::get<1>(a), size_t(std::get<3>(a)));
-	std::memcpy(g.pm.bytes.data(), ram + 0x0B00, g.pm.bytes.size());
 	pal_ = ram[0xBF] == 0;   // A06F: GTIA's PAL bits, 0 on a PAL machine
 	screen = screenFromRam(ram);
 	g.screenTop = uint16_t(ram[0x3F04] | (ram[0x3F05] << 8));
@@ -86,7 +85,19 @@ void Game::saveToRam(uint8_t *ram) const {
 	gen.saveToRam(ram);
 	for (auto &f : gameFields(*this)) ram[f.first.second] = *f.second;
 	for (auto &a : gameArrays(*this)) std::memcpy(ram + std::get<1>(a), std::get<2>(a), size_t(std::get<3>(a)));
-	std::memcpy(ram + 0x0B00, g.pm.bytes.data(), g.pm.bytes.size());
+	// player-missile memory as the original has it at the top of the frame (AE99): the sprites'
+	// rows (sub $B0F1 leaves the logo's rainbow and the fuel needle below the river, rows
+	// $DB-$E1 and $CC-$D5; on PAL 12 and 7 lower)
+	std::memset(ram + 0x0B00, 0, 0x500);
+	for (int l = 0; l < 0x100; l++) {
+		ram[0x0C00 + l] = spriteRow(0, l);
+		ram[0x0D00 + l] = spriteRow(1, l);
+		ram[0x0E00 + l] = spriteRow(2, l);
+		ram[0x0B00 + l] = uint8_t(spriteRow(4, l) | spriteRow(5, l) << 4);
+	}
+	const int logo = pal_ ? 0xE7 : 0xDB, needle = pal_ ? 0xD3 : 0xCC;
+	for (int i = 0; i < 7; i++) ram[0x0E00 + logo + i] = 0xFF, ram[0x0F00 + logo + i] = 0xFC;
+	for (int i = 0; i < 10; i++) ram[0x0B00 + needle + i] |= 0x0C;
 	ram[0xBF] = pal_ ? 0 : 0x0E;
 	ram[0x3F04] = uint8_t(g.screenTop);
 	ram[0x3F05] = uint8_t(g.screenTop >> 8);
@@ -120,11 +131,6 @@ std::vector<std::string> Game::diffWithRam(const uint8_t *orig) const {
 		std::snprintf(b, sizeof b, "screenTop: port=%04X orig=%04X", g.screenTop, top);
 		diffs.push_back(b);
 	}
-	for (size_t i = 0; i < g.pm.bytes.size(); i++)
-		if (g.pm.bytes[i] != ram[0x0B00 + i] && !(i >= 0x0400 && i < 0x04C0)) {   // (player 3's rows: the DLI's, which the port has not)
-			std::snprintf(b, sizeof b, "pm $%04zX: port=%02X orig=%02X", 0x0B00 + i, g.pm.bytes[i], ram[0x0B00 + i]);
-			diffs.push_back(b);
-		}
 	const auto lines = screenFromRam(ram);
 	for (size_t i = 0; i < lines.size() && i < screen.size(); i++)
 		if (lines[i] != screen[i]) {

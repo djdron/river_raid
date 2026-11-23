@@ -113,11 +113,11 @@ void Game::display() {
 		count = sprite < 4 ? 8 : 2;
 		size = 0;
 		switch (sprite) {
-		case 0: bits = g.pm.player(0, l); hpos = panel ? 0 : g.shellX; break;
-		case 1: bits = g.pm.player(1, l); hpos = panel ? 0 : s.tankX; break;
-		case 2: bits = g.pm.player(2, l); hpos = g.plane.x; break;
-		case 4: bits = uint8_t(g.pm.missiles(l) & 3); hpos = panel ? 0 : s.missileX; size = 1; break;
-		default: bits = uint8_t((g.pm.missiles(l) >> 4) & 3); hpos = uint8_t(g.plane.x + 4); break;
+		case 0: bits = spriteRow(0, l); hpos = panel ? 0 : g.shellX; break;
+		case 1: bits = spriteRow(1, l); hpos = panel ? 0 : s.tankX; break;
+		case 2: bits = spriteRow(2, l); hpos = g.plane.x; break;
+		case 4: bits = spriteRow(4, l); hpos = panel ? 0 : s.missileX; size = 1; break;
+		default: bits = spriteRow(5, l); hpos = uint8_t(g.plane.x + 4); break;
 		}
 	};
 	auto pfAt = [&](int l) -> const Runs * {
@@ -223,6 +223,24 @@ void Game::display() {
 	for (const ObjectRows &o : objects) drawn.push_back({o.slot, o.first, o.x, o.size, o.rows, o.colours});
 }
 
+// The sprites' rows from their state: each shape from the ROM at its row (as the original
+// copies them into player-missile memory at the top of the frame, AE99), the missile one row,
+// the bullet 8.
+uint8_t Game::spriteRow(int sprite, int line) const {
+	if (!g.spritesShown) return 0;
+	const RiverState &s = gen.s;
+	auto shape = [&](uint16_t address, int y, int rows) -> uint8_t {
+		return line >= y && line < y + rows ? rom_.at(uint16_t(address + line - y)) : 0;
+	};
+	switch (sprite) {
+	case 0: return shape(rom_.shellShape(g.shellFrame), s.shellY, 16);
+	case 1: return shape(rom_.tankShape(s.tankKind), s.tankY, 11);
+	case 2: return shape(rom_.planeShape(g.plane.frame), 0xAA, 14);
+	case 4: return s.missileX && s.missileY >= 0x1C && line == s.missileY ? 0x03 : 0;
+	default: return g.bullet.shown() && line >= g.bullet.top() && line < g.bullet.top() + 8 ? 0x02 : 0;
+	}
+}
+
 void Game::drawRiver(uint8_t out[240][kRowWidth]) const {
 	const RiverState &s = gen.s;
 	auto put = [&](uint8_t *row, int x0, int w, uint8_t c) {
@@ -256,15 +274,15 @@ void Game::drawRiver(uint8_t out[240][kRowWidth]) const {
 			if (line >= o.first && line < o.first + int(o.rows.size()))
 				player(row, o.rows[size_t(line - o.first)], o.x, o.size, o.colours[size_t(line - o.first)]);
 		const uint8_t planeColour = g.player ? 0x8E : 0x1E;                 // COLPM2 (B542)
-		player(row, g.pm.player(2, line), g.plane.x, 0, planeColour);        // the plane
-		const uint8_t m2 = (g.pm.missiles(line) >> 4) & 0x03;               // its bullet
+		player(row, spriteRow(2, line), g.plane.x, 0, planeColour);         // the plane
+		const uint8_t m2 = spriteRow(5, line);                              // its bullet
 		for (int b = 0; b < 2; b++)
 			if (m2 & (2 >> b)) put(row, 2 * (g.plane.x + 4 + b - 32), 2, planeColour);
-		player(row, g.pm.player(1, line), s.tankX, 0, 0x00);                // tank, COLPM1 = 0
-		const uint8_t m0 = g.pm.missiles(line) & 0x03;                      // helicopter missile, double width
+		player(row, spriteRow(1, line), s.tankX, 0, 0x00);                  // tank, COLPM1 = 0
+		const uint8_t m0 = spriteRow(4, line);                              // helicopter missile, double width
 		for (int b = 0; b < 2; b++)
 			if (m0 & (2 >> b)) put(row, 2 * (s.missileX + b * 2 - 32), 4, g.shellColour);
-		player(row, g.pm.player(0, line), g.shellX, 0, g.shellColour);      // tank shell
+		player(row, spriteRow(0, line), g.shellX, 0, g.shellColour);        // tank shell
 		std::fill(row, row + 24, 0);
 		std::fill(row + 360, row + kRowWidth, 0);
 	}

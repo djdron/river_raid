@@ -118,7 +118,9 @@ struct GameState {
 	uint8_t colourBank = 0xD6, colourEdge = 0x20, colourWater = 0x84;
 	PokeyRegs pokey;            // what the sound driver last wrote
 	Collisions hit;
-	PmMemory pm;
+	// The sprites (shell, tank, plane, missile, bullet) are shown from their state; a reset
+	// (sub $B0F1) clears them until the next frame's prepare() (AE99) draws them again.
+	bool spritesShown = false;
 };
 
 class Game {
@@ -220,6 +222,9 @@ public:
 	// see status_bar.h) as the original shows it this frame: playfield, objects, the tank,
 	// its shell and the helicopter missile.
 	void drawRiver(uint8_t screen[240][kRowWidth]) const;
+	// A sprite's graphics bits on a scanline: 0 the shell, 1 the tank, 2 the plane (players,
+	// 8 bits), 4 the helicopter's missile, 5 the bullet (missiles, 2 bits)
+	uint8_t spriteRow(int sprite, int line) const;
 
 	// The state as the original keeps it in RAM ($0000-$3FFF), for the checks against traces
 	// of the original (src/game_ram.cpp). Colours the VBI sets are recomputed on loading.
@@ -246,7 +251,6 @@ private:
 	uint8_t beforeGameOver_[3] = {};
 	void newGame();                               // A688-A17E
 	void reset(bool full);                        // sub $B0F1 ($4D-$5F, or $4D-$76 for a new game)
-	void drawLogoAndNeedle();
 	void selectGame();                            // A699-A6DC
 	bool respawnOrGameOver();                     // A36E-A3B6
 	void flyPlane(const Input &input);            // A3E9-A5B4

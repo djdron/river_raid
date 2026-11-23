@@ -58,17 +58,20 @@ replace.
    from this branch; they stay on `dli_removal`. `display.cpp`: 276 lines instead of 1331.
 4. `src/fixed.h`: `Fixed8` (a byte and its fraction byte, add / sub with the carry), `Bcd<N>`
    (BCD counters: add with the carry up, the original's comparison), `addBcd`.
+5. The bullet (`bullet.h`) and the plane (`plane.h`: steering, speed, fuel) as their own types.
+6. No player-missile memory: the sprites' rows come from their state (`Game::spriteRow`: each
+   shape from the ROM at its row, the missile one row, the bullet 8), shown from each frame's
+   top until a reset clears them. The original's sharing of that memory (the bullet's rows
+   clearing the missile's) is undone by the next frame's copy before anything reads it, so the
+   game is the same. `saveToRam` still writes the memory as the original has it.
 
 ## Next
 
-5. The bullet, then the plane (position and its fraction, speed, fuel, frame, steering).
-6. The tank and its shell; the helicopter's missile.
-7. The objects in the slots: one class per kind of behaviour (ship, helicopter, jet, balloon,
+7. The tank and its shell; the helicopter's missile.
+8. The objects in the slots: one class per kind of behaviour (ship, helicopter, jet, balloon,
    fuel depot, bridge, explosion), with their animation, movement and turning at the edge, an
    object turning into another when hit.
-8. The players: score, bridges, lives, the other player, high scores; the panel.
-9. The sound driver.
-10. The river: the generator, screen lines, runs.
-11. The sprites' rows from the shapes instead of player-missile memory (with what sharing that
-    memory does: the bullet's rows clear the missile's).
+9. The players: score, bridges, lives, the other player, high scores; the panel.
+10. The sound driver.
+11. The river: the generator, screen lines, runs.
 12. `GameState` and `RiverState` gone, the RAM export written from the classes; the documents.
