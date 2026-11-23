@@ -141,6 +141,15 @@ replace.
     a respawn goes on, is `moveMissile` (A5B7), `moveShell` (A607), `consoleKeys` (A673),
     `scroll` (A6DE). A step that starts a reset returns true and the loop stops there, as
     before. At the end, all 17 runs the same, also on the sanitizer build.
+22. Small cleanups. In `game.h` what only the river viewer and the tools use (the parts of
+    `frame()`, `skipFrame` and `SkipState`, `attractSound`, `playSound`, `stayAwake`, `ghost`,
+    the RAM image, `setPokey`) is in one block after the game's own interface; `resetState` and
+    `eachState` are private. The viewer's attract mode sound settings are one `AttractSound`
+    (sound.h). `game_internal.h` is `namespace rr::game_detail` with `inline constexpr` instead
+    of an anonymous namespace in a header. The match's numbers in the panel are `Scoreboard`
+    (match.h), given the match, the panel and the attract mode once; `showOtherScore` became
+    `player2Score`, with why it prints the score of the player whose turn it is ($63-$65), as
+    sub $B068 does.
 
 ## Next
 

@@ -6,6 +6,8 @@
 
 namespace rr {
 
+using namespace game_detail;
+
 // sub $AF80: one- or two-player markers in the panel and the starting point of the game.
 void Game::setUpGame() { match_.setUp(world_.gen, panel_, attract()); }
 
@@ -25,6 +27,6 @@ void Game::selectGame() {
 }
 
 // sub $AF5B: the lives as plane symbols in the panel (the newest blinks while the bonus sounds).
-void Game::showLives() { match_.showLives(panel_, sound_.bonus); }
+void Game::showLives() { scoreboard().lives(sound_.bonus); }
 
 }  // namespace rr

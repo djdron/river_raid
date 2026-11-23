@@ -140,6 +140,15 @@ zastępują.
     (A673), `scroll` (A6DE). Krok, który zaczyna reset, zwraca true i pętla się na nim
     zatrzymuje, jak wcześniej. Na koniec wszystkie 17 przebiegów takie same, także na buildzie z
     sanitizerami.
+22. Drobne porządki. W `game.h` to, czego używają tylko przeglądarka rzeki i narzędzia (części
+    `frame()`, `skipFrame` i `SkipState`, `attractSound`, `playSound`, `stayAwake`, `ghost`,
+    obraz RAM, `setPokey`), jest w jednym bloku po własnym interfejsie gry; `resetState` i
+    `eachState` są prywatne. Ustawienia dźwięku trybu demonstracyjnego dla przeglądarki to jedna
+    `AttractSound` (sound.h). `game_internal.h` to `namespace rr::game_detail` z `inline
+    constexpr` zamiast anonimowej przestrzeni nazw w nagłówku. Liczby partii na panelu to
+    `Scoreboard` (match.h), któremu partię, panel i tryb demonstracyjny podaje się raz;
+    `showOtherScore` stał się `player2Score`, z wyjaśnieniem, dlaczego wypisuje punkty tego,
+    czyja jest kolej ($63-$65) — tak robi sub $B068.
 
 ## Dalej
 

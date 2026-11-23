@@ -14,6 +14,8 @@
 
 namespace rr {
 
+using namespace game_detail;
+
 Game::Game(const Rom &rom) : world_(rom), rom_(rom) {}
 
 // A new river line goes above the others.
@@ -56,9 +58,10 @@ void Game::prepare() {
 	}
 	// AF3A-AF58: lives, bridges and score into the panel
 	if (console_.attractTimer == 0) showLives();
-	match_.showBridges(panel_, attract());
-	if (match_.player == 0) match_.showScore(panel_, attract());
-	else match_.showOtherScore(panel_, attract());
+	const Scoreboard board = scoreboard();
+	board.bridges();
+	if (match_.player == 0) board.score();
+	else board.player2Score();
 }
 
 void Game::logic(const Input &input, const std::function<uint8_t()> &random) { mainLoop(input, random); }
@@ -75,8 +78,8 @@ void Game::finishReset(const Input &input, const std::function<uint8_t()> &rando
 		setUpGame();
 		if (!attract()) {
 			showLives();
-			match_.showBridges(panel_, false);
-			match_.showScore(panel_, false);
+			scoreboard().bridges();
+			scoreboard().score();
 		}
 		mainLoop(input, random);
 	}
@@ -258,13 +261,7 @@ void Game::vbi(const std::function<uint8_t()> &random) {
 
 // B2A5-B3D8: the sound driver (sound.cpp), with what it needs of the game.
 void Game::soundDriver(const std::function<uint8_t()> &random) {
-	SoundContext c{plane_};
-	c.paused = console_.paused();
-	c.attract = attract();
-	c.attractSound = attractSound;
-	c.attractEnginePitch = attractEnginePitch;
-	c.attractEngineStick = attractEngineStick;
-	c.shellTimer = world_.objects.shell.timer;
+	const SoundContext c{plane_, console_.paused(), attract(), world_.objects.shell.timer, attractSound};
 	sound_.drive(pokey_, c, random, rom_);
 }
 

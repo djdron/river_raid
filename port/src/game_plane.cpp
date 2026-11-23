@@ -10,6 +10,8 @@
 
 namespace rr {
 
+using namespace game_detail;
+
 // A3E9-A5B4: the plane is flying.
 void Game::flyPlane(const Input &input) {
 	using namespace object;

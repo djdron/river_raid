@@ -10,6 +10,8 @@
 
 namespace rr {
 
+using namespace game_detail;
+
 namespace {
 
 // Raw bytes in, zero runs packed: a zero byte is followed by the length of its run (1-255).

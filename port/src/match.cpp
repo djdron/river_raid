@@ -5,10 +5,11 @@
 namespace rr {
 
 void Match::setUp(RiverGen &gen, Panel &panel, bool attract) {
+	const Scoreboard board(*this, panel, attract);
 	if (twoPlayers()) {
-		showOtherScore(panel, attract);
+		board.player2Score();
 	} else {
-		showHighScore(panel, attract);
+		board.highScore();
 	}
 	panel.markPlayers(twoPlayers());
 	const RiverGen::Start &start = gen.start(gameNumber >> 1);
@@ -60,10 +61,10 @@ Match::Points Match::addPoints(uint8_t points) {
 	return Points::Added;
 }
 
-void Match::showLives(Panel &panel, uint8_t bonusSound) const {
-	int shown = lives;
+void Scoreboard::lives(uint8_t bonusSound) const {
+	int shown = match_.lives;
 	if (shown && (bonusSound & 0x08)) shown--;
-	panel.showLives(shown);
+	panel_.showLives(shown);
 }
 
 }  // namespace rr

@@ -153,6 +153,16 @@ código que sustituyen.
     (A607), `consoleKeys` (A673), `scroll` (A6DE). Un paso que inicia un reinicio devuelve true
     y el bucle se detiene ahí, como antes. Al final, los 17 recorridos iguales, también en la
     compilación con sanitizers.
+22. Pequeñas limpiezas. En `game.h`, lo que solo usan el visor y las herramientas (las partes de
+    `frame()`, `skipFrame` y `SkipState`, `attractSound`, `playSound`, `stayAwake`, `ghost`, la
+    imagen de la RAM, `setPokey`) está en un solo bloque tras la interfaz propia del juego;
+    `resetState` y `eachState` son privados. Los ajustes de sonido del modo de demostración para
+    el visor son un solo `AttractSound` (sound.h). `game_internal.h` es `namespace
+    rr::game_detail` con `inline constexpr` en lugar de un espacio de nombres anónimo en una
+    cabecera. Los números de la partida en el panel son `Scoreboard` (match.h), al que se le dan
+    la partida, el panel y el modo de demostración una vez; `showOtherScore` pasó a ser
+    `player2Score`, con el porqué de que imprima los puntos de quien tiene el turno ($63-$65),
+    como hace sub $B068.
 
 ## Lo siguiente
 

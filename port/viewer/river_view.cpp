@@ -147,9 +147,7 @@ public:
 	void frame(bool fast = false, bool sound = true) {
 		keep();
 		liveStale_ = fast;
-		head_.game.attractSound = sounds_;
-		head_.game.attractEnginePitch = engine_.first;
-		head_.game.attractEngineStick = engine_.second;
+		head_.game.attractSound = {sounds_, engine_.first, engine_.second};
 		head_.step(pal_, fast ? nullptr : live_, newLine());
 		play(head_, !fast && sound);
 	}
@@ -458,9 +456,7 @@ private:
 				replay_.emplace(snapshots_.begin()->second.machine);
 			}
 		}
-		replay_->game.attractSound = sounds_;
-		replay_->game.attractEnginePitch = engine_.first;
-		replay_->game.attractEngineStick = engine_.second;
+		replay_->game.attractSound = {sounds_, engine_.first, engine_.second};
 		while (replay_->lines - 1 < target) {
 			const long before = replay_->lines;
 			// the river only while far; settled `cover` frames before the line, so snapshots are kept

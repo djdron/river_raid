@@ -10,6 +10,8 @@
 
 namespace rr {
 
+using namespace game_detail;
+
 void Game::startAttract(bool pal) {
 	pal_ = pal;
 	world_.gen.s = RiverState();
@@ -109,9 +111,9 @@ bool Game::respawnOrGameOver() {
 	if (match_.twoPlayers()) {
 		if (match_.player) match_.swapPlayers(world_.gen.s);
 		for (int i = 0; i < 4; i++) panel_.chars[Panel::kLives + i] = rom_.playerTwoText(i) ^ 0xC0;
-		match_.showOtherBridges(panel_, attract());
+		scoreboard().otherBridges();
 	} else {
-		match_.showHighScore(panel_, attract());
+		scoreboard().highScore();
 	}
 	// (In the original the high score check makes this frame's work end close to the vertical
 	// blank: depending on the objects on screen, sub $B21A sets the frame counter to $FF just

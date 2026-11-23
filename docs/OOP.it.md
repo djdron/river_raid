@@ -151,6 +151,16 @@ sostituiscono.
     (A607), `consoleKeys` (A673), `scroll` (A6DE). Un passo che avvia un reset restituisce true
     e il ciclo si ferma lì, come prima. Alla fine tutte le 17 partite uguali, anche sulla build
     con i sanitizer.
+22. Piccole pulizie. In `game.h` ciò che usano solo il visualizzatore e gli strumenti (le parti
+    di `frame()`, `skipFrame` e `SkipState`, `attractSound`, `playSound`, `stayAwake`, `ghost`,
+    l'immagine della RAM, `setPokey`) è in un unico blocco dopo l'interfaccia del gioco;
+    `resetState` ed `eachState` sono privati. Le impostazioni del suono della modalità
+    dimostrativa per il visualizzatore sono un solo `AttractSound` (sound.h). `game_internal.h`
+    è `namespace rr::game_detail` con `inline constexpr` invece di uno spazio dei nomi anonimo
+    in un header. I numeri della partita nel pannello sono `Scoreboard` (match.h), a cui
+    partita, pannello e modalità dimostrativa si danno una volta; `showOtherScore` è diventato
+    `player2Score`, con il perché stampa i punti di chi ha il turno ($63-$65), come fa sub
+    $B068.
 
 ## Prossimi passi
 

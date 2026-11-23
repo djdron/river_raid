@@ -17,15 +17,24 @@ struct PokeyRegs {
 	uint8_t audf[4] = {}, audc[4] = {};
 };
 
+// Not in the original: the attract mode with sound (river viewer). The original keeps the
+// attract mode silent on purpose: the tank shell (B3B6) and the helicopter's missile (B367)
+// sound only in a game, and channel 1 plays the engine only while a plane flies. With `on` they
+// sound in the attract mode too, and channel 1 plays the engine of a plane flying at normal
+// speed. Only the sound registers change: the game itself runs the same.
+struct AttractSound {
+	bool on = false;
+	uint8_t enginePitch = 0;      // the engine's pitch (AUDF; 0: from the plane's speed, as a game does)
+	uint8_t engineStick = 0x0F;   // the stick its tone follows (up: speeding up, down: slowing down)
+};
+
 // What the driver needs of the rest of the game this frame.
 struct SoundContext {
 	const Plane &plane;
 	bool paused = false;
 	bool attract = false;
 	uint8_t shellTimer = 0xFF;
-	// not in the original: the attract mode with sound (river viewer, Game::attractSound)
-	bool attractSound = false;
-	uint8_t attractEnginePitch = 0, attractEngineStick = 0x0F;
+	AttractSound attractSound;
 };
 
 struct Sounds {

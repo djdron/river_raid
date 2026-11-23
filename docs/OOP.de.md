@@ -155,6 +155,16 @@ den sie ersetzen.
     (A5B7), `moveShell` (A607), `consoleKeys` (A673), `scroll` (A6DE). Ein Schritt, der einen
     Reset beginnt, gibt true zurück, und die Schleife endet dort wie zuvor. Am Ende alle 17
     Läufe gleich, auch auf dem Sanitizer-Build.
+22. Kleine Aufräumarbeiten. In `game.h` steht, was nur der Flussbetrachter und die Werkzeuge
+    benutzen (die Teile von `frame()`, `skipFrame` und `SkipState`, `attractSound`, `playSound`,
+    `stayAwake`, `ghost`, das RAM-Abbild, `setPokey`), in einem Block nach der eigenen
+    Schnittstelle des Spiels; `resetState` und `eachState` sind privat. Die Toneinstellungen des
+    Demo-Modus für den Betrachter sind ein `AttractSound` (sound.h). `game_internal.h` ist
+    `namespace rr::game_detail` mit `inline constexpr` statt eines anonymen Namensraums in einem
+    Header. Die Zahlen der Partie in der Statusleiste sind `Scoreboard` (match.h), dem Partie,
+    Statusleiste und Demo-Modus einmal gegeben werden; aus `showOtherScore` wurde
+    `player2Score`, mit der Erklärung, warum es die Punkte dessen druckt, der dran ist
+    ($63-$65), wie sub $B068.
 
 ## Als Nächstes
 

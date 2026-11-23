@@ -48,7 +48,7 @@ void Sounds::drive(PokeyRegs &p, const SoundContext &c, const std::function<uint
 			event = 0;
 			last = 0;
 		}
-	} else if (c.plane.state != Plane::kFlying && !(c.attractSound && c.attract)) {   // B2F9: no plane: channel 1 off
+	} else if (c.plane.state != Plane::kFlying && !(c.attractSound.on && c.attract)) {   // B2F9: no plane: channel 1 off
 		last = c.plane.state;
 		setPitch = false;
 	} else {
@@ -72,9 +72,9 @@ void Sounds::drive(PokeyRegs &p, const SoundContext &c, const std::function<uint
 			pitch = lo8(0x1F - (c.plane.speed >> 4));
 			if (crashPitch >= 0x1B) pitch = crashPitch--;   // falling pitch after a crash
 			control = last = rom.engineTone(c.plane.stick);       // tone from up/down
-			if (c.attractSound && c.attract) {     // (not in the original: the viewer's plane)
-				if (c.attractEnginePitch) pitch = c.attractEnginePitch;
-				control = last = rom.engineTone(c.attractEngineStick);
+			if (c.attractSound.on && c.attract) {     // (not in the original: the viewer's plane)
+				if (c.attractSound.enginePitch) pitch = c.attractSound.enginePitch;
+				control = last = rom.engineTone(c.attractSound.engineStick);
 			}
 		}
 	}
@@ -90,7 +90,7 @@ void Sounds::drive(PokeyRegs &p, const SoundContext &c, const std::function<uint
 	}
 	if (const uint8_t t = missile) {       // B367: the helicopter's missile
 		missile--;
-		if (!c.attract || c.attractSound) {
+		if (!c.attract || c.attractSound.on) {
 			control = lo8(t + 0x46);
 			pitch = uint8_t(((lo8((control ^ 0x0E) + 4)) & 0x0F) << 2);
 		}
@@ -115,7 +115,7 @@ void Sounds::drive(PokeyRegs &p, const SoundContext &c, const std::function<uint
 	p.audc[2] = control;
 	// channel 4
 	control = 0;
-	if ((!c.attract || c.attractSound) && !(c.shellTimer & 0x80) && c.shellTimer != 0) {   // B3B6: the tank shell
+	if ((!c.attract || c.attractSound.on) && !(c.shellTimer & 0x80) && c.shellTimer != 0) {   // B3B6: the tank shell
 		if (c.shellTimer < 0x11) {
 			p.audf[3] = rom.shellPitch(c.shellTimer);   // whistling down
 			control = 0xAC;

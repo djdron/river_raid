@@ -98,15 +98,6 @@ public:
 	// Called after each new river line (world().gen.s is the state right after it), if set.
 	std::function<void(const uint8_t *line)> afterLine;
 
-	// Parts of frame(), in order (frame() also handles the frames of a reset).
-	void prepare();
-	// Each object at its slot's y, the collisions as plain geometry (display.cpp)
-	void display();
-	void logic(const Input &input, const std::function<uint8_t()> &random);
-	void vbi(const std::function<uint8_t()> &random);
-	// The sound part of the VBI (B2A5-B3D8): sets pokey() from the game state.
-	void soundDriver(const std::function<uint8_t()> &random);
-
 	// What a frame shows and plays. The river area: drawRiver(), after display(): rows
 	// kRiverTop.. of the 384 x 240 screen buffer (see status_bar.h) as the original shows it this
 	// frame (playfield, objects, the tank, its shell and the helicopter missile). Below it:
@@ -150,11 +141,19 @@ public:
 	void load(const std::vector<uint8_t> &data);
 	// The river's state before each line on the screen, for saved states (about 33 KB)
 	void keepLineStates(bool keep) { river_.keepLineStates = keep; }
-	// All the state as after construction (power-on, the attract mode's start)
-	void resetState();
-	// The state's members, in order, for saving, loading and resetting them
-	template <class F> void eachState(F f) { eachStateOf(*this, f); }
-	template <class F> void eachState(F f) const { eachStateOf(*this, f); }
+
+	// --- For the river viewer and the tools; the game itself (game/river_raid.cpp) uses none
+	// of these.
+
+	// Parts of frame(), in order (frame() also handles the frames of a reset), for the river
+	// viewer, which runs them one by one, and sound_check (the driver alone).
+	void prepare();
+	// Each object at its slot's y, the collisions as plain geometry (display.cpp)
+	void display();
+	void logic(const Input &input, const std::function<uint8_t()> &random);
+	void vbi(const std::function<uint8_t()> &random);
+	// The sound part of the VBI (B2A5-B3D8): sets pokey() from the game state.
+	void soundDriver(const std::function<uint8_t()> &random);
 
 	// For jumping ahead in the attract mode (river viewer): one frame of the river only. The
 	// river scrolls and the frame counters and the scrolling line advance as in frame(), but the
@@ -174,16 +173,8 @@ public:
 	}
 	void setSkipState(const SkipState &s);
 
-	// Not in the original: the attract mode with sound (river viewer). The original keeps the
-	// attract mode silent on purpose: the tank shell (B3B6) and the helicopter's missile (B367)
-	// sound only in a game, and channel 1 plays the engine only while a plane flies. With this
-	// set they sound in the attract mode too, and channel 1 plays the engine of a plane flying
-	// at normal speed. Only pokey() changes: the game itself runs the same.
-	bool attractSound = false;
-	// The attract mode's engine (with attractSound): its pitch (AUDF; 0: from plane().speed, as
-	// a game does) and the stick its tone follows (up: speeding up, down: slowing down).
-	uint8_t attractEnginePitch = 0;
-	uint8_t attractEngineStick = 0x0F;
+	// Not in the original: the attract mode with sound (AttractSound, sound.h)
+	AttractSound attractSound;
 	// The river viewer's sound keys: a sound started as the game starts it
 	enum class Sound { Explosion, Fire, Bonus };
 	void playSound(Sound s);
@@ -251,6 +242,11 @@ private:
 	// 8 bits), 4 the helicopter's missile, 5 the bullet (missiles, 2 bits)
 	uint8_t spriteRow(int sprite, int line) const;
 
+	// All the state as after construction (power-on, the attract mode's start)
+	void resetState();
+	// The state's members, in order, for saving, loading and resetting them
+	template <class F> void eachState(F f) { eachStateOf(*this, f); }
+	template <class F> void eachState(F f) const { eachStateOf(*this, f); }
 	template <class Self, class F> static void eachStateOf(Self &s, F f) {
 		f(s.console_);
 		f(s.match_);
@@ -305,7 +301,8 @@ private:
 	void removePlaneThings();                     // B204-B220
 	void moveBullet(int y);                       // A5AA-A5B4
 	void setUpGame();                             // sub $AF80 (Match::setUp)
-	void showLives();                             // sub $AF5B (Match::showLives)
+	void showLives();                             // sub $AF5B (Scoreboard::lives)
+	Scoreboard scoreboard() { return {match_, panel_, attract()}; }   // the match in the panel
 	void gameOverScreen();                        // sub $B21A
 	void scrollRiver();                           // A6FD-A70F and the generator
 	void pushLine();             // the generator's next line goes to the top of the screen
