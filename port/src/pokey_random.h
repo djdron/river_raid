@@ -46,7 +46,7 @@ private:
 	static constexpr int kBits = 17;
 	using Map = std::array<uint32_t, kBits>;   // the image of each bit
 
-	static uint32_t apply(const Map &m, uint32_t s) {
+	static uint32_t apply(const Map &m, uint32_t s) {   // s: 17 bits
 		uint32_t r = 0;
 		for (int j = 0; s; j++, s >>= 1)
 			if (s & 1) r ^= m[size_t(j)];
@@ -89,8 +89,8 @@ private:
 			Jump &c = cache_[nextJump_];
 			nextJump_ = (nextJump_ + 1) % cache_.size();
 			c.steps = steps;
-			for (int k = 0; k < 5; k++)
-				for (uint32_t v = 0; v < 16; v++) c.nibble[k][v] = advance(v << (4 * k), steps);
+			for (int k = 0; k < 5; k++)   // (the fifth nibble is bit 16 alone: values 0 and 1)
+				for (uint32_t v = 0; v < (k < 4 ? 16u : 2u); v++) c.nibble[k][v] = advance(v << (4 * k), steps);
 			j = &c;
 		}
 		const uint32_t s = state_;
