@@ -71,9 +71,7 @@ Game::Runs Game::makeRuns(const uint8_t *line) {
 	return r;
 }
 
-Game::Game(const Rom &rom) : gen(rom), rom_(rom) {
-	if (const char *e = std::getenv("RR_BANK_RUNS")) bankRuns = std::atoi(e) != 0;
-}
+Game::Game(const Rom &rom) : gen(rom), rom_(rom) {}
 
 // sub $B0F1 leaves the rainbow under the logo (players 2 and 3, rows $DB-$E1) and the fuel
 // gauge needle (missile 1, rows $CC-$D5) in player-missile memory; on PAL (B133-B15C) 12 and 7
@@ -205,7 +203,7 @@ void Game::load(const std::vector<uint8_t> &data) {
 		run.nextLine(line.data(), bank.data());
 		screen.insert(screen.begin(), line);
 		bankLines.insert(bankLines.begin(), bank);
-		runLines.insert(runLines.begin(), makeRuns(bankRuns ? bank.data() : line.data()));
+		runLines.insert(runLines.begin(), makeRuns(bank.data()));
 	}
 	scan = {};
 }
@@ -223,7 +221,7 @@ void Game::pushLine() {
 	if (screen.size() > 256) screen.pop_back();
 	bankLines.insert(bankLines.begin(), bank);
 	if (bankLines.size() > 256) bankLines.pop_back();
-	runLines.insert(runLines.begin(), makeRuns(bankRuns ? bank.data() : line.data()));
+	runLines.insert(runLines.begin(), makeRuns(bank.data()));
 	if (runLines.size() > 256) runLines.pop_back();
 	uint8_t topLo = uint8_t(g.screenTop), topHi = uint8_t(g.screenTop >> 8);
 	if (topLo < kLineBytes) topHi--;

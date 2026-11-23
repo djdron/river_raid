@@ -1,5 +1,5 @@
-// Runs the game for many frames with a simple autopilot, for timing display() (RR_TIME=1,
-// RR_DISPLAY=beam / simple; docs/DLI_REMOVAL.md).
+// Runs the game for many frames with a simple autopilot (for long runs; tools/game_trace
+// writes what it does).
 //
 // usage: display_bench <rom> <frames> [-pal] [-game N] [-seed N] [-bridge N] [-wild]
 //   -game N: game N of the menu (7: one player from bridge 50), chosen with SELECT in the

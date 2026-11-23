@@ -153,19 +153,15 @@ public:
 	// Lines currently in screen memory, newest first: the river area shows lines 0..159.
 	std::vector<std::array<uint8_t, kLineBytes>> screen;
 	// The same lines without their decoration (houses, roads): what the collisions with the
-	// playfield look at when bankRuns is set (display.cpp). RR_BANK_RUNS=0: the screen itself.
+	// playfield look at (display.cpp).
 	std::vector<std::array<uint8_t, kLineBytes>> bankLines;
-	// The same lines as runs of one colour (made once, as each line enters; displaySimple)
+	// Those lines as runs of one colour (made once, as each line enters)
 	struct Runs {
 		int n = 0;
 		uint8_t a[48], b[48], colour[48];   // pixels a..b-1 (0-191) of colour 1-3
 	};
 	std::vector<Runs> runLines;
 	static Runs makeRuns(const uint8_t *line);
-	bool bankRuns = true;
-	// displaySimple (the default) does not write player 3's rows (the DLI's): diffWithRam
-	// skips them
-	bool simpleDisplay = true;
 	// If set: the generator's state before each line in `screen`, newest first, so screen
 	// memory can be made again from the oldest one (a small saved state, see compact()).
 	bool keepLineStates = false;
@@ -204,15 +200,8 @@ public:
 
 	// Parts of frame(), in order (frame() also handles the frames of a reset).
 	void prepare();
+	// Each object at its slot's y, the collisions as plain geometry (display.cpp)
 	void display();
-	// displaySimple (the default) and displayBeam (RR_DISPLAY=beam): the same without and with
-	// the DLI's cycles (docs/DLI_REMOVAL.md); RR_DISPLAY=check runs both and prints where they
-	// differ.
-	void displaySimple();
-	void displayBeam();
-	// displayGeometry (RR_DISPLAY=geometry, the default on the dli_removed branch): the objects
-	// where the DLI's loop puts them, the collisions as plain geometry, no cycles and no reads
-	void displayGeometry();
 	void logic(const Input &input, const std::function<uint8_t()> &random);
 	void vbi(const std::function<uint8_t()> &random);
 	// For jumping ahead in the attract mode (river viewer): one frame of the river only. The
@@ -234,16 +223,14 @@ public:
 	// The sound part of the VBI (B2A5-B3D8): sets g.pokey from the game state.
 	void soundDriver(const std::function<uint8_t()> &random);
 
-	// What display() leaves for drawing: per scanline, the state of player 3 and of the bank
-	// colour as the DLI set them (index = scanline, 0..261).
+	// What display() leaves for drawing: per scanline, the bank colour (COLPF0: a bridge's road
+	// has its own; index = scanline, 0..261) ...
 	struct Scanline {
-		uint8_t p3 = 0, p3x = 0, p3size = 0, p3colour = 0;
-		uint8_t bankColour = 0;   // COLPF0
+		uint8_t bankColour = 0;
 	};
 	std::array<Scanline, 262> scan{};
-	// displaySimple draws the objects from their rows, not from player 3 by scanline (scan's
-	// p3 fields stay 0): each object's first scanline, position, size, rows and their colours
-	// (the first row on the first scanline), as the DLI's loop writes them.
+	// ... and each object's first scanline, position, size, rows and their colours (the first
+	// row on the first scanline).
 	struct DrawnObject {
 		int slot = 0, first = 0;
 		uint8_t x = 0, size = 0;

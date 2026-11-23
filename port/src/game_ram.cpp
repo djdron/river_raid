@@ -93,14 +93,13 @@ void Game::saveToRam(uint8_t *ram) const {
 }
 
 std::vector<std::string> Game::diffWithRam(const uint8_t *orig) const {
-	// bankRuns: the collisions do not see the decoration (houses, roads), which only jets fly
-	// over; the "touching the edge" bit is read only for helicopters, balloons and ships
-	// (moveObjects): displaySimple tests only theirs, and the others' is not compared
+	// The collisions do not see the decoration (houses, roads), which only jets fly over; the
+	// "touching the edge" bit is read only for helicopters, balloons and ships (moveObjects):
+	// the display tests only theirs, and the others' is not compared
 	std::vector<uint8_t> copy(orig, orig + 0x4000);
-	if (bankRuns)
-		for (int i = 0; i < kSlots; i++)
-			if (gen.s.slot[i].kind < object::kHelicopter || gen.s.slot[i].kind > object::kShip)
-				copy[size_t(0x42 + i)] = uint8_t((copy[size_t(0x42 + i)] & ~slotflag::kTouchingEdge) | (gen.s.slot[i].flags & slotflag::kTouchingEdge));
+	for (int i = 0; i < kSlots; i++)
+		if (gen.s.slot[i].kind < object::kHelicopter || gen.s.slot[i].kind > object::kShip)
+			copy[size_t(0x42 + i)] = uint8_t((copy[size_t(0x42 + i)] & ~slotflag::kTouchingEdge) | (gen.s.slot[i].flags & slotflag::kTouchingEdge));
 	const uint8_t *ram = copy.data();
 	std::vector<std::string> diffs = gen.diffWithRam(ram, true);
 	char b[96];
@@ -122,7 +121,7 @@ std::vector<std::string> Game::diffWithRam(const uint8_t *orig) const {
 		diffs.push_back(b);
 	}
 	for (size_t i = 0; i < g.pm.bytes.size(); i++)
-		if (g.pm.bytes[i] != ram[0x0B00 + i] && !(simpleDisplay && i >= 0x0400 && i < 0x04C0)) {   // (player 3's rows: the DLI's)
+		if (g.pm.bytes[i] != ram[0x0B00 + i] && !(i >= 0x0400 && i < 0x04C0)) {   // (player 3's rows: the DLI's, which the port has not)
 			std::snprintf(b, sizeof b, "pm $%04zX: port=%02X orig=%02X", 0x0B00 + i, g.pm.bytes[i], ram[0x0B00 + i]);
 			diffs.push_back(b);
 		}
