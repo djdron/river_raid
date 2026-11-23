@@ -1,6 +1,8 @@
 // The river on the screen. See river.h.
 #include "river.h"
 
+#include <cstring>
+
 namespace rr {
 
 River::Runs River::makeRuns(const uint8_t *line) {
@@ -60,6 +62,38 @@ void River::rebuild(World world, const World::State &oldest, int count) {
 		world.nextLine(line.data(), bank.data());
 		add(line, bank);
 	}
+}
+
+namespace {
+
+std::vector<River::Line> screenFromRam(const uint8_t *ram) {
+	std::vector<River::Line> lines;
+	int pc = 0x3F03;   // after 70 F0 30
+	uint16_t addr = 0;
+	while (lines.size() < 160 && pc < 0x3FFF) {
+		const uint8_t op = ram[pc++];
+		if ((op & 0x0F) != 0x0E) break;
+		if (op & 0x40) {   // LMS: a new address
+			addr = uint16_t(ram[pc] | (ram[pc + 1] << 8));
+			pc += 2;
+		}
+		River::Line l;
+		std::memcpy(l.data(), ram + addr, kLineBytes);
+		lines.push_back(l);
+		addr = uint16_t(addr + kLineBytes);
+	}
+	return lines;
+}
+
+}  // namespace
+
+void River::linesFromRam(const uint8_t *ram) { lines = screenFromRam(ram); }
+
+int River::lineDifferingFromRam(const uint8_t *ram) const {
+	const auto shown = screenFromRam(ram);
+	for (size_t i = 0; i < shown.size() && i < lines.size(); i++)
+		if (shown[i] != lines[i]) return int(i);
+	return -1;
 }
 
 }  // namespace rr

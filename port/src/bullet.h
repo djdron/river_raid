@@ -2,6 +2,8 @@
 #pragma once
 #include <cstdint>
 
+#include "ram_map.h"
+
 namespace rr {
 
 // The plane's bullet: 8 rows of missile 2 (one bit wide), at the plane's x + 4. y ($56) is the
@@ -9,6 +11,8 @@ namespace rr {
 // gone at the bank, at an object, or above row $1C (Game::flyPlane).
 struct Bullet {
 	uint8_t y = 0;
+
+	void mapRam(RamMap &m) { m.byte("bullet.y", 0x56, y); }
 
 	bool shown() const { return y > 1; }
 	// Its rows: from row y (at least row $1C) down, 8 of them

@@ -39,13 +39,14 @@ add_library(rrcore
 	src/pokey_random.h
 	src/pokey_sound.cpp
 	src/pokey_sound.h
+	src/ram_map.cpp
+	src/ram_map.h
 	src/river.cpp
 	src/river.h
 	src/river_draw.cpp
 	src/river_draw.h
 	src/river_gen.cpp
 	src/river_gen.h
-	src/river_state_io.cpp
 	src/rom.h
 	src/status_bar.cpp
 	src/sound.cpp

@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "objects.h"
+#include "ram_map.h"
 #include "river_gen.h"
 
 namespace rr {
@@ -45,6 +46,11 @@ public:
 	// game starts at this bridge (1..99999) instead. 0 for both: the cartridge's table.
 	void setRiver(uint32_t seed, int bridge);
 
+	// The river's bytes and the objects' in the original's RAM
+	void mapRam(RamMap &m) {
+		gen.s.mapRam(m);
+		objects.mapRam(m);
+	}
 	// Load / compare with a 16 KB RAM image of the original ($0000-$3FFF)
 	void loadFromRam(const uint8_t *ram);
 	void saveToRam(uint8_t *ram) const;

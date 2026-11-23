@@ -111,7 +111,7 @@ Which object wakes up when is decided by POKEY's RANDOM register, a hardware cou
 | `src/pokey_sound.h/.cpp` | POKEY sound: four channels, dividers and noise counters, generated cycle by cycle |
 | `src/status_bar.h/.cpp` | status panel and scrolling line: character sets, panel, scroller step, drawing |
 | `src/os_font.h/.cpp` | OS font: AltirraOS built in, or loaded from an OS ROM |
-| `src/river_state_io.cpp`, `src/game_ram.cpp` | mapping of the generator's and the game's fields to the original's RAM addresses: loading, writing and comparison (for verification) |
+| `src/ram_map.h`, `src/ram_map.cpp`, `src/game_ram.cpp` | the original's RAM addresses of the game's bytes: each class lists its own (`mapRam`), `RamMap` loads, writes and compares them (for verification) |
 | `game/river_raid.cpp` | the game (SDL3): picture, sound, keyboard and gamepads |
 | `viewer/river_view.cpp` | the river viewer (SDL3), see below |
 | `sdl/host.h`, `host_sdl3.cpp`, `host_sdl2.cpp` | window, picture, sound, keyboard and gamepads for the game and the viewer, over SDL3 or SDL2; hiding the mouse pointer |

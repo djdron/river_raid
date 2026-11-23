@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "ram_map.h"
 #include "world.h"
 
 namespace rr {
@@ -38,6 +39,13 @@ struct River {
 	void rebuild(World world, const World::State &oldest, int count);
 	// The runs of the river's row r (0: its top line), nullptr past the lines made
 	const Runs *runsAt(int r) const { return r >= 0 && size_t(r) < runs.size() ? &runs[size_t(r)] : nullptr; }
+
+	// The original's screen in its RAM: where the top line is, and the lines its display list at
+	// $3F00 shows (160 of them, from the top)
+	void mapRam(RamMap &m) { m.word("screenTop", 0x3F04, 0x3F05, top); }
+	void linesFromRam(const uint8_t *ram);
+	// The first of those lines that differs from the river's, -1 if none
+	int lineDifferingFromRam(const uint8_t *ram) const;
 
 private:
 	void add(const Line &line, const Line &bank);

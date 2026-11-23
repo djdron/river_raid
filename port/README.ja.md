@@ -111,7 +111,7 @@ river_view [rom] [オプション]
 | `src/pokey_sound.h/.cpp` | POKEY のサウンド：4 チャンネル、分周器とノイズのカウンター、サイクルごとに生成 |
 | `src/status_bar.h/.cpp` | パネルと流れる文字の行：文字セット、パネル、スクロールの 1 歩、描画 |
 | `src/os_font.h/.cpp` | OS のフォント：内蔵の AltirraOS、または OS ROM から読み込み |
-| `src/river_state_io.cpp`、`src/game_ram.cpp` | 生成器とゲームのフィールドとオリジナルの RAM アドレスの対応：読み込み、書き込み、比較（検証用） |
+| `src/ram_map.h`、`src/ram_map.cpp`、`src/game_ram.cpp` | ゲームの各バイトに対応するオリジナルの RAM アドレス：各クラスが自分のバイトを列挙し（`mapRam`）、`RamMap` が読み込み・書き込み・比較を行う（検証用） |
 | `game/river_raid.cpp` | ゲーム（SDL3）：画面、サウンド、キーボード、ゲームパッド |
 | `viewer/river_view.cpp` | 川のビューア（SDL3）、上記を参照 |
 | `sdl/host.h`、`host_sdl3.cpp`、`host_sdl2.cpp` | ゲームとビューアのウィンドウ、画面、サウンド、キーボード、ゲームパッド。SDL3 または SDL2 の上で。マウスポインターを隠す処理 |

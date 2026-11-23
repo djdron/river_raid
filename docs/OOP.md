@@ -21,7 +21,7 @@ are checked against it; `oop` is a rewrite of the same game, not a new one.
 - **One thing at a time**, each its own commit: a new type or class first wraps the state as it
   is, then the code moves into it, then the old state goes.
 - **The original's RAM stays reachable**: `saveToRam` / `loadFromRam` / `diffWithRam`
-  (`game_ram.cpp`) keep the original's layout, for `game_check` and for the ZX ports' checks
+  (`ram_map.h`, `game_ram.cpp`) keep the original's layout, for `game_check` and for the ZX ports' checks
   (`nxcheck`, `tscheck`), whatever the classes keep inside.
 
 ## The checks
@@ -94,6 +94,14 @@ replace.
     bank keeps clear of it. `World` holds both and runs them line by line; its `State` is what
     the saved states and the river's line states keep.
 
+14. The RAM export from the classes (`ram_map.h`, `ram_map.cpp`): each class lists its own bytes
+    with their addresses in its `mapRam(RamMap &)` (the plane, the bullet, the sounds, the
+    collisions, the players, the high scores, the panel, the scroller, the river, the slots, the
+    tank, its shell and the missile, the screen's top line); `World` and `Game` put the lists
+    together, and `RamMap` loads, writes and compares them. What is worked out rather than kept
+    (the player-missile memory, the screen lines from the display list) stays in
+    `game_ram.cpp` and `River`.
+
 ## Next
 
-14. The RAM export written from the classes; the documents.
+15. The documents: the READMEs' file tables and the CODE documents with the new classes.

@@ -4,6 +4,8 @@
 #pragma once
 #include <cstdint>
 
+#include "ram_map.h"
+
 namespace rr {
 
 class Rom;
@@ -16,6 +18,10 @@ struct Tank {
 	uint8_t y = 0;       // $3A
 	uint8_t fires = 0;   // $41 bit 7: drives to the river and fires
 	bool facingRight() const { return kind < 6; }
+	void mapRam(RamMap &m) {
+		m.byte("tank.kind", 0x38, kind, RamMap::kGameOwned).byte("tank.x", 0x39, x, RamMap::kGameOwned);
+		m.byte("tank.y", 0x3A, y, RamMap::kGameOwned).byte("tank.fires", 0x41, fires, RamMap::kGameOwned);
+	}
 	// A21B-A26A: towards the river every 16 frames (every 4 while its kind is 4-7), stops at
 	// the edge and fires; its kind animates. `moving`: the plane flies (or the attract mode);
 	// `atEdge`: the display saw it touch the river edge; `bridgeHit`: the bridge ahead is down.
@@ -33,6 +39,12 @@ struct Shell {
 	uint8_t frame = 0;      // $3B shape: 0 none, 1 flying, 2.. explosion
 	uint8_t colour = 0;     // COLPM0, set at the top of the frame (AED3)
 	bool none() const { return (timer & 0x80) != 0; }
+	void mapRam(RamMap &m) {
+		const uint8_t o = RamMap::kGameOwned;
+		m.byte("shell.timer", 0x50, timer, o).byte("shell.y", 0x40, y, o).byte("shell.x", 0x3C, x, o);
+		m.byte("shell.xFrac", 0x3D, xFrac, o).byte("shell.speed", 0x3E, speed, o).byte("shell.speedFrac", 0x3F, speedFrac, o);
+		m.byte("shell.frame", 0x3B, frame, o);
+	}
 	bool exploding() const { return timer >= 0x11; }   // (also with no shell: timer $FF)
 	// A607-A671: across the river from the tank, then the explosion (timer 0..$38: launch,
 	// flight 1-$10, explosion $11-$38). `noPlane`: none flying, so the tank does not fire again.
@@ -43,6 +55,10 @@ struct Missile {
 	uint8_t x = 0;      // $C1 0: no missile
 	uint8_t y = 0;      // $C2
 	uint8_t step = 0;   // $C0 +2 or -2 per frame
+	void mapRam(RamMap &m) {
+		m.byte("missile.x", 0xC1, x, RamMap::kGameOwned).byte("missile.y", 0xC2, y, RamMap::kGameOwned);
+		m.byte("missile.step", 0xC0, step, RamMap::kGameOwned);
+	}
 	// A5B7-A605: the shooting helicopter (`shooter`, nullptr if there is none) fires one the way
 	// it faces; it flies until it hits the bank (`hitBank`, seen by the display). `moving`: the
 	// plane flies (or the attract mode). True when one is fired (its sound starts).

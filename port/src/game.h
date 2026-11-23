@@ -17,7 +17,8 @@
 // fuel, collisions, explosions, score and lives, two-player games, death, respawn, game over,
 // the high score of each game, pause (any key).
 //
-// Field comments give the original RAM address, for comparing with traces (tools/game_check).
+// Field comments give the original RAM address; each class lists its bytes there (mapRam), for
+// comparing with traces (tools/game_check).
 #pragma once
 #include <array>
 #include <cstdint>
@@ -27,6 +28,7 @@
 #include "river_draw.h"
 #include "bullet.h"
 #include "plane.h"
+#include "ram_map.h"
 #include "panel.h"
 #include "players.h"
 #include "sound.h"
@@ -49,6 +51,14 @@ struct Collisions {
 	uint8_t tankAtEdge = 0xFF;       // $20 the tank (player 1) with the river edge
 	uint8_t missileHitPlane = 0xFF;  // $21 the helicopter's missile (missile 0) with the plane
 	uint8_t missileHitBank = 0xFF;   // $22 the helicopter's missile with bank or edge
+
+	void mapRam(RamMap &m) {
+		m.byte("hit.bulletHitBank", 0x1A, bulletHitBank).byte("hit.planeHitBank", 0x1B, planeHitBank);
+		m.byte("hit.bulletHitObject", 0x1C, bulletHitObject).byte("hit.planeHitObject", 0x1D, planeHitObject);
+		m.byte("hit.planeHitShell", 0x1E, planeHitShell).byte("hit.shellHitObject", 0x1F, shellHitObject);
+		m.byte("hit.tankAtEdge", 0x20, tankAtEdge).byte("hit.missileHitPlane", 0x21, missileHitPlane);
+		m.byte("hit.missileHitBank", 0x22, missileHitBank);
+	}
 };
 
 // Controls, as the original reads them every frame.
@@ -191,7 +201,9 @@ public:
 	uint8_t spriteRow(int sprite, int line) const;
 
 	// The state as the original keeps it in RAM ($0000-$3FFF), for the checks against traces
-	// of the original (src/game_ram.cpp). Colours the VBI sets are recomputed on loading.
+	// of the original (src/game_ram.cpp): the game's own bytes and those of its parts.
+	void mapRam(RamMap &m);
+	// Colours the VBI sets are recomputed on loading.
 	void loadFromRam(const uint8_t *ram);
 	void saveToRam(uint8_t *ram) const;
 	// Differences from a RAM image ("name $addr: port=.. orig=.."), the screen lines included.

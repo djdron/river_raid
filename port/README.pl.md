@@ -111,7 +111,7 @@ To, który obiekt kiedy się budzi, rozstrzyga rejestr RANDOM układu POKEY, spr
 | `src/pokey_sound.h/.cpp` | dźwięk POKEY: cztery kanały, dzielniki i liczniki szumu, generowane takt po takcie |
 | `src/status_bar.h/.cpp` | panel i przewijany pasek: zestawy znaków, panel, krok przewijania, rysowanie |
 | `src/os_font.h/.cpp` | czcionka systemu: wbudowana AltirraOS albo wczytana z ROM systemu |
-| `src/river_state_io.cpp`, `src/game_ram.cpp` | odwzorowanie pól generatora i gry na adresy RAM oryginału: wczytywanie, zapis i porównanie (do weryfikacji) |
+| `src/ram_map.h`, `src/ram_map.cpp`, `src/game_ram.cpp` | adresy RAM oryginału dla bajtów gry: każda klasa wymienia swoje (`mapRam`), `RamMap` je wczytuje, zapisuje i porównuje (do weryfikacji) |
 | `game/river_raid.cpp` | gra (SDL3): obraz, dźwięk, klawiatura i gamepady |
 | `viewer/river_view.cpp` | przeglądarka rzeki (SDL3), zob. wyżej |
 | `sdl/host.h`, `host_sdl3.cpp`, `host_sdl2.cpp` | okno, obraz, dźwięk, klawiatura i gamepady dla gry i przeglądarki, na SDL3 lub SDL2; ukrywanie wskaźnika myszy |

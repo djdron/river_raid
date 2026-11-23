@@ -62,5 +62,31 @@ void World::setRiver(uint32_t seed, int bridge) {
 	for (int n = 0; n < 4; n++) gen.setStart(n, starts[n]);
 }
 
+// (const: the map only reads the bytes when saving and comparing)
+void World::loadFromRam(const uint8_t *ram) {
+	RamMap m;
+	mapRam(m);
+	m.load(ram);
+}
+
+void World::saveToRam(uint8_t *ram) const {
+	RamMap m;
+	const_cast<World *>(this)->mapRam(m);
+	m.save(ram);
+}
+
+void World::loadGameOwned(const uint8_t *ram) {
+	RamMap m;
+	mapRam(m);
+	m.load(ram, true);
+}
+
+std::vector<std::string> World::diffWithRam(const uint8_t *ram, bool includeGameOwned) const {
+	RamMap m;
+	const_cast<World *>(this)->mapRam(m);
+	std::vector<std::string> out;
+	m.diff(ram, includeGameOwned, out);
+	return out;
+}
 
 }  // namespace rr

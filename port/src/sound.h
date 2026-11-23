@@ -5,6 +5,7 @@
 #include <functional>
 
 #include "plane.h"
+#include "ram_map.h"
 
 namespace rr {
 
@@ -39,6 +40,12 @@ struct Sounds {
 	uint8_t bonus = 0;        // $7E a new plane at 10 000 points
 	uint8_t missile = 0;      // $7F
 	uint8_t crashPitch = 0;   // $052C engine pitch falling after a crash
+
+	void mapRam(RamMap &m) {
+		m.byte("sound.startBeep", 0xC6, startBeep).byte("sound.event", 0x7A, event).byte("sound.eventTime", 0x7B, eventTime);
+		m.byte("sound.explosion", 0x7C, explosion).byte("sound.fire", 0x7D, fire).byte("sound.bonus", 0x7E, bonus);
+		m.byte("sound.missile", 0x7F, missile).byte("sound.crashPitch", 0x052C, crashPitch);
+	}
 
 	// B2A5-B3D8: sets the four channels from the sounds asked for and the game, counting them
 	// down. random(): POKEY's RANDOM, for the noises' pitch.

@@ -111,7 +111,7 @@ river_view [rom] [选项]
 | `src/pokey_sound.h/.cpp` | POKEY 声音：四个声道、分频器和噪声计数器，逐周期生成 |
 | `src/status_bar.h/.cpp` | 状态栏和滚动字幕：字符集、状态栏、滚动步进、绘制 |
 | `src/os_font.h/.cpp` | 操作系统字体：内置 AltirraOS，或从 OS ROM 加载 |
-| `src/river_state_io.cpp`、`src/game_ram.cpp` | 生成器和游戏的字段与原版 RAM 地址的对应：加载、写入和比较（用于验证） |
+| `src/ram_map.h`、`src/ram_map.cpp`、`src/game_ram.cpp` | 游戏各字节在原版 RAM 中的地址：每个类列出自己的字节（`mapRam`），`RamMap` 负责加载、写入和比较（用于验证） |
 | `game/river_raid.cpp` | 游戏（SDL3）：画面、声音、键盘和手柄 |
 | `viewer/river_view.cpp` | 河流查看器（SDL3），见上文 |
 | `sdl/host.h`、`host_sdl3.cpp`、`host_sdl2.cpp` | 游戏和查看器的窗口、画面、声音、键盘和手柄，基于 SDL3 或 SDL2；隐藏鼠标指针 |

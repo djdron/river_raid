@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 
+#include "ram_map.h"
 #include "rom.h"
 
 namespace rr {
@@ -79,6 +80,23 @@ struct RiverState {
 	uint8_t sectionBankColour = 0;  // $0B  bank colour of the section ($D2/$D6)
 	uint8_t flashLines = 0;         // $4F  a hit bridge: the bank flashes on this many new lines
 	uint8_t depotLevelLimit = 0x2E; // $CB  levels past it don't make fuel depots rarer ($2E NTSC, $2F PAL)
+
+	void mapRam(RamMap &m) {
+		const uint8_t owned = RamMap::kGameOwned;
+		m.byte("lineInBlock", 0x2F, lineInBlock).byte("blocksLeft", 0x5A, blocksLeft).byte("sectionsLeft", 0x5D, sectionsLeft);
+		m.byte("level", 0x60, level).byte("blockFlags", 0x23, blockFlags).byte("islandFlags", 0x2D, islandFlags);
+		m.byte("corridor", 0x052D, corridor).byte("bridgeHit", 0x2E, bridgeHit, owned);
+		m.byte("rndA", 0xAA, rndA).byte("rndB", 0xAB, rndB).byte("rndC", 0xAC, rndC);
+		m.bytes("checkpoint", 0x66, checkpoint, 4).bytes("prevCheckpoint", 0xAD, prevCheckpoint, 4);
+		m.byte("bank", 0x52, bank).byte("bankDir", 0xC3, bankDir).byte("bankMin", 0xC4, bankMin).byte("bankMax", 0xC5, bankMax);
+		m.byte("waterWidth", 0x53, waterWidth).byte("islandWidth", 0x54, islandWidth);
+		m.byte("islandTargetWidth", 0x34, islandTargetWidth).byte("islandStep", 0x35, islandStep);
+		m.byte("sectionWidth", 0x5F, sectionWidth).byte("prevSectionWidth", 0x2C, prevSectionWidth).byte("bankMargin", 0xB5, bankMargin);
+		m.byte("decoFlags", 0x36, decoFlags).word("decoBitmap", 0xBA, 0xBB, decoBitmap).byte("decoWidth", 0xBC, decoWidth);
+		m.byte("decoOffset", 0xBD, decoOffset).byte("decoRows", 0xBE, decoRows);
+		m.byte("sectionBankColour", 0x0B, sectionBankColour, owned).byte("flashLines", 0x4F, flashLines, owned);
+		m.byte("depotLevelLimit", 0xCB, depotLevelLimit);
+	}
 };
 
 class RiverGen {

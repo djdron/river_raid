@@ -5,6 +5,7 @@
 #include <cstdint>
 
 #include "fixed.h"
+#include "ram_map.h"
 #include "status_bar.h"
 
 namespace rr {
@@ -24,6 +25,8 @@ struct Panel {
 	static constexpr uint8_t kDigitsBridges = rr::kDigitsBridges;
 
 	uint8_t chars[kPanelBytes] = {};
+
+	void mapRam(RamMap &m) { m.bytes("panel", 0x1000, chars, kPanelBytes); }
 
 	// B086-B0C6: BCD digits from `at`, leading zeros blank
 	template <int N> void print(const Bcd<N> &bcd, int at, uint8_t digitZero) {

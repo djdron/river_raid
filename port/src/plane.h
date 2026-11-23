@@ -3,6 +3,8 @@
 #pragma once
 #include <cstdint>
 
+#include "ram_map.h"
+
 namespace rr {
 
 struct Plane {
@@ -26,6 +28,13 @@ struct Plane {
 	uint8_t fuelFrac = 0;   // $5C
 	uint8_t stick = 0x0F;   // $19 the stick of the player whose turn it is, this frame (0 = pressed)
 	uint8_t stickPrev = 0;  // $B9 the previous frame's, << 4
+
+	void mapRam(RamMap &m) {
+		m.byte("plane.state", 0x76, state).byte("plane.x", 0x57, x).byte("plane.xFrac", 0x58, xFrac);
+		m.byte("plane.accel", 0x2B, accel).byte("plane.frame", 0x5E, frame).byte("plane.speed", 0x59, speed);
+		m.byte("plane.fuel", 0x5B, fuel).byte("plane.fuelFrac", 0x5C, fuelFrac);
+		m.byte("plane.stick", 0x19, stick).byte("plane.stickPrev", 0xB9, stickPrev);
+	}
 
 	bool flying() const { return state == kFlying; }
 	bool exploding() const { return (state & 0x80) != 0; }   // (or no plane)

@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include "fixed.h"
+#include "ram_map.h"
 
 namespace rr {
 
@@ -15,6 +16,12 @@ struct PlayerData {
 	Bcd<3> score;               // $63-$65
 	uint8_t checkpoint[4] = {}; // $66-$69 restart point
 	uint8_t lives = 0;          // $6A
+
+	// The other player's copy, $0B higher: $6B-$75
+	void mapRam(RamMap &m) {
+		m.byte("other.level", 0x6B, level).bytes("other.bridges", 0x6C, bridges.d, 2).bytes("other.score", 0x6E, score.d, 3);
+		m.bytes("other.checkpoint", 0x71, checkpoint, 4).byte("other.lives", 0x75, lives);
+	}
 };
 
 // The high score of each pair of games (1-2, 3-4, 5-6, 7-8: one player and two players),
@@ -23,6 +30,8 @@ struct PlayerData {
 struct HighScores {
 	uint8_t table[16] = {};
 	uint8_t check[16] = {};
+
+	void mapRam(RamMap &m) { m.bytes("highScore", 0x80, table, 16).bytes("highScoreCheck", 0x90, check, 16); }
 
 	Bcd<3> of(int gameNumber) const {
 		const uint8_t *h = &table[(gameNumber & 0x0E) * 2];

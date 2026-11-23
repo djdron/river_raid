@@ -20,6 +20,7 @@
 #include <cstdint>
 
 #include "os_font.h"
+#include "ram_map.h"
 #include "river_gen.h"
 
 namespace rr {
@@ -59,6 +60,9 @@ struct Scroller {
 	uint8_t textLo = 0x4B;   // $3FB3 low byte of the text address ($B800 + textLo)
 	uint8_t fineScroll = 0;  // $26   HSCROL, 7..0
 	uint8_t logoX = 0;       // $27   horizontal position of the rainbow logo, 0 = hidden
+	void mapRam(RamMap &m) {
+		m.byte("scroller.textLo", 0x3FB3, textLo).byte("scroller.fineScroll", 0x26, fineScroll).byte("scroller.logoX", 0x27, logoX);
+	}
 	// attract: the line scrolls (the game is not running, $2A != 0)
 	void step(bool attract);
 };

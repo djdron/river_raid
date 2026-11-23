@@ -56,6 +56,22 @@ struct Objects {
 	Missile missile;
 	uint8_t islandObjectSide = 0;   // $37  bit 7: the newest object is right of the island
 
+	void mapRam(RamMap &m) {
+		const uint8_t owned = RamMap::kGameOwned, inSlot = RamMap::kSlot;
+		for (int i = 0; i < kSlots; i++) {
+			Slot &s = slot[size_t(i)];
+			m.byte("slot.y", uint16_t(0x0C + i), s.y, inSlot, i).byte("slot.x", uint16_t(0x0516 + i), s.x, owned | inSlot, i);
+			m.byte("slot.flags", uint16_t(0x42 + i), s.flags, owned | inSlot, i).byte("slot.kind", uint16_t(0x0500 + i), s.kind, owned | inSlot, i);
+			m.byte("slot.type", uint16_t(0x050B + i), s.type, inSlot, i).byte("slot.size", uint16_t(0x0521 + i), s.size, inSlot, i);
+		}
+		m.byte("firstSlot", 0x4D, firstSlot).byte("enteringSlot", 0x4E, enteringSlot).byte("shooterSlot", 0x51, shooterSlot, owned);
+		m.byte("enteringLines", 0x32, enteringLines).byte("slotParity", 0x33, slotParity, owned);
+		m.byte("wideObject", 0xB8, wideObject).byte("placeWidth", 0xB3, placeWidth).byte("islandObjectSide", 0x37, islandObjectSide);
+		tank.mapRam(m);
+		shell.mapRam(m);
+		missile.mapRam(m);
+	}
+
 	// The entering object, which the bank keeps clear of
 	BankObstacle obstacle() const;
 	// After the river's line ($AB76-$AE96): everything moves down a line ($AB76), and every 16

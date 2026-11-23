@@ -111,7 +111,7 @@ Welches Objekt wann erwacht, entscheidet POKEYs RANDOM-Register, ein Hardwarezä
 | `src/pokey_sound.h/.cpp` | POKEY-Sound: vier Kanäle, Teiler und Rauschzähler, Takt für Takt erzeugt |
 | `src/status_bar.h/.cpp` | Anzeige und Laufschrift: Zeichensätze, Anzeige, Schritt der Laufschrift, Zeichnen |
 | `src/os_font.h/.cpp` | Betriebssystem-Schrift: AltirraOS eingebaut oder aus einem OS-ROM geladen |
-| `src/river_state_io.cpp`, `src/game_ram.cpp` | Zuordnung der Felder von Generator und Spiel zu den RAM-Adressen des Originals: Laden, Schreiben und Vergleichen (für die Überprüfung) |
+| `src/ram_map.h`, `src/ram_map.cpp`, `src/game_ram.cpp` | die RAM-Adressen des Originals für die Bytes des Spiels: jede Klasse listet ihre eigenen auf (`mapRam`), `RamMap` lädt, schreibt und vergleicht sie (für die Überprüfung) |
 | `game/river_raid.cpp` | das Spiel (SDL3): Bild, Sound, Tastatur und Gamepads |
 | `viewer/river_view.cpp` | der Fluss-Betrachter (SDL3), siehe oben |
 | `sdl/host.h`, `host_sdl3.cpp`, `host_sdl2.cpp` | Fenster, Bild, Sound, Tastatur und Gamepads für Spiel und Betrachter, über SDL3 oder SDL2; Ausblenden des Mauszeigers |

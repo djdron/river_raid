@@ -111,7 +111,7 @@ Quale oggetto si sveglia quando lo decide il registro RANDOM di POKEY, un contat
 | `src/pokey_sound.h/.cpp` | il suono di POKEY: quattro canali, divisori e contatori del rumore, generati ciclo per ciclo |
 | `src/status_bar.h/.cpp` | pannello e riga che scorre: set di caratteri, pannello, passo dello scorrimento, disegno |
 | `src/os_font.h/.cpp` | font del sistema operativo: AltirraOS incorporato o caricato da una ROM del sistema |
-| `src/river_state_io.cpp`, `src/game_ram.cpp` | corrispondenza tra i campi del generatore e del gioco e gli indirizzi della RAM dell'originale: caricamento, scrittura e confronto (per la verifica) |
+| `src/ram_map.h`, `src/ram_map.cpp`, `src/game_ram.cpp` | gli indirizzi della RAM dell'originale per i byte del gioco: ogni classe elenca i propri (`mapRam`), `RamMap` li carica, li scrive e li confronta (per la verifica) |
 | `game/river_raid.cpp` | il gioco (SDL3): immagine, suono, tastiera e gamepad |
 | `viewer/river_view.cpp` | il visualizzatore del fiume (SDL3), vedi sopra |
 | `sdl/host.h`, `host_sdl3.cpp`, `host_sdl2.cpp` | finestra, immagine, suono, tastiera e gamepad per il gioco e il visualizzatore, su SDL3 o SDL2; occultamento del puntatore del mouse |
