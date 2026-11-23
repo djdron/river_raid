@@ -12,12 +12,13 @@ namespace {
 // Game fields compared with RAM (address, reference into the game).
 std::vector<std::pair<std::pair<const char *, uint16_t>, uint8_t *>> gameFields(const Game &game) {
 	GameState &g = const_cast<GameState &>(game.g);
+	RiverGen &gen = const_cast<RiverGen &>(game.gen);
 	return {
 		{{"frameCount", 0x18}, &g.frameCount}, {{"attractFlags", 0x29}, &g.attractFlags},
 		{{"attractTimer", 0x2A}, &g.attractTimer}, {{"planeState", 0x76}, &g.plane.state},
 		{{"idleTime", 0x78}, &g.idleTime}, {{"speed", 0x59}, &g.plane.speed}, {{"scrollFrac", 0x30}, &g.scrollFrac},
-		{{"shellFrame", 0x3B}, &g.shellFrame}, {{"shellX", 0x3C}, &g.shellX}, {{"shellXFrac", 0x3D}, &g.shellXFrac},
-		{{"missileStep", 0xC0}, &g.missileStep}, {{"planeX", 0x57}, &g.plane.x}, {{"planeFrame", 0x5E}, &g.plane.frame},
+		{{"shellFrame", 0x3B}, &gen.s.shell.frame}, {{"shellX", 0x3C}, &gen.s.shell.x}, {{"shellXFrac", 0x3D}, &gen.s.shell.xFrac},
+		{{"missileStep", 0xC0}, &gen.s.missile.step}, {{"planeX", 0x57}, &g.plane.x}, {{"planeFrame", 0x5E}, &g.plane.frame},
 		{{"soundExplosion", 0x7C}, &g.soundExplosion}, {{"soundMissile", 0x7F}, &g.soundMissile},
 		{{"bridgeFlash", 0x31}, &g.bridgeFlash}, {{"fuel", 0x5B}, &g.plane.fuel}, {{"joystick", 0x19}, &g.plane.stick},
 		{{"joystickPrev", 0xB9}, &g.plane.stickPrev}, {{"startBeep", 0xC6}, &g.startBeep}, {{"pauseState", 0x24}, &g.pauseState},

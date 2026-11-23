@@ -44,7 +44,7 @@ void F(Snapshot)(Snapshot &out) {
 	for (int k = 0; k < 4; k++) { out.audf[k] = game->g.pokey.audf[k]; out.audc[k] = game->g.pokey.audc[k]; }
 	out.busy = game->busy();
 	out.colours[0] = game->g.colourBank; out.colours[1] = game->g.colourEdge; out.colours[2] = game->g.colourWater;
-	out.colours[3] = game->g.logoShown; out.colours[4] = game->g.shellColour;
+	out.colours[3] = game->g.logoShown; out.colours[4] = game->gen.s.shell.colour;
 }
 
 void F(GenLine)(uint8_t line[48], uint8_t *ram) {

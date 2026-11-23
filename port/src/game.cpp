@@ -234,12 +234,12 @@ void Game::frame(const Input &input, const std::function<uint8_t()> &random) {
 void Game::prepare() {
 	RiverState &s = gen.s;
 	g.spritesShown = true;
-	if (s.tankY >= 0xBC) s.tankKind = s.tankY = 0;
-	g.shellColour = rom_.shellColour(g.frameCount >> 3);
-	if (s.shellY >= 0xBC) {
-		s.shellTimer = 0xFF;
-		g.shellFrame = 0;
-		s.shellY = 0;
+	if (s.tank.y >= 0xBC) s.tank.kind = s.tank.y = 0;
+	gen.s.shell.colour = rom_.shellColour(g.frameCount >> 3);
+	if (s.shell.y >= 0xBC) {
+		s.shell.timer = 0xFF;
+		gen.s.shell.frame = 0;
+		s.shell.y = 0;
 	}
 	// AF3A-AF58: lives, bridges and score into the panel
 	if (g.attractTimer == 0) showLives();
@@ -429,7 +429,7 @@ void Game::reset(bool full) {
 	g.plane.accel = 0;
 	g.scrollFrac = 0;
 	g.bridgeFlash = 0;
-	g.shellFrame = g.shellX = g.shellXFrac = 0;
+	gen.s.shell.frame = gen.s.shell.x = gen.s.shell.xFrac = 0;
 	g.crashPitch = 0;   // $052C ($0500-$05FF cleared)
 	// player-missile memory rows 1-$BB cleared (the sprites gone until prepare()), screen memory cleared
 	g.spritesShown = false;
@@ -475,7 +475,7 @@ void Game::selectGame() {
 	g.startBeep = 2;
 	for (int i = 0; i < 3; i++) g.score[i] = g.other.score[i] = 0;
 	g.soundMissile = 0;
-	gen.s.shellTimer = 0xFF;
+	gen.s.shell.timer = 0xFF;
 	setUpGame();
 	showLives();
 	gameOverScreen();
@@ -535,15 +535,15 @@ void Game::finishRespawn() {
 // its kind is 4-7), stops at the edge and fires; its kind animates.
 void Game::driveTank() {
 	RiverState &s = gen.s;
-	const uint8_t every = (s.tankKind >= 4 && s.tankKind < 8) ? 0x03 : 0x0F;
+	const uint8_t every = (s.tank.kind >= 4 && s.tank.kind < 8) ? 0x03 : 0x0F;
 	if (every & g.frameCount) return;
 	bool drive = false;
-	if (s.shellTimer & 0x80) {                    // no shell in flight
+	if (s.shell.timer & 0x80) {                    // no shell in flight
 		if (attract(g) || g.plane.state == kFlying) {
-			if (s.tankFires & 0x80) {
-				if (s.tankY >= 0x1A) {
+			if (s.tank.fires & 0x80) {
+				if (s.tank.y >= 0x1A) {
 					if (g.hit.tankAtEdge & 0x80) drive = true;   // not at the river edge yet
-					else s.shellTimer++;                         // at the edge: fire (timer 0)
+					else s.shell.timer++;                         // at the edge: fire (timer 0)
 				}
 			} else if (s.bridgeHit == 0) {
 				drive = true;                     // a tank on a bridge drives across
@@ -551,10 +551,10 @@ void Game::driveTank() {
 		}
 	}
 	if (drive) {
-		if ((s.tankKind & 0x7F) < 6) s.tankX++;
-		else s.tankX--;
+		if ((s.tank.kind & 0x7F) < 6) s.tank.x++;
+		else s.tank.x--;
 	}
-	s.tankKind = (s.tankKind & 0x80) ? 0x03 : rom_.nextTankKind(s.tankKind);
+	s.tank.kind = (s.tank.kind & 0x80) ? 0x03 : rom_.nextTankKind(s.tank.kind);
 }
 
 // A26C-A2ED: animation and movement of the objects in the slots.
@@ -607,27 +607,27 @@ void Game::moveMissile() {
 	const int n = s.shooterSlot;
 	if (n < kSlots && (s.slot[n].kind == kShooter || s.slot[n].kind == kShooter + 1)) {
 		const Slot &heli = s.slot[n];
-		if (s.missileX) {                                 // flying
-			if (g.hit.missileHitBank & 0x80) x = lo(s.missileX + g.missileStep);
+		if (s.missile.x) {                                 // flying
+			if (g.hit.missileHitBank & 0x80) x = lo(s.missile.x + gen.s.missile.step);
 		} else {
 			if (!attract(g) && g.plane.state != kFlying) {
-				s.missileX = 0;
+				s.missile.x = 0;
 				return;
 			}
 			const uint8_t y = lo(heli.y - 0x3C);
 			if (y < 0x1C) return;                         // too high on the screen: wait
-			s.missileY = y;
+			s.missile.y = y;
 			g.soundMissile = 9;
 			x = lo(heli.x - 3);
 			if (heli.flags & slotflag::kFacingLeft) {
-				g.missileStep = 0xFE;                     // -2
+				gen.s.missile.step = 0xFE;                     // -2
 			} else {
-				g.missileStep = 0x02;
+				gen.s.missile.step = 0x02;
 				x = lo(x + 10);
 			}
 		}
 	}
-	s.missileX = x;
+	s.missile.x = x;
 }
 
 // A607-A671: the tank's shell flies across the river, then explodes (shellTimer counts
@@ -635,49 +635,49 @@ void Game::moveMissile() {
 void Game::moveShell() {
 	RiverState &s = gen.s;
 	uint8_t frame = 0;
-	if (!(s.shellTimer & 0x80)) {
+	if (!(s.shell.timer & 0x80)) {
 		bool count = true;
-		const bool facingRight = s.tankKind < 6;
-		if (s.shellTimer == 0) {                          // A60F: launch from the tank
-			if (s.tankY < 0x19) {
+		const bool facingRight = s.tank.kind < 6;
+		if (s.shell.timer == 0) {                          // A60F: launch from the tank
+			if (s.tank.y < 0x19) {
 				count = false;                            // the tank is too high: wait
 			} else {
-				s.shellY = lo(s.tankY - 6);
-				g.shellXFrac = 0;
+				s.shell.y = lo(s.tank.y - 6);
+				gen.s.shell.xFrac = 0;
 				if (facingRight) {
 					// ADC #9 (carry clear), SBC #4: one more off unless the sum carried
-					const int sum = s.tankX + 9;
-					g.shellX = lo(sum - 4 - (sum > 0xFF ? 0 : 1));
+					const int sum = s.tank.x + 9;
+					gen.s.shell.x = lo(sum - 4 - (sum > 0xFF ? 0 : 1));
 				} else {
-					g.shellX = lo(s.tankX - 4);
+					gen.s.shell.x = lo(s.tank.x - 4);
 				}
 				frame = 1;
 			}
-		} else if (s.shellTimer < 0x11) {                 // A62A: in flight
-			s.shellY = lo(s.shellY + rom_.shellRise(s.shellTimer));
+		} else if (s.shell.timer < 0x11) {                 // A62A: in flight
+			s.shell.y = lo(s.shell.y + rom_.shellRise(s.shell.timer));
 			if (facingRight) {
-				const int frac = g.shellXFrac + s.shellSpeedFrac;
-				g.shellXFrac = lo(frac);
-				g.shellX = lo(g.shellX + s.shellSpeed + (frac >> 8));
+				const int frac = gen.s.shell.xFrac + s.shell.speedFrac;
+				gen.s.shell.xFrac = lo(frac);
+				gen.s.shell.x = lo(gen.s.shell.x + s.shell.speed + (frac >> 8));
 			} else {
-				const int frac = g.shellXFrac - s.shellSpeedFrac;
-				g.shellXFrac = lo(frac);
-				g.shellX = lo(g.shellX - s.shellSpeed - (frac < 0 ? 1 : 0));
+				const int frac = gen.s.shell.xFrac - s.shell.speedFrac;
+				gen.s.shell.xFrac = lo(frac);
+				gen.s.shell.x = lo(gen.s.shell.x - s.shell.speed - (frac < 0 ? 1 : 0));
 			}
 			frame = 1;
 		} else {                                          // A657: explosion frames
-			frame = lo(((s.shellTimer - 0x11) >> 3) + 2);
+			frame = lo(((s.shell.timer - 0x11) >> 3) + 2);
 		}
 		if (count) {
-			uint8_t timer = lo(s.shellTimer + 1);         // A65E
+			uint8_t timer = lo(s.shell.timer + 1);         // A65E
 			if (timer >= 0x39) {                          // over: the tank fires again (no shell after a crash)
 				timer = g.plane.state ? 0xFF : 0;
 				frame = 0;
 			}
-			s.shellTimer = timer;
+			s.shell.timer = timer;
 		}
 	}
-	g.shellFrame = frame;
+	gen.s.shell.frame = frame;
 }
 
 void Game::skipFrame() {
@@ -685,11 +685,11 @@ void Game::skipFrame() {
 	// scrolled below the screen (a tank still there would keep the generator from placing the
 	// next one)
 	RiverState &s = gen.s;
-	if (s.tankY >= 0xBC) s.tankKind = s.tankY = 0;
-	if (s.shellY >= 0xBC) {
-		s.shellTimer = 0xFF;
-		g.shellFrame = 0;
-		s.shellY = 0;
+	if (s.tank.y >= 0xBC) s.tank.kind = s.tank.y = 0;
+	if (s.shell.y >= 0xBC) {
+		s.shell.timer = 0xFF;
+		gen.s.shell.frame = 0;
+		s.shell.y = 0;
 	}
 	// A2F5: the attract timer (in the attract mode it only goes round)
 	if (g.attractTimer && !(g.frameCount & 7)) {
@@ -874,9 +874,9 @@ void Game::soundDriver(const std::function<uint8_t()> &random) {
 	p.audc[2] = control;
 	// channel 4
 	control = 0;
-	if ((!attract(g) || attractSound) && !(s.shellTimer & 0x80) && s.shellTimer != 0) {   // B3B6: the tank shell
-		if (s.shellTimer < 0x11) {
-			p.audf[3] = rom_.shellPitch(s.shellTimer);   // whistling down
+	if ((!attract(g) || attractSound) && !(s.shell.timer & 0x80) && s.shell.timer != 0) {   // B3B6: the tank shell
+		if (s.shell.timer < 0x11) {
+			p.audf[3] = rom_.shellPitch(s.shell.timer);   // whistling down
 			control = 0xAC;
 		} else {
 			control = 0x8C;                       // exploding: noise
@@ -910,7 +910,7 @@ void Game::flyPlane(const Input &input) {
 		}
 	}
 	// A424: the tank shell exploding on the plane, the helicopter's missile, the bank
-	const bool shellExploding = s.shellTimer >= 0x11;   // (also with no shell: timer $FF)
+	const bool shellExploding = s.shell.timer >= 0x11;   // (also with no shell: timer $FF)
 	if ((!(g.hit.planeHitShell & 0x80) && shellExploding) || !(g.hit.missileHitPlane & 0x80) ||
 		!(g.hit.planeHitBank & 0x80)) {
 		crash(kCrashSound, 0x1F);
@@ -962,14 +962,14 @@ void Game::explode(int n, uint8_t kind) {
 		g.bridges[0] = addBcd(g.bridges[0], 0, carry);
 		s.bridgeHit++;
 		// A500: a tank on the bridge goes with it
-		if (lo(obj.x - 8) < s.tankX && lo(obj.x + 0x1F) >= s.tankX) {
-			s.tankKind |= 0x80;
+		if (lo(obj.x - 8) < s.tank.x && lo(obj.x + 0x1F) >= s.tank.x) {
+			s.tank.kind |= 0x80;
 			g.soundExplosion = 0x37;
 			type = kBridgeWithTank;
 		} else if (g.bridges[0] != 0 || g.bridges[1] >= 5) {
 			// A52B: from bridge 5 on, a tank close to the bridge fires
-			const bool near = s.tankKind < 6 ? lo(obj.x - s.tankX) < 0x29 : lo(s.tankX - obj.x) < 0x41;
-			if (near) s.shellTimer++;
+			const bool near = s.tank.kind < 6 ? lo(obj.x - s.tank.x) < 0x29 : lo(s.tank.x - obj.x) < 0x41;
+			if (near) s.shell.timer++;
 		}
 	}
 	// A547: points (BCD); every 10 000 points a new plane, up to 9

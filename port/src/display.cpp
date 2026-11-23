@@ -113,10 +113,10 @@ void Game::display() {
 		count = sprite < 4 ? 8 : 2;
 		size = 0;
 		switch (sprite) {
-		case 0: bits = spriteRow(0, l); hpos = panel ? 0 : g.shellX; break;
-		case 1: bits = spriteRow(1, l); hpos = panel ? 0 : s.tankX; break;
+		case 0: bits = spriteRow(0, l); hpos = panel ? 0 : gen.s.shell.x; break;
+		case 1: bits = spriteRow(1, l); hpos = panel ? 0 : s.tank.x; break;
 		case 2: bits = spriteRow(2, l); hpos = g.plane.x; break;
-		case 4: bits = spriteRow(4, l); hpos = panel ? 0 : s.missileX; size = 1; break;
+		case 4: bits = spriteRow(4, l); hpos = panel ? 0 : s.missile.x; size = 1; break;
 		default: bits = spriteRow(5, l); hpos = uint8_t(g.plane.x + 4); break;
 		}
 	};
@@ -126,9 +126,9 @@ void Game::display() {
 	};
 	struct Rows { int y0 = 0, y1 = -1; };
 	auto box = [&](int y0, int y1) { Rows b; b.y0 = std::max(y0, kFirstLine); b.y1 = std::min(y1, kLines - 1); return b; };
-	const Rows shellBox = box(s.shellY, s.shellY + 15), tankBox = box(s.tankY, s.tankY + 10), planeBox = box(0xAA, 0xAA + 13);
+	const Rows shellBox = box(s.shell.y, s.shell.y + 15), tankBox = box(s.tank.y, s.tank.y + 10), planeBox = box(0xAA, 0xAA + 13);
 	Rows missileBox, bulletBox;
-	if (s.missileY >= 0x1C) missileBox = box(s.missileY, s.missileY);
+	if (s.missile.y >= 0x1C) missileBox = box(s.missile.y, s.missile.y);
 	if (g.bullet.shown()) bulletBox = box(g.bullet.top(), g.bullet.top() + 7);
 	auto pfAny = [&](int sprite, const Rows &b, uint8_t want) {
 		for (int l = b.y0; l <= b.y1; l++) {
@@ -233,10 +233,10 @@ uint8_t Game::spriteRow(int sprite, int line) const {
 		return line >= y && line < y + rows ? rom_.at(uint16_t(address + line - y)) : 0;
 	};
 	switch (sprite) {
-	case 0: return shape(rom_.shellShape(g.shellFrame), s.shellY, 16);
-	case 1: return shape(rom_.tankShape(s.tankKind), s.tankY, 11);
+	case 0: return shape(rom_.shellShape(gen.s.shell.frame), s.shell.y, 16);
+	case 1: return shape(rom_.tankShape(s.tank.kind), s.tank.y, 11);
 	case 2: return shape(rom_.planeShape(g.plane.frame), 0xAA, 14);
-	case 4: return s.missileX && s.missileY >= 0x1C && line == s.missileY ? 0x03 : 0;
+	case 4: return s.missile.x && s.missile.y >= 0x1C && line == s.missile.y ? 0x03 : 0;
 	default: return g.bullet.shown() && line >= g.bullet.top() && line < g.bullet.top() + 8 ? 0x02 : 0;
 	}
 }
@@ -278,11 +278,11 @@ void Game::drawRiver(uint8_t out[240][kRowWidth]) const {
 		const uint8_t m2 = spriteRow(5, line);                              // its bullet
 		for (int b = 0; b < 2; b++)
 			if (m2 & (2 >> b)) put(row, 2 * (g.plane.x + 4 + b - 32), 2, planeColour);
-		player(row, spriteRow(1, line), s.tankX, 0, 0x00);                  // tank, COLPM1 = 0
+		player(row, spriteRow(1, line), s.tank.x, 0, 0x00);                  // tank, COLPM1 = 0
 		const uint8_t m0 = spriteRow(4, line);                              // helicopter missile, double width
 		for (int b = 0; b < 2; b++)
-			if (m0 & (2 >> b)) put(row, 2 * (s.missileX + b * 2 - 32), 4, g.shellColour);
-		player(row, spriteRow(0, line), g.shellX, 0, g.shellColour);        // tank shell
+			if (m0 & (2 >> b)) put(row, 2 * (s.missile.x + b * 2 - 32), 4, gen.s.shell.colour);
+		player(row, spriteRow(0, line), gen.s.shell.x, 0, gen.s.shell.colour);        // tank shell
 		std::fill(row, row + 24, 0);
 		std::fill(row + 360, row + kRowWidth, 0);
 	}

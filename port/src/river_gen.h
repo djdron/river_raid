@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "rom.h"
+#include "tank.h"
 
 namespace rr {
 
@@ -99,16 +100,9 @@ struct RiverState {
 	uint8_t wideObject = 0;         // $B8  non-zero while placing a bridge (7) or a ship (5)
 	uint8_t placeWidth = 0;         // $B3  river width code used to place the object
 	// the tank on the bank road, its shell, and the helicopter's missile
-	uint8_t tankKind = 0;           // $38  0 none; 5/6 facing right/left (animated); bit 7: destroyed
-	uint8_t tankX = 0;              // $39
-	uint8_t tankY = 0;              // $3A
-	uint8_t tankFires = 0;          // $41  bit 7: drives to the river and fires
-	uint8_t shellSpeed = 0;         // $3E  shell's sideways speed per frame, whole part
-	uint8_t shellSpeedFrac = 0;     // $3F  and fraction (/256)
-	uint8_t shellY = 0;             // $40
-	uint8_t shellTimer = 0;         // $50  bit 7: no shell; 0 launch; 1-$10 flight; $11-$38 explosion
-	uint8_t missileX = 0;           // $C1  0: no missile
-	uint8_t missileY = 0;           // $C2
+	Tank tank;
+	Shell shell;
+	Missile missile;
 	uint8_t flashLines = 0;         // $4F  a hit bridge: the bank flashes on this many new lines
 	uint8_t depotLevelLimit = 0x2E; // $CB  levels past it don't make fuel depots rarer ($2E NTSC, $2F PAL)
 };

@@ -94,12 +94,6 @@ struct GameState {
 	Plane plane;                // $76, $57-$59, $5B-$5C, $5E, $2B, $19, $B9
 	Bullet bullet;              // $56 the plane's bullet
 	uint8_t scrollFrac = 0;     // $30 the river's scrolling: the plane's speed added to it twice a frame
-	// the tank's shell and the helicopter's missile (more in RiverState)
-	uint8_t shellFrame = 0;     // $3B shape: 0 none, 1 flying, 2.. explosion
-	uint8_t shellX = 0;         // $3C
-	uint8_t shellXFrac = 0;     // $3D
-	uint8_t shellColour = 0;    // COLPM0, set at the top of the frame (AED3)
-	uint8_t missileStep = 0;    // $C0 +2 or -2 per frame
 	uint8_t bridgeFlash = 0;    // $31 frames of the red water flash after a bridge is hit
 	// sounds the game asks for (the VBI's sound driver plays them, counting down)
 	uint8_t eventSound = 0;     // $7A channel 1: 1 crash, 2 out of fuel, 3 tank full, 4 refuelling

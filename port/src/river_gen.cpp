@@ -385,9 +385,9 @@ void RiverGen::drawLine(uint8_t out[kLineBytes], uint8_t *bank) {
 // slots shift down by one.
 void RiverGen::scrollObjects() {
 	if (s.flashLines) s.flashLines--;
-	s.tankY++;
-	s.shellY++;
-	s.missileY++;
+	s.tank.y++;
+	s.shell.y++;
+	s.missile.y++;
 	for (Slot &slot : s.slot) slot.y++;
 	if (s.slot[kSlots - 1].y == 0 && s.firstSlot < kNoSlot) {
 		for (int n = kSlots - 2; n >= 0 && n >= s.firstSlot; n--) s.slot[n + 1] = s.slot[n];
@@ -530,13 +530,13 @@ void RiverGen::placeObject() {
 	if (type == kHelicopter && s.shooterSlot >= kNoSlot && s.sectionsLeft < 0x0E && !(s.rndC & 0x70) &&
 		s.level >= 0x0D) {
 		obj.kind = obj.type = kShooter;                 // one helicopter at a time fires missiles
-		s.missileX = 0;
+		s.missile.x = 0;
 		s.shooterSlot = n;
 	}
 	s.enteringLines = lo(rom_.objectHeight(type) + 4);
 	obj.size = rom_.objectSize(type);
 	obj.y = lo(0x61 - s.enteringLines);
-	if ((s.lineInBlock | s.tankKind) == 0) placeTank();
+	if ((s.lineInBlock | s.tank.kind) == 0) placeTank();
 }
 
 // $AD8E-$AE93: at a block start, maybe a tank on a road: on the bridge's road, or on a road
@@ -544,12 +544,12 @@ void RiverGen::placeObject() {
 void RiverGen::placeTank() {
 	if (s.blockFlags & kBridgeBlock) {                  // $ADA6: on the bridge, driving across
 		const uint8_t r = s.rndA & 0x7F;
-		s.tankY = 0x0B;
-		s.tankFires = 0;
-		s.shellSpeedFrac = 0;
-		s.shellSpeed = 2;
-		s.tankKind = r >= 0x40 ? 6 : 5;
-		s.tankX = lo(r + 0x40);
+		s.tank.y = 0x0B;
+		s.tank.fires = 0;
+		s.shell.speedFrac = 0;
+		s.shell.speed = 2;
+		s.tank.kind = r >= 0x40 ? 6 : 5;
+		s.tank.x = lo(r + 0x40);
 		return;
 	}
 	// $ADCD
@@ -562,8 +562,8 @@ void RiverGen::placeTank() {
 	if (s.level == 0x0A) speed ^= 7;
 	speed &= 6;
 	if (speed == 0 && !(s.islandFlags & kIsland) && width < 8) speed = 8;
-	s.shellSpeed = rom_.shellSpeed(speed);
-	s.shellSpeedFrac = rom_.shellSpeedFrac(speed);
+	s.shell.speed = rom_.shellSpeed(speed);
+	s.shell.speedFrac = rom_.shellSpeedFrac(speed);
 	// where it starts and which way it faces: kind 5 right, 6 left
 	uint8_t kind = 5;
 	uint8_t x;
@@ -595,11 +595,11 @@ void RiverGen::placeTank() {
 			x = lo(start + 0x30);
 		}
 	}
-	s.tankX = x;
-	s.tankKind = kind;
-	s.tankY = 0x0C;
-	s.shellTimer = 0xFF;
-	s.tankFires = 0xFF;
+	s.tank.x = x;
+	s.tank.kind = kind;
+	s.tank.y = 0x0C;
+	s.shell.timer = 0xFF;
+	s.tank.fires = 0xFF;
 }
 
 // Respawn (also used for the game start): sub $B0F1 resets the river and puts a bridge at
@@ -612,7 +612,7 @@ void RiverGen::restoreCheckpoint() {
 	s.firstSlot = reset(0x4D);
 	s.enteringSlot = reset(0x4E);
 	s.flashLines = reset(0x4F);
-	s.shellTimer = reset(0x50);
+	s.shell.timer = reset(0x50);
 	s.shooterSlot = reset(0x51);
 	s.bank = reset(0x52);
 	s.waterWidth = reset(0x53);
@@ -623,7 +623,7 @@ void RiverGen::restoreCheckpoint() {
 	// $2B-$4C cleared
 	s.prevSectionWidth = s.islandFlags = s.bridgeHit = s.lineInBlock = 0;
 	s.enteringLines = s.slotParity = s.islandTargetWidth = s.islandStep = s.decoFlags = s.islandObjectSide = 0;
-	s.tankKind = s.tankX = s.tankY = s.shellSpeed = s.shellSpeedFrac = s.shellY = s.tankFires = 0;
+	s.tank.kind = s.tank.x = s.tank.y = s.shell.speed = s.shell.speedFrac = s.shell.y = s.tank.fires = 0;
 	// $0500-$05FF cleared: object kinds, positions, types, sprite sizes, the corridor
 	for (Slot &slot : s.slot) slot.kind = slot.x = slot.type = slot.size = slot.flags = 0;
 	s.corridor = 0;

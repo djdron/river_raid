@@ -125,8 +125,8 @@ int main(int argc, char **argv) {
 		std::printf(" | plane %02X.%02X a%02X f%u sp%02X.%02X fuel%02X.%02X bul%02X", s.plane.x, s.plane.xFrac,
 			s.plane.accel, s.plane.frame, s.plane.speed, s.scrollFrac, s.plane.fuel, s.plane.fuelFrac, s.bullet.y);
 		std::printf(" | tank %02X %02X,%02X fire%02X shell t%02X f%u %02X.%02X,%02X v%02X.%02X | missile %02X,%02X st%02X",
-			r.tankKind, r.tankX, r.tankY, r.tankFires, r.shellTimer, s.shellFrame, s.shellX, s.shellXFrac, r.shellY,
-			r.shellSpeed, r.shellSpeedFrac, r.missileX, r.missileY, s.missileStep);
+			r.tank.kind, r.tank.x, r.tank.y, r.tank.fires, r.shell.timer, r.shell.frame, r.shell.x, r.shell.xFrac, r.shell.y,
+			r.shell.speed, r.shell.speedFrac, r.missile.x, r.missile.y, r.missile.step);
 		std::printf(" | score %s br %s lives %u other %s/%s/%u hi %s", hex(s.score, 3).c_str(), hex(s.bridges, 2).c_str(),
 			s.lives, hex(s.other.score, 3).c_str(), hex(s.other.bridges, 2).c_str(), s.other.lives, hex(s.highScore, 16).c_str());
 		std::printf(" | slots %u..", r.firstSlot);
