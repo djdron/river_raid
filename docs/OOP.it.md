@@ -128,11 +128,17 @@ sostituiscono.
     quindi i salvataggi restano uguali. Trovato strada facendo: `World::State` aveva due byte di
     riempimento, salvati con ciò che c'era in memoria; ora sono byte zero espliciti, e lo stesso
     stato viene sempre salvato con gli stessi byte.
+19. I campi di `Game` privati (`name_`). Fuori, getter costanti (`world()`, `plane()`,
+    `match()`, `pokey()`...), `output()` (ciò che un fotogramma mostra e suona: il pannello, il
+    carburante, la scritta scorrevole, il logo, lo schermo spento, i registri del suono) e
+    alcune azioni con un nome invece di scritture nei campi: `setRiver`, `keepLineStates`,
+    `skipState` / `setSkipState` (le ancore del visualizzatore), `playSound` e `stayAwake` (il
+    visualizzatore), `ghost` (la modalità fantasma degli strumenti), `setPokey` (`sound_check`).
+    `sound_check` carica i byte che il driver legge tramite `mapRam`, gli stessi byte di prima.
 
 ## Prossimi passi
 
-`Game` resta ciò che è, il direttore d'orchestra del fotogramma; attorno a lui: i campi chiusi
-dietro getter costanti e una struttura di ciò che va mostrato e suonato, le modalità della
-console (`Console`: contatore dei fotogrammi, modalità dimostrativa, pausa, SELECT) dove si
-separano senza riordinare nulla, e il ciclo principale come passi con un nome nello stesso
+`Game` resta ciò che è, il direttore d'orchestra del fotogramma; attorno a lui: le modalità
+della console (`Console`: contatore dei fotogrammi, modalità dimostrativa, pausa, SELECT) dove
+si separano senza riordinare nulla, e il ciclo principale come passi con un nome nello stesso
 ordine. Ogni passo verificato con `compare.sh -quick`, tutte le 17 partite alla fine.

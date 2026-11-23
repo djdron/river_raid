@@ -109,7 +109,7 @@ public:
 
 	void restart() {
 		head_ = Machine(rom_, seed_, pal_);
-		head_.game.world.setRiver(riverSeed_, 0);
+		head_.game.setRiver(riverSeed_, 0);
 		sections_.clear();
 		anchors_.clear();
 		snapshots_.clear();
@@ -205,7 +205,7 @@ public:
 	long nextBridge(long line) {
 		const long known = bridgeAfter(line);
 		if (known >= 0) return known;
-		rr::World world = head_.game.world;
+		rr::World world = head_.game.world();
 		const uint8_t level = sections_.empty() ? world.gen.s.level : sections_.back().level;
 		uint8_t buf[rr::kLineBytes];
 		for (long n = lines(); n < lines() + 100000; n++) {
@@ -220,9 +220,9 @@ public:
 	void soundTest(int which) {
 		if (!head_.running) return;
 		switch (which) {
-		case 0: head_.game.sound.explosion = 0x17; break;   // explosion, as A4E6 sets it
-		case 1: head_.game.sound.fire = 0x0F; break;        // firing (A5A6)
-		case 2: head_.game.sound.bonus = 0x40; break;       // score (A587)
+		case 0: head_.game.playSound(rr::Game::Sound::Explosion); break;
+		case 1: head_.game.playSound(rr::Game::Sound::Fire); break;
+		case 2: head_.game.playSound(rr::Game::Sound::Bonus); break;
 		default: break;
 		}
 	}
@@ -328,7 +328,7 @@ private:
 			frame++;
 			game.afterLine = [this, &newLine](const uint8_t *) {
 				lines++;
-				if (newLine) newLine(game.world.gen.s);
+				if (newLine) newLine(game.world().gen.s);
 			};
 			if (frame == rr::Game::attractStartFrame(pal)) {
 				game.startAttract(pal);
@@ -339,7 +339,7 @@ private:
 				if (live) game.drawRiver(live);
 				// The original turns the screen off and stops after 128 x 2048 frames (about 73 minutes)
 				// without input (A1F5, $78): the viewer keeps flying, as if a key had just been touched.
-				game.idleTime = 0;
+				game.stayAwake();
 				game.logic(rr::Input(), [this, pal] {   // A205, after scanline 160
 					return pal ? random.read(191, 24) : random.read(192, 13);
 				});
@@ -361,9 +361,9 @@ private:
 			exactFrom = frame + kSettleFrames;
 			game.afterLine = [this, &newLine](const uint8_t *) {
 				lines++;
-				if (newLine) newLine(game.world.gen.s);
+				if (newLine) newLine(game.world().gen.s);
 			};
-			game.idleTime = 0;
+			game.stayAwake();
 			game.skipFrame();
 			game.afterLine = nullptr;
 			random.nextFrame();
@@ -375,28 +375,16 @@ private:
 	// What Machine::skip changes: the river and the counters. A machine set to it runs on
 	// exactly, but its objects are those of another moment until it has settled.
 	struct Anchor {
-		rr::World::State world;
-		uint8_t frameCount, attractFlags, attractTimer, scrollFrac, gameLogo;
-		rr::Scroller gameScroller;
-		uint16_t screenTop;
+		rr::Game::SkipState game;
 		rr::PokeyRandom random;
 		rr::Scroller scroller;
 		uint8_t logoShown;
 		long frame, lines;
 		explicit Anchor(const Machine &m)
-			: world(m.game.world.state()), frameCount(m.game.frameCount), attractFlags(m.game.attractFlags),
-			  attractTimer(m.game.attractTimer), scrollFrac(m.game.scrollFrac), gameLogo(m.game.logoShown),
-			  gameScroller(m.game.scroller), screenTop(m.game.river.top), random(m.random), scroller(m.scroller),
+			: game(m.game.skipState()), random(m.random), scroller(m.scroller),
 			  logoShown(m.logoShown), frame(m.frame), lines(m.lines) {}
 		void setUp(Machine &m) const {
-			m.game.world.setState(world);
-			m.game.frameCount = frameCount;
-			m.game.attractFlags = attractFlags;
-			m.game.attractTimer = attractTimer;
-			m.game.scrollFrac = scrollFrac;
-			m.game.logoShown = gameLogo;
-			m.game.scroller = gameScroller;
-			m.game.river.top = screenTop;
+			m.game.setSkipState(game);
 			m.random = random;
 			m.scroller = scroller;
 			m.logoShown = logoShown;
@@ -420,7 +408,7 @@ private:
 	std::function<void(const rr::RiverState &)> newLine() {
 		return [this](const rr::RiverState &s) {
 			const long line = head_.lines - 1;
-			if (sections_.empty()) sections_.push_back({line, s.level, head_.game.world.gen.start(0).bridge});
+			if (sections_.empty()) sections_.push_back({line, s.level, head_.game.world().gen.start(0).bridge});
 			else if (s.level != sections_.back().level) sections_.push_back({line, s.level, sections_.back().bridge + 1});
 		};
 	}
@@ -440,8 +428,8 @@ private:
 	void play(const Machine &m, bool sound) {
 		if (sound) pokey_.run(rr::tvSystem(pal_).cyclesPerFrame(), audio_);
 		for (int c = 0; c < 4; c++) {
-			pokey_.write(2 * c, m.game.pokey.audf[c]);
-			pokey_.write(2 * c + 1, m.game.pokey.audc[c]);
+			pokey_.write(2 * c, m.game.pokey().audf[c]);
+			pokey_.write(2 * c + 1, m.game.pokey().audc[c]);
 		}
 	}
 

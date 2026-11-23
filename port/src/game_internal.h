@@ -20,7 +20,5 @@ constexpr uint8_t kPlaying = 0, kResuming = 1, kPaused = 2, kPausing = 3;
 // channel 1's event sounds
 constexpr uint8_t kCrashSound = Sounds::kCrash, kOutOfFuelSound = Sounds::kOutOfFuel, kTankFullSound = Sounds::kTankFull, kRefuelSound = Sounds::kRefuel;
 
-inline bool attract(const Game &g) { return (g.attractFlags & 0x80) != 0; }
-
 }  // namespace
 }  // namespace rr

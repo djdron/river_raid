@@ -129,11 +129,18 @@ código que sustituyen.
     campos, así que las partidas guardadas no cambian. Encontrado por el camino: `World::State`
     tenía dos bytes de relleno, guardados con lo que hubiera en memoria; ahora son bytes cero
     explícitos, y el mismo estado se guarda siempre con los mismos bytes.
+19. Los campos de `Game`, privados (`name_`). Fuera, getters constantes (`world()`, `plane()`,
+    `match()`, `pokey()`...), `output()` (lo que un fotograma muestra y toca: el panel, el
+    combustible, la línea de desplazamiento, el logotipo, la pantalla apagada, los registros de
+    sonido) y unas pocas acciones con nombre en lugar de escribir en los campos: `setRiver`,
+    `keepLineStates`, `skipState` / `setSkipState` (las anclas del visor), `playSound` y
+    `stayAwake` (el visor), `ghost` (el modo fantasma de las herramientas), `setPokey`
+    (`sound_check`). `sound_check` carga los bytes que lee el controlador mediante `mapRam`, los
+    mismos bytes que antes.
 
 ## Lo siguiente
 
-`Game` sigue siendo lo que es, el director del fotograma; a su alrededor: los campos cerrados
-tras getters constantes y una estructura de lo que hay que mostrar y tocar, los modos de la
+`Game` sigue siendo lo que es, el director del fotograma; a su alrededor: los modos de la
 consola (`Console`: contador de fotogramas, modo de demostración, pausa, SELECT) donde se
 separan sin reordenar nada, y el bucle principal como pasos con nombre en el mismo orden. Cada
 paso comprobado con `compare.sh -quick`, los 17 recorridos al final.

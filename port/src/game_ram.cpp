@@ -10,19 +10,19 @@
 namespace rr {
 
 void Game::mapRam(RamMap &m) {
-	world.mapRam(m);
-	river.mapRam(m);
-	m.byte("frameCount", 0x18, frameCount).byte("attractFlags", 0x29, attractFlags).byte("attractTimer", 0x2A, attractTimer);
-	m.byte("idleTime", 0x78, idleTime).byte("pauseState", 0x24, pauseState).byte("selectDelay", 0x25, selectDelay);
-	m.byte("powerOnDone", 0x28, powerOnDone).byte("screenOn", 0xC7, screenOn);
-	m.byte("scrollFrac", 0x30, scrollFrac).byte("bridgeFlash", 0x31, bridgeFlash);
-	plane.mapRam(m);
-	bullet.mapRam(m);
-	sound.mapRam(m);
-	hit.mapRam(m);
-	match.mapRam(m);
-	panel.mapRam(m);
-	scroller.mapRam(m);
+	world_.mapRam(m);
+	river_.mapRam(m);
+	m.byte("frameCount", 0x18, frameCount_).byte("attractFlags", 0x29, attractFlags_).byte("attractTimer", 0x2A, attractTimer_);
+	m.byte("idleTime", 0x78, idleTime_).byte("pauseState", 0x24, pauseState_).byte("selectDelay", 0x25, selectDelay_);
+	m.byte("powerOnDone", 0x28, powerOnDone_).byte("screenOn", 0xC7, screenOn_);
+	m.byte("scrollFrac", 0x30, scrollFrac_).byte("bridgeFlash", 0x31, bridgeFlash_);
+	plane_.mapRam(m);
+	bullet_.mapRam(m);
+	sound_.mapRam(m);
+	hit_.mapRam(m);
+	match_.mapRam(m);
+	panel_.mapRam(m);
+	scroller_.mapRam(m);
 }
 
 void Game::loadFromRam(const uint8_t *ram) {
@@ -30,12 +30,12 @@ void Game::loadFromRam(const uint8_t *ram) {
 	mapRam(m);
 	m.load(ram);
 	pal_ = ram[0xBF] == 0;   // A06F: GTIA's PAL bits, 0 on a PAL machine
-	river.linesFromRam(ram);
+	river_.linesFromRam(ram);
 	// colours the VBI set (not in RAM): as it computes them
-	colourWater = (pauseState < 2 && bridgeFlash && !((bridgeFlash + 1) & 1)) ? 0x42 : 0x84;
-	colourEdge = 0x20;
-	colourBank = bankColour(world.gen.s, world.objects);
-	if (!screenOn) colourBank = colourEdge = colourWater = 0;
+	colourWater_ = (pauseState_ < 2 && bridgeFlash_ && !((bridgeFlash_ + 1) & 1)) ? 0x42 : 0x84;
+	colourEdge_ = 0x20;
+	colourBank_ = bankColour(world_.gen.s, world_.objects);
+	if (!screenOn_) colourBank_ = colourEdge_ = colourWater_ = 0;
 }
 
 void Game::saveToRam(uint8_t *ram) const {
@@ -64,14 +64,14 @@ std::vector<std::string> Game::diffWithRam(const uint8_t *orig) const {
 	// the display tests only theirs, and the others' is not compared
 	std::vector<uint8_t> copy(orig, orig + 0x4000);
 	for (int i = 0; i < kSlots; i++)
-		if (!objectKind(world.objects.slot[i].kind).turnsAtEdge())
-			copy[size_t(0x42 + i)] = uint8_t((copy[size_t(0x42 + i)] & ~slotflag::kTouchingEdge) | (world.objects.slot[i].flags & slotflag::kTouchingEdge));
+		if (!objectKind(world_.objects.slot[i].kind).turnsAtEdge())
+			copy[size_t(0x42 + i)] = uint8_t((copy[size_t(0x42 + i)] & ~slotflag::kTouchingEdge) | (world_.objects.slot[i].flags & slotflag::kTouchingEdge));
 	const uint8_t *ram = copy.data();
 	RamMap m;
 	const_cast<Game *>(this)->mapRam(m);   // (only read)
 	std::vector<std::string> diffs;
 	m.diff(ram, true, diffs);
-	const int line = river.lineDifferingFromRam(ram);
+	const int line = river_.lineDifferingFromRam(ram);
 	if (line >= 0) diffs.push_back("screen line " + std::to_string(line));
 	return diffs;
 }

@@ -120,11 +120,17 @@ replace.
     it). Its bytes come in the order the fields had, so saved states stay the same. Found on the
     way: `World::State` had two bytes of padding, saved as whatever was in memory; they are now
     explicit zero bytes, and the same state is always saved as the same bytes.
+19. `Game`'s fields private (`name_`). Outside, const getters (`world()`, `plane()`, `match()`,
+    `pokey()`...), `output()` (what a frame shows and plays: the panel, the fuel, the scrolling
+    line, the logo, screen off, the sound registers) and a few named actions instead of writes
+    into the fields: `setRiver`, `keepLineStates`, `skipState` / `setSkipState` (the river
+    viewer's anchors), `playSound` and `stayAwake` (the viewer), `ghost` (the tools' ghost
+    mode), `setPokey` (`sound_check`). `sound_check` loads the bytes the driver reads through
+    `mapRam`, the same bytes as before.
 
 ## Next
 
-`Game` stays what it is, the conductor of the frame; around it: the fields closed behind const
-getters and one structure of what to show and play, the console's modes (`Console`: frame
-counter, attract mode, pause, SELECT) where they come apart without reordering anything, and the
-main loop as named steps in the same order. Each step checked with `compare.sh -quick`, all 17
-runs at the end.
+`Game` stays what it is, the conductor of the frame; around it: the console's modes (`Console`:
+frame counter, attract mode, pause, SELECT) where they come apart without reordering anything,
+and the main loop as named steps in the same order. Each step checked with `compare.sh -quick`,
+all 17 runs at the end.

@@ -95,10 +95,10 @@ bool spritesTouch(uint8_t bitsA, int countA, uint8_t hposA, uint8_t sizeA, uint8
 }  // namespace
 
 void Game::display() {
-	RiverState &s = world.gen.s;
-	Objects &objs = world.objects;
-	scan = {};
-	hit = Collisions();
+	RiverState &s = world_.gen.s;
+	Objects &objs = world_.objects;
+	scan_ = {};
+	hit_ = Collisions();
 	constexpr int kLines = 262;
 	constexpr int kFirstLine = 24;
 	uint8_t bank[kLines];
@@ -108,30 +108,30 @@ void Game::display() {
 		bank[l] = v;
 		setBank[l] = true;
 	};
-	from(0, colourBank);
+	from(0, colourBank_);
 	const int endLine = 187;   // the river's last scanline
 	auto spriteAt = [&](int sprite, int l, uint8_t &bits, int &count, uint8_t &hpos, uint8_t &size) {
 		const bool belowRiver = l >= endLine + 1;
 		count = sprite < 4 ? 8 : 2;
 		size = 0;
 		switch (sprite) {
-		case 0: bits = spriteRow(0, l); hpos = belowRiver ? 0 : world.objects.shell.x; break;
+		case 0: bits = spriteRow(0, l); hpos = belowRiver ? 0 : world_.objects.shell.x; break;
 		case 1: bits = spriteRow(1, l); hpos = belowRiver ? 0 : objs.tank.x; break;
-		case 2: bits = spriteRow(2, l); hpos = plane.x; break;
+		case 2: bits = spriteRow(2, l); hpos = plane_.x; break;
 		case 4: bits = spriteRow(4, l); hpos = belowRiver ? 0 : objs.missile.x; size = 1; break;
-		default: bits = spriteRow(5, l); hpos = uint8_t(plane.x + 4); break;
+		default: bits = spriteRow(5, l); hpos = uint8_t(plane_.x + 4); break;
 		}
 	};
 	auto pfAt = [&](int l) -> const River::Runs * {
 		const int r = l - kRiverFirstLine;
-		return r < kRiverLines ? river.runsAt(r) : nullptr;
+		return r < kRiverLines ? river_.runsAt(r) : nullptr;
 	};
 	struct Rows { int y0 = 0, y1 = -1; };
 	auto box = [&](int y0, int y1) { Rows b; b.y0 = std::max(y0, kFirstLine); b.y1 = std::min(y1, kLines - 1); return b; };
 	const Rows shellBox = box(objs.shell.y, objs.shell.y + 15), tankBox = box(objs.tank.y, objs.tank.y + 10), planeBox = box(0xAA, 0xAA + 13);
 	Rows missileBox, bulletBox;
 	if (objs.missile.y >= 0x1C) missileBox = box(objs.missile.y, objs.missile.y);
-	if (bullet.shown()) bulletBox = box(bullet.top(), bullet.top() + 7);
+	if (bullet_.shown()) bulletBox = box(bullet_.top(), bullet_.top() + 7);
 	auto pfAny = [&](int sprite, const Rows &b, uint8_t want) {
 		for (int l = b.y0; l <= b.y1; l++) {
 			uint8_t bits, hpos, size;
@@ -151,12 +151,12 @@ void Game::display() {
 		}
 		return false;
 	};
-	if (pfAny(1, tankBox, 2)) hit.tankAtEdge = 0;
-	if (pfAny(2, planeBox, 1)) hit.planeHitBank = 0;
-	if (pfAny(4, missileBox, 3)) hit.missileHitBank = 0;
-	if (pfAny(5, bulletBox, 3)) hit.bulletHitBank = 0;
-	if (pairAny(2, planeBox, 0, shellBox)) hit.planeHitShell = 0;
-	if (pairAny(4, missileBox, 2, planeBox)) hit.missileHitPlane = 0;
+	if (pfAny(1, tankBox, 2)) hit_.tankAtEdge = 0;
+	if (pfAny(2, planeBox, 1)) hit_.planeHitBank = 0;
+	if (pfAny(4, missileBox, 3)) hit_.missileHitBank = 0;
+	if (pfAny(5, bulletBox, 3)) hit_.bulletHitBank = 0;
+	if (pairAny(2, planeBox, 0, shellBox)) hit_.planeHitShell = 0;
+	if (pairAny(4, missileBox, 2, planeBox)) hit_.missileHitPlane = 0;
 
 	struct ObjectRows { int slot, first; uint8_t x, size; bool edge, bridge; std::vector<uint8_t> rows, colours; };
 	std::vector<ObjectRows> objects;
@@ -208,9 +208,9 @@ void Game::display() {
 	place(objects);
 	for (const ObjectRows &o : objects) {
 		const uint8_t n = uint8_t(o.slot);
-		if (touches(5, bulletBox, o)) hit.bulletHitObject = n;
-		if (!o.bridge && touches(0, shellBox, o)) hit.shellHitObject = n;
-		if (touches(2, planeBox, o)) hit.planeHitObject = n;
+		if (touches(5, bulletBox, o)) hit_.bulletHitObject = n;
+		if (!o.bridge && touches(0, shellBox, o)) hit_.shellHitObject = n;
+		if (touches(2, planeBox, o)) hit_.planeHitObject = n;
 		if (o.slot < kSlots) {
 			Slot &obj = objs.slot[size_t(o.slot)];
 			obj.flags = uint8_t((obj.flags & ~slotflag::kTouchingEdge) | (edgeOf(o) ? slotflag::kTouchingEdge : 0));
@@ -220,31 +220,31 @@ void Game::display() {
 	const int last = endLine + 3;
 	for (int l = 1; l <= last; l++)
 		if (!setBank[l]) bank[l] = bank[l - 1];
-	for (int l = kFirstLine; l <= last; l++) scan[size_t(l)].bankColour = bank[l];
-	drawn.clear();
-	for (const ObjectRows &o : objects) drawn.push_back({o.slot, o.first, o.x, o.size, o.rows, o.colours});
+	for (int l = kFirstLine; l <= last; l++) scan_[size_t(l)].bankColour = bank[l];
+	drawn_.clear();
+	for (const ObjectRows &o : objects) drawn_.push_back({o.slot, o.first, o.x, o.size, o.rows, o.colours});
 }
 
 // The sprites' rows from their state: each shape from the ROM at its row (as the original
 // copies them into player-missile memory at the top of the frame, AE99), the missile one row,
 // the bullet 8.
 uint8_t Game::spriteRow(int sprite, int line) const {
-	if (!spritesShown) return 0;
-	const Objects &objs = world.objects;
+	if (!spritesShown_) return 0;
+	const Objects &objs = world_.objects;
 	auto shape = [&](uint16_t address, int y, int rows) -> uint8_t {
 		return line >= y && line < y + rows ? rom_.at(uint16_t(address + line - y)) : 0;
 	};
 	switch (sprite) {
-	case 0: return shape(rom_.shellShape(world.objects.shell.frame), objs.shell.y, 16);
+	case 0: return shape(rom_.shellShape(world_.objects.shell.frame), objs.shell.y, 16);
 	case 1: return shape(rom_.tankShape(objs.tank.kind), objs.tank.y, 11);
-	case 2: return shape(rom_.planeShape(plane.frame), 0xAA, 14);
+	case 2: return shape(rom_.planeShape(plane_.frame), 0xAA, 14);
 	case 4: return objs.missile.x && objs.missile.y >= 0x1C && line == objs.missile.y ? 0x03 : 0;
-	default: return bullet.shown() && line >= bullet.top() && line < bullet.top() + 8 ? 0x02 : 0;
+	default: return bullet_.shown() && line >= bullet_.top() && line < bullet_.top() + 8 ? 0x02 : 0;
 	}
 }
 
 void Game::drawRiver(uint8_t out[240][kRowWidth]) const {
-	const Objects &objs = world.objects;
+	const Objects &objs = world_.objects;
 	auto put = [&](uint8_t *row, int x0, int w, uint8_t c) {
 		for (int x = std::max(0, x0); x < std::min(kRowWidth, x0 + w); x++) row[x] = c;
 	};
@@ -256,10 +256,10 @@ void Game::drawRiver(uint8_t out[240][kRowWidth]) const {
 	for (int k = 0; k < kRiverLines; k++) {
 		const int line = kRiverFirstLine + k;
 		uint8_t *row = out[line - 8];
-		const Scanline &sc = scan[size_t(line)];
-		const uint8_t colours[4] = {0x00, sc.bankColour, colourEdge, colourWater};
-		if (size_t(k) < river.lines.size()) {
-			const uint8_t *src = river.lines[size_t(k)].data();
+		const Scanline &sc = scan_[size_t(line)];
+		const uint8_t colours[4] = {0x00, sc.bankColour, colourEdge_, colourWater_};
+		if (size_t(k) < river_.lines.size()) {
+			const uint8_t *src = river_.lines[size_t(k)].data();
 			for (int i = 0; i < kLineBytes; i++) {   // 4 pixels per byte, 2 columns per pixel
 				const uint8_t v = src[i];
 				uint8_t *d = row + 8 * i;
@@ -272,19 +272,19 @@ void Game::drawRiver(uint8_t out[240][kRowWidth]) const {
 			std::fill(row, row + kRowWidth, 0);
 		}
 		// players over the playfield (PRIOR 1), player 0 on top
-		for (const DrawnObject &o : drawn)                                   // the objects
+		for (const DrawnObject &o : drawn_)                                   // the objects
 			if (line >= o.first && line < o.first + int(o.rows.size()))
 				sprite(row, o.rows[size_t(line - o.first)], o.x, o.size, o.colours[size_t(line - o.first)]);
-		const uint8_t planeColour = match.player ? 0x8E : 0x1E;                 // COLPM2 (B542)
-		sprite(row, spriteRow(2, line), plane.x, 0, planeColour);         // the plane
+		const uint8_t planeColour = match_.player ? 0x8E : 0x1E;                 // COLPM2 (B542)
+		sprite(row, spriteRow(2, line), plane_.x, 0, planeColour);         // the plane
 		const uint8_t m2 = spriteRow(5, line);                              // its bullet
 		for (int b = 0; b < 2; b++)
-			if (m2 & (2 >> b)) put(row, 2 * (plane.x + 4 + b - 32), 2, planeColour);
+			if (m2 & (2 >> b)) put(row, 2 * (plane_.x + 4 + b - 32), 2, planeColour);
 		sprite(row, spriteRow(1, line), objs.tank.x, 0, 0x00);                  // tank, COLPM1 = 0
 		const uint8_t m0 = spriteRow(4, line);                              // helicopter missile, double width
 		for (int b = 0; b < 2; b++)
-			if (m0 & (2 >> b)) put(row, 2 * (objs.missile.x + b * 2 - 32), 4, world.objects.shell.colour);
-		sprite(row, spriteRow(0, line), world.objects.shell.x, 0, world.objects.shell.colour);        // tank shell
+			if (m0 & (2 >> b)) put(row, 2 * (objs.missile.x + b * 2 - 32), 4, world_.objects.shell.colour);
+		sprite(row, spriteRow(0, line), world_.objects.shell.x, 0, world_.objects.shell.colour);        // tank shell
 		std::fill(row, row + 24, 0);
 		std::fill(row + 360, row + kRowWidth, 0);
 	}

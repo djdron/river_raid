@@ -43,7 +43,8 @@ port/tools/trace/compare.sh <rom> [build dir] [runs...]
 16. 收尾：全部 17 段录制相同（700 000 帧），在启用 AddressSanitizer、UndefinedBehaviorSanitizer 和标准库断言的构建上也一样，没有任何报告；本文档的所有语言版本。
 17. 按主题把 `game.cpp` 拆成多个文件，类本身不动：`game.cpp`（按原版顺序的一帧）、`game_plane.cpp`（飞机、爆炸、得分）、`game_players.cpp`（游戏与玩家、面板）、`game_reset.cpp`（开机、演示模式、新游戏、重置、下一架飞机）、`game_state.cpp`（存档）；它们共用的内容在 `game_internal.h`。
 18. 一局游戏（`match.h`、`match.cpp`）：`Match` 保存游戏编号、轮到谁、两位玩家的桥数、分数和生命、`respawned` 和最高分，带有 `setUp`（sub $AF80）、`selectNext`、`swapPlayers`（接收河道状态：关卡和重生点也随之交换）、`updateHighScore`、`addPoints`（A547：加分、奖励飞机、超过 999 999 时结束）以及面板上的数字（演示模式下不显示，由 `Game` 告诉它）。它的字节顺序与原来的字段相同，所以存档不变。顺带发现：`World::State` 有两个填充字节，存档时写入的是内存里碰巧有的内容；现在它们是明确的零字节，同一状态总是存成同样的字节。
+19. `Game` 的字段改为私有（`name_`）。对外提供常量 getter（`world()`、`plane()`、`match()`、`pokey()`……）、`output()`（一帧要显示和播放的内容：面板、燃料、滚动字幕、标志、关屏、声音寄存器），以及几个有名字的操作来代替直接写字段：`setRiver`、`keepLineStates`、`skipState` / `setSkipState`（河道查看器的锚点）、`playSound` 和 `stayAwake`（查看器）、`ghost`（工具的幽灵模式）、`setPokey`（`sound_check`）。`sound_check` 通过 `mapRam` 加载驱动读取的字节，与以前完全相同。
 
 ## 接下来
 
-`Game` 保持它本来的角色——一帧的指挥；围绕它：字段收起来，只留常量 getter 和一个“显示和播放什么”的结构；主机的模式（`Console`：帧计数、演示模式、暂停、SELECT），只在不必调整顺序就能分开的地方拆出；主循环按同样顺序分成有名字的步骤。每一步用 `compare.sh -quick` 检查，最后运行全部 17 段。
+`Game` 保持它本来的角色——一帧的指挥；围绕它：主机的模式（`Console`：帧计数、演示模式、暂停、SELECT），只在不必调整顺序就能分开的地方拆出；主循环按同样顺序分成有名字的步骤。每一步用 `compare.sh -quick` 检查，最后运行全部 17 段。

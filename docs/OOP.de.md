@@ -131,11 +131,18 @@ den sie ersetzen.
     Spielstände gleich. Unterwegs gefunden: `World::State` hatte zwei Füllbytes, gespeichert mit
     dem, was gerade im Speicher stand; jetzt sind es ausdrückliche Nullbytes, und derselbe
     Zustand wird immer als dieselben Bytes gespeichert.
+19. Die Felder von `Game` privat (`name_`). Außen konstante Getter (`world()`, `plane()`,
+    `match()`, `pokey()`...), `output()` (was ein Bild zeigt und spielt: die Statusleiste, der
+    Treibstoff, die Laufschrift, das Logo, Bildschirm aus, die Soundregister) und ein paar
+    benannte Aktionen statt Schreibzugriffen auf die Felder: `setRiver`, `keepLineStates`,
+    `skipState` / `setSkipState` (die Anker des Flussbetrachters), `playSound` und `stayAwake`
+    (der Betrachter), `ghost` (der Geistermodus der Werkzeuge), `setPokey` (`sound_check`).
+    `sound_check` lädt die Bytes, die der Treiber liest, über `mapRam`, dieselben Bytes wie
+    zuvor.
 
 ## Als Nächstes
 
-`Game` bleibt, was es ist, der Dirigent des Bilds; um es herum: die Felder hinter konstanten
-Gettern und einer Struktur dessen, was zu zeigen und zu spielen ist, die Modi der Konsole
-(`Console`: Bildzähler, Demo-Modus, Pause, SELECT), wo sie sich ohne Umstellung trennen lassen,
-und die Hauptschleife als benannte Schritte in derselben Reihenfolge. Jeder Schritt geprüft mit
+`Game` bleibt, was es ist, der Dirigent des Bilds; um es herum: die Modi der Konsole (`Console`:
+Bildzähler, Demo-Modus, Pause, SELECT), wo sie sich ohne Umstellung trennen lassen, und die
+Hauptschleife als benannte Schritte in derselben Reihenfolge. Jeder Schritt geprüft mit
 `compare.sh -quick`, alle 17 Läufe am Ende.

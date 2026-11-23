@@ -74,53 +74,6 @@ class Game {
 public:
 	explicit Game(const Rom &rom);
 
-	World world;      // the river and the objects on it
-
-	// The state of the game (field comments give the original's RAM address)
-
-	// frame, modes, timers
-	uint8_t frameCount = 0;     // $18 +1 per frame (VBI)
-	uint8_t attractFlags = 0;   // $29 bit 7: attract mode (no player); bits 2-0 count frameCount wraps
-	uint8_t attractTimer = 0;   // $2A counts down every 8 frames while not playing; 0 while playing
-	uint8_t idleTime = 0;       // $78 +1 every 2048 frames without input; bit 7: screen off
-	uint8_t pauseState = 0;     // $24 3 key pressed, 2 paused, 1 key pressed again, 0 playing
-	uint8_t selectDelay = 0;    // $25 frames until SELECT/OPTION changes the game again
-	uint8_t powerOnDone = 0;    // $28
-	uint8_t screenOn = 0;       // $C7 0 while the screen is being cleared (colours off)
-	Match match;                // the game and the players: $09, $61-$75, $77, $79, $80-$9F
-	Plane plane;                // $76, $57-$59, $5B-$5C, $5E, $2B, $19, $B9
-	Bullet bullet;              // $56 the plane's bullet
-	uint8_t scrollFrac = 0;     // $30 the river's scrolling: the plane's speed added to it twice a frame
-	uint8_t bridgeFlash = 0;    // $31 frames of the red water flash after a bridge is hit
-	Sounds sound;               // the sounds the game asks for ($7A-$7F, $C6, $052C)
-	// the screen below the river
-	Panel panel;                // $1000-$103B the status panel's characters
-	Scroller scroller;          // $3FB3/$26/$27 the scrolling line below the panel (VBI B44B)
-	uint8_t logoShown = 0;      // the logo position the display uses this frame
-	// playfield colours the VBI sets for the next frame (COLPF0 bank, COLPF1 edge, COLPF2 water)
-	uint8_t colourBank = 0xD6, colourEdge = 0x20, colourWater = 0x84;
-	PokeyRegs pokey;            // what the sound driver last wrote
-	Collisions hit;
-	// The sprites (shell, tank, plane, missile, bullet) are shown from their state; a reset
-	// (sub $B0F1) clears them until the next frame's prepare() (AE99) draws them again.
-	bool spritesShown = false;
-
-	// The state's members, in order, for saving, loading and resetting them
-	template <class F> void eachState(F f) { eachStateOf(*this, f); }
-	template <class F> void eachState(F f) const { eachStateOf(*this, f); }
-
-	River river;      // the lines on the screen
-	// A saved state (needs river.keepLineStates): only what the game cannot make again. The variables
-	// (the state's members, eachState) and the generator's state are kept; screen memory
-	// is kept as the generator's state before its oldest line and the number of lines, and made
-	// again on loading (the river's lines depend only on the generator); the per-scanline data
-	// (scan) is made again by the next frame's display(). Runs of zero bytes are packed, so a
-	// saved state is well under 1 KB. load() needs the same starting points (gen.setRiver).
-	std::vector<uint8_t> save() const;
-	void load(const std::vector<uint8_t> &data);
-	// Called after each new river line (world.gen.s is the state right after it), if set.
-	std::function<void(const uint8_t *line)> afterLine;
-
 	// The state of the attract mode right after power-on, at the frame its river starts
 	// (frame 38 of the original): game 1 reset (sub $B0F1 via RiverGen::startGame), no plane,
 	// the first river line generated.
@@ -130,19 +83,19 @@ public:
 	// leaves the CPU more time, so there it takes fewer frames: 9 and 25.
 	static int scrollerStartFrame(bool pal) { return pal ? 9 : 11; }
 	static int attractStartFrame(bool pal) { return pal ? 25 : 38; }
-
 	// Power-on (A000-A17C): clears the RAM (keeping the high scores if their check is right),
 	// sets up the panel and game 1; the attract mode starts by itself a few frames later.
 	void powerOn(bool pal = false);
+	// The river's starting points: the river from seed (0: the original's), with bridge as the
+	// first bridge of game 1 (0: the original's); before startAttract() / powerOn().
+	void setRiver(uint32_t seed, int bridge) { world_.setRiver(seed, bridge); }
 
 	// One frame. random() returns the next value read from POKEY RANDOM ($D20A).
 	void frame(const Input &input, const std::function<uint8_t()> &random);
-
 	// Called in frame() right after display(), e.g. to draw the frame.
 	std::function<void()> afterDisplay;
-	bool busy() const { return busy_ > 0; }
-	// All the state as after construction (power-on, the attract mode's start)
-	void resetState();
+	// Called after each new river line (world().gen.s is the state right after it), if set.
+	std::function<void(const uint8_t *line)> afterLine;
 
 	// Parts of frame(), in order (frame() also handles the frames of a reset).
 	void prepare();
@@ -150,47 +103,102 @@ public:
 	void display();
 	void logic(const Input &input, const std::function<uint8_t()> &random);
 	void vbi(const std::function<uint8_t()> &random);
+	// The sound part of the VBI (B2A5-B3D8): sets pokey() from the game state.
+	void soundDriver(const std::function<uint8_t()> &random);
+
+	// What a frame shows and plays. The river area: drawRiver(), after display(): rows
+	// kRiverTop.. of the 384 x 240 screen buffer (see status_bar.h) as the original shows it this
+	// frame (playfield, objects, the tank, its shell and the helicopter missile). Below it:
+	// the status bar (drawStatusBar) from the panel, the fuel, the scrolling line and the logo.
+	void drawRiver(uint8_t screen[240][kRowWidth]) const;
+	struct Output {
+		const Panel &panel;
+		uint8_t fuel;
+		const Scroller &scroller;
+		uint8_t logoX;             // the logo position the display uses this frame
+		bool screenOff;            // idle too long: the original turns the screen off
+		const PokeyRegs &pokey;    // the sound registers
+	};
+	Output output() const { return {panel_, plane_.fuel, scroller_, logoShown_, (idleTime_ & 0x80) != 0, pokey_}; }
+
+	// Reading the state (field comments in the private part give the original's RAM addresses)
+	const World &world() const { return world_; }
+	const River &river() const { return river_; }
+	const Match &match() const { return match_; }
+	const Plane &plane() const { return plane_; }
+	const Bullet &bullet() const { return bullet_; }
+	const Sounds &sound() const { return sound_; }
+	const PokeyRegs &pokey() const { return pokey_; }
+	const Collisions &hit() const { return hit_; }
+	const Panel &panel() const { return panel_; }
+	const Scroller &scroller() const { return scroller_; }
+	uint8_t logoShown() const { return logoShown_; }
+	uint8_t frameCount() const { return frameCount_; }
+	uint8_t attractFlags() const { return attractFlags_; }
+	uint8_t attractTimer() const { return attractTimer_; }
+	uint8_t idleTime() const { return idleTime_; }
+	uint8_t pauseState() const { return pauseState_; }
+	uint8_t scrollFrac() const { return scrollFrac_; }
+	bool busy() const { return busy_ > 0; }
+	// The attract mode: the game plays itself, nobody has pressed START (attractFlags bit 7)
+	bool attract() const { return (attractFlags_ & 0x80) != 0; }
+
+	// A saved state (needs keepLineStates): only what the game cannot make again. The variables
+	// (the state's members, eachState) and the river's and objects' state are kept; screen
+	// memory is kept as that state before its oldest line and the number of lines, and made
+	// again on loading (the river's lines depend only on it); the per-scanline data (scan) is
+	// made again by the next frame's display(). Runs of zero bytes are packed, so a saved state
+	// is well under 1 KB. load() needs the same starting points (setRiver).
+	std::vector<uint8_t> save() const;
+	void load(const std::vector<uint8_t> &data);
+	// The river's state before each line on the screen, for saved states (about 33 KB)
+	void keepLineStates(bool keep) { river_.keepLineStates = keep; }
+	// All the state as after construction (power-on, the attract mode's start)
+	void resetState();
+	// The state's members, in order, for saving, loading and resetting them
+	template <class F> void eachState(F f) { eachStateOf(*this, f); }
+	template <class F> void eachState(F f) const { eachStateOf(*this, f); }
+
 	// For jumping ahead in the attract mode (river viewer): one frame of the river only. The
 	// river scrolls and the frame counters and the scrolling line advance as in frame(), but the
 	// objects, the display and the sound do not run; the river (the generator) does not depend
 	// on them, and the objects on screen are right again once the ones from before the jump
 	// have scrolled off (a few hundred whole frames, see viewer/river_view.cpp).
 	void skipFrame();
+	// What skipFrame() changes: the river and its objects, the counters, the scrolling line.
+	struct SkipState {
+		World::State world;
+		uint8_t frameCount, attractFlags, attractTimer, scrollFrac, logoShown;
+		Scroller scroller;
+		uint16_t screenTop;
+	};
+	SkipState skipState() const {
+		return {world_.state(), frameCount_, attractFlags_, attractTimer_, scrollFrac_, logoShown_, scroller_, river_.top};
+	}
+	void setSkipState(const SkipState &s);
+
 	// Not in the original: the attract mode with sound (river viewer). The original keeps the
 	// attract mode silent on purpose: the tank shell (B3B6) and the helicopter's missile (B367)
 	// sound only in a game, and channel 1 plays the engine only while a plane flies. With this
 	// set they sound in the attract mode too, and channel 1 plays the engine of a plane flying
-	// at normal speed. Only g.pokey changes: the game itself runs the same.
+	// at normal speed. Only pokey() changes: the game itself runs the same.
 	bool attractSound = false;
-	// The attract mode's engine (with attractSound): its pitch (AUDF; 0: from g.plane.speed, as a game
-	// does) and the stick its tone follows (up: speeding up, down: slowing down).
+	// The attract mode's engine (with attractSound): its pitch (AUDF; 0: from plane().speed, as
+	// a game does) and the stick its tone follows (up: speeding up, down: slowing down).
 	uint8_t attractEnginePitch = 0;
 	uint8_t attractEngineStick = 0x0F;
-	// The sound part of the VBI (B2A5-B3D8): sets g.pokey from the game state.
-	void soundDriver(const std::function<uint8_t()> &random);
+	// The river viewer's sound keys: a sound started as the game starts it
+	enum class Sound { Explosion, Fire, Bonus };
+	void playSound(Sound s);
+	// The river viewer keeps the screen on (no idle time)
+	void stayAwake() { idleTime_ = 0; }
 
-	// What display() leaves for drawing: per scanline, the bank colour (COLPF0: a bridge's road
-	// has its own; index = scanline, 0..261) ...
-	struct Scanline {
-		uint8_t bankColour = 0;
-	};
-	std::array<Scanline, 262> scan{};
-	// ... and each object's first scanline, position, size, rows and their colours (the first
-	// row on the first scanline).
-	struct DrawnObject {
-		int slot = 0, first = 0;
-		uint8_t x = 0, size = 0;
-		std::vector<uint8_t> rows, colours;
-	};
-	std::vector<DrawnObject> drawn;
-
-	// After display(): draws the river area (rows kRiverTop.. of the 384 x 240 screen buffer,
-	// see status_bar.h) as the original shows it this frame: playfield, objects, the tank,
-	// its shell and the helicopter missile.
-	void drawRiver(uint8_t screen[240][kRowWidth]) const;
-	// A sprite's graphics bits on a scanline: 0 the shell, 1 the tank, 2 the plane (players,
-	// 8 bits), 4 the helicopter's missile, 5 the bullet (missiles, 2 bits)
-	uint8_t spriteRow(int sprite, int line) const;
+	// For the tools' ghost mode (game_trace, display_bench -ghost), from afterDisplay: the plane
+	// is not hit this frame and its tank stays full.
+	void ghost() {
+		hit_.planeHitBank = hit_.planeHitObject = hit_.planeHitShell = hit_.missileHitPlane = 0xFF;
+		plane_.fuel = 0xFF;
+	}
 
 	// The state as the original keeps it in RAM ($0000-$3FFF), for the checks against traces
 	// of the original (src/game_ram.cpp): the game's own bytes and those of its parts.
@@ -200,32 +208,84 @@ public:
 	void saveToRam(uint8_t *ram) const;
 	// Differences from a RAM image ("name $addr: port=.. orig=.."), the screen lines included.
 	std::vector<std::string> diffWithRam(const uint8_t *ram) const;
+	// The sound registers as the original last wrote them (sound_check: before its driver runs)
+	void setPokey(const PokeyRegs &regs) { pokey_ = regs; }
 
 private:
+	World world_;                 // the river and the objects on it
+	River river_;                 // the lines on the screen
+
+	// The state of the game (field comments give the original's RAM address)
+
+	// frame, modes, timers
+	uint8_t frameCount_ = 0;      // $18 +1 per frame (VBI)
+	uint8_t attractFlags_ = 0;    // $29 bit 7: attract mode (no player); bits 2-0 count frameCount wraps
+	uint8_t attractTimer_ = 0;    // $2A counts down every 8 frames while not playing; 0 while playing
+	uint8_t idleTime_ = 0;        // $78 +1 every 2048 frames without input; bit 7: screen off
+	uint8_t pauseState_ = 0;      // $24 3 key pressed, 2 paused, 1 key pressed again, 0 playing
+	uint8_t selectDelay_ = 0;     // $25 frames until SELECT/OPTION changes the game again
+	uint8_t powerOnDone_ = 0;     // $28
+	uint8_t screenOn_ = 0;        // $C7 0 while the screen is being cleared (colours off)
+	Match match_;                 // the game and the players: $09, $61-$75, $77, $79, $80-$9F
+	Plane plane_;                 // $76, $57-$59, $5B-$5C, $5E, $2B, $19, $B9
+	Bullet bullet_;               // $56 the plane's bullet
+	uint8_t scrollFrac_ = 0;      // $30 the river's scrolling: the plane's speed added to it twice a frame
+	uint8_t bridgeFlash_ = 0;     // $31 frames of the red water flash after a bridge is hit
+	Sounds sound_;                // the sounds the game asks for ($7A-$7F, $C6, $052C)
+	// the screen below the river
+	Panel panel_;                 // $1000-$103B the status panel's characters
+	Scroller scroller_;           // $3FB3/$26/$27 the scrolling line below the panel (VBI B44B)
+	uint8_t logoShown_ = 0;       // the logo position the display uses this frame
+	// playfield colours the VBI sets for the next frame (COLPF0 bank, COLPF1 edge, COLPF2 water)
+	uint8_t colourBank_ = 0xD6, colourEdge_ = 0x20, colourWater_ = 0x84;
+	PokeyRegs pokey_;             // what the sound driver last wrote
+	Collisions hit_;
+	// The sprites (shell, tank, plane, missile, bullet) are shown from their state; a reset
+	// (sub $B0F1) clears them until the next frame's prepare() (AE99) draws them again.
+	bool spritesShown_ = false;
+
+	// What display() leaves for drawing: per scanline, the bank colour (COLPF0: a bridge's road
+	// has its own; index = scanline, 0..261) ...
+	struct Scanline {
+		uint8_t bankColour = 0;
+	};
+	std::array<Scanline, 262> scan_{};
+	// ... and each object's first scanline, position, size, rows and their colours (the first
+	// row on the first scanline).
+	struct DrawnObject {
+		int slot = 0, first = 0;
+		uint8_t x = 0, size = 0;
+		std::vector<uint8_t> rows, colours;
+	};
+	std::vector<DrawnObject> drawn_;
+	// A sprite's graphics bits on a scanline: 0 the shell, 1 the tank, 2 the plane (players,
+	// 8 bits), 4 the helicopter's missile, 5 the bullet (missiles, 2 bits)
+	uint8_t spriteRow(int sprite, int line) const;
+
 	template <class Self, class F> static void eachStateOf(Self &s, F f) {
-		f(s.frameCount);
-		f(s.attractFlags);
-		f(s.attractTimer);
-		f(s.idleTime);
-		f(s.pauseState);
-		f(s.selectDelay);
-		f(s.powerOnDone);
-		f(s.screenOn);
-		f(s.match);
-		f(s.plane);
-		f(s.bullet);
-		f(s.scrollFrac);
-		f(s.bridgeFlash);
-		f(s.sound);
-		f(s.panel);
-		f(s.scroller);
-		f(s.logoShown);
-		f(s.colourBank);
-		f(s.colourEdge);
-		f(s.colourWater);
-		f(s.pokey);
-		f(s.hit);
-		f(s.spritesShown);
+		f(s.frameCount_);
+		f(s.attractFlags_);
+		f(s.attractTimer_);
+		f(s.idleTime_);
+		f(s.pauseState_);
+		f(s.selectDelay_);
+		f(s.powerOnDone_);
+		f(s.screenOn_);
+		f(s.match_);
+		f(s.plane_);
+		f(s.bullet_);
+		f(s.scrollFrac_);
+		f(s.bridgeFlash_);
+		f(s.sound_);
+		f(s.panel_);
+		f(s.scroller_);
+		f(s.logoShown_);
+		f(s.colourBank_);
+		f(s.colourEdge_);
+		f(s.colourWater_);
+		f(s.pokey_);
+		f(s.hit_);
+		f(s.spritesShown_);
 	}
 	const Rom &rom_;
 	bool pal_ = false;

@@ -118,11 +118,17 @@ zastępują.
     bajty idą w kolejności dawnych pól, więc zapisy stanu się nie zmieniły. Przy okazji
     znalezione: `World::State` miał dwa bajty wyrównania, zapisywane z tym, co akurat było w
     pamięci; teraz to jawne bajty zerowe i ten sam stan zawsze zapisuje się tymi samymi bajtami.
+19. Pola `Game` zamknięte (`name_`). Na zewnątrz stałe gettery (`world()`, `plane()`, `match()`,
+    `pokey()`...), `output()` (co klatka pokazuje i gra: panel, paliwo, przewijany napis, logo,
+    wyłączony ekran, rejestry dźwięku) i kilka nazwanych działań zamiast zapisu do pól:
+    `setRiver`, `keepLineStates`, `skipState` / `setSkipState` (kotwice przeglądarki rzeki),
+    `playSound` i `stayAwake` (przeglądarka), `ghost` (tryb ducha w narzędziach), `setPokey`
+    (`sound_check`). `sound_check` wczytuje bajty, które czyta sterownik, przez `mapRam` — te
+    same bajty co wcześniej.
 
 ## Dalej
 
-`Game` zostaje tym, czym jest — dyrygentem klatki; wokół niego: pola zamknięte za stałymi
-getterami i jedną strukturą „co pokazać i zagrać”, tryby konsoli (`Console`: licznik klatek,
-tryb demonstracyjny, pauza, SELECT) tam, gdzie dają się oddzielić bez przestawiania, i pętla
-główna jako nazwane kroki w tej samej kolejności. Każdy krok sprawdzany `compare.sh -quick`,
-wszystkie 17 przebiegów na końcu.
+`Game` zostaje tym, czym jest — dyrygentem klatki; wokół niego: tryby konsoli (`Console`:
+licznik klatek, tryb demonstracyjny, pauza, SELECT) tam, gdzie dają się oddzielić bez
+przestawiania, i pętla główna jako nazwane kroki w tej samej kolejności. Każdy krok sprawdzany
+`compare.sh -quick`, wszystkie 17 przebiegów na końcu.

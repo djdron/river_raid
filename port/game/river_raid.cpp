@@ -103,7 +103,7 @@ public:
 	Atari(const rr::Rom &rom, const uint8_t osFont[rr::kOsFontBytes], bool pal, uint32_t seed)
 		: rom_(rom), game_(rom), pal_(pal), tv_(rr::tvSystem(pal)), random_(seed, tv_), pokey_(kSampleRate, tv_.clock),
 		charsets_(rr::buildCharsets(rom, osFont)) {
-		game_.river.keepLineStates = true;   // for small saved states
+		game_.keepLineStates(true);   // for small saved states
 		rr::initialPanel(rom, powerOnPanel_);
 		std::memset(screen_, 0, sizeof screen_);
 		game_.afterDisplay = [this] {
@@ -133,19 +133,19 @@ public:
 					return reads++ ? random_.read(249, 13) : pal_ ? random_.read(191, 24) : random_.read(192, 13);
 				});
 			}
-			const rr::Game &g = game_;
-			if (g.idleTime & 0x80) {
+			const rr::Game::Output out = game_.output();
+			if (out.screenOff) {
 				std::memset(screen_, 0, sizeof screen_);   // screen off after a long time unused
 			} else {
-				rr::drawStatusBar(rom_, charsets_, g.panel.chars, g.plane.fuel, g.scroller, g.logoShown, screen_, pal_);
+				rr::drawStatusBar(rom_, charsets_, out.panel.chars, out.fuel, out.scroller, out.logoX, screen_, pal_);
 			}
 		}
 		random_.nextFrame();
 		// sound: the registers the VBI set at the end of the previous frame play for one frame
 		pokey_.run(tv_.cyclesPerFrame(), audio_);
 		for (int c = 0; c < 4; c++) {
-			pokey_.write(2 * c, game_.pokey.audf[c]);
-			pokey_.write(2 * c + 1, game_.pokey.audc[c]);
+			pokey_.write(2 * c, game_.pokey().audf[c]);
+			pokey_.write(2 * c + 1, game_.pokey().audc[c]);
 		}
 	}
 
@@ -154,7 +154,7 @@ public:
 	void setSoundRate(double rate) { pokey_.setSampleRate(rate); }
 	const rr::Game &state() const { return game_; }
 
-	void setRiver(uint32_t seed, int bridge) { game_.world.setRiver(seed, bridge); }
+	void setRiver(uint32_t seed, int bridge) { game_.setRiver(seed, bridge); }
 
 	// Saved state (F7 / F8): the whole machine, in memory: the game's own (Game::save, only what
 	// it cannot make again), POKEY's random counter and sound, the power-on screen's scrolling

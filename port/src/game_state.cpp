@@ -67,10 +67,10 @@ std::vector<uint8_t> Game::save() const {
 		static_assert(std::is_trivially_copyable_v<T> && (std::has_unique_object_representations_v<T> || std::is_same_v<T, bool>), "saved as bytes, no padding");
 		put(raw, x);
 	});
-	put(raw, world.state());
-	put(raw, river.lines.empty() ? World::State() : river.lineStates.back());   // the river and the objects before the oldest line
-	put(raw, uint16_t(river.lines.size()));
-	put(raw, river.top);
+	put(raw, world_.state());
+	put(raw, river_.lines.empty() ? World::State() : river_.lineStates.back());   // the river and the objects before the oldest line
+	put(raw, uint16_t(river_.lines.size()));
+	put(raw, river_.top);
 	put(raw, resume_);
 	put(raw, busy_);
 	put(raw, gameOverText_);
@@ -87,16 +87,16 @@ void Game::load(const std::vector<uint8_t> &data) {
 	uint16_t lines = 0;
 	eachState([&](auto &x) { get(raw, at, x); });
 	get(raw, at, now);
-	world.setState(now);
+	world_.setState(now);
 	get(raw, at, oldest);
 	get(raw, at, lines);
-	get(raw, at, river.top);
+	get(raw, at, river_.top);
 	get(raw, at, resume_);
 	get(raw, at, busy_);
 	get(raw, at, gameOverText_);
 	get(raw, at, pal_);
-	river.rebuild(world, oldest, lines);   // screen memory again, from the generator's state before its oldest line
-	scan = {};
+	river_.rebuild(world_, oldest, lines);   // screen memory again, from the generator's state before its oldest line
+	scan_ = {};
 }
 
 }  // namespace rr

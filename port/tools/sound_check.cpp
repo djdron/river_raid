@@ -10,6 +10,7 @@
 #include <cstring>
 #include <deque>
 #include <map>
+#include <set>
 #include <vector>
 
 #include "../src/game.h"
@@ -41,20 +42,30 @@ int main(int argc, char **argv) {
 	}
 
 	rr::Game game(rom);
+	// What the driver reads, from the original's RAM: the river's and the objects' bytes (the
+	// shell, the missile) and these of the game (start beep, pause, event sound and its time,
+	// plane state, fuel, speed, crash pitch, stick, explosion, missile, attract flags, fire, bonus)
+	std::set<uint16_t> driverBytes = {0xC6, 0x24, 0x7A, 0x7B, 0x76, 0x5B, 0x5C, 0x59, 0x052C, 0x19, 0x7C, 0x7F, 0x29, 0x7D, 0x7E};
+	{
+		rr::World world = game.world();
+		rr::RamMap worldMap;
+		world.mapRam(worldMap);
+		for (const auto &b : worldMap.list()) driverBytes.insert(b.addr);
+	}
+	rr::RamMap map;
+	game.mapRam(map);
 	std::vector<uint8_t> mem(0x4000);
 	uint8_t regs[8] = {};   // the original's registers, from its writes
 	long frames = 0, bad = 0, active = 0, shown = 0;
 	int32_t frame = 0;
 	while (std::fread(&frame, 4, 1, vbi) == 1 && std::fread(mem.data(), 1, mem.size(), vbi) == mem.size()) {
 		for (auto &w : writes[frame]) regs[w.first] = uint8_t(w.second);
-		rr::Game &g = game;
-		game.world.loadFromRam(mem.data());
-		g.sound.startBeep = mem[0xC6]; g.pauseState = mem[0x24]; g.sound.event = mem[0x7A]; g.sound.eventTime = mem[0x7B];
-		g.plane.state = mem[0x76]; g.plane.fuel = mem[0x5B]; g.plane.fuelFrac = mem[0x5C]; g.plane.speed = mem[0x59];
-		g.sound.crashPitch = mem[0x052C]; g.plane.stick = mem[0x19]; g.sound.explosion = mem[0x7C];
-		g.sound.missile = mem[0x7F]; g.attractFlags = mem[0x29]; g.sound.fire = mem[0x7D]; g.sound.bonus = mem[0x7E];
+		for (const auto &b : map.list())
+			if (driverBytes.count(b.addr)) b.set(mem[b.addr]);
 		// registers not written in this VBI keep the original's values
-		for (int c = 0; c < 4; c++) { g.pokey.audf[c] = regs[2 * c]; g.pokey.audc[c] = regs[2 * c + 1]; }
+		rr::PokeyRegs before;
+		for (int c = 0; c < 4; c++) { before.audf[c] = regs[2 * c]; before.audc[c] = regs[2 * c + 1]; }
+		game.setPokey(before);
 		std::deque<uint8_t> &rq = randoms[frame];
 		game.soundDriver([&]() -> uint8_t {
 			if (rq.empty()) return 0;
@@ -65,7 +76,7 @@ int main(int argc, char **argv) {
 		frames++;
 		bool same = true, sounding = false;
 		for (int c = 0; c < 4; c++) {
-			if (game.pokey.audf[c] != regs[2 * c] || game.pokey.audc[c] != regs[2 * c + 1]) same = false;
+			if (game.pokey().audf[c] != regs[2 * c] || game.pokey().audc[c] != regs[2 * c + 1]) same = false;
 			if (regs[2 * c + 1] & 0x0F) sounding = true;
 		}
 		if (sounding) active++;
@@ -74,7 +85,7 @@ int main(int argc, char **argv) {
 			if (shown++ < 8) {
 				std::printf("frame %d:", frame);
 				for (int c = 0; c < 4; c++)
-					std::printf("  ch%d port %02X/%02X orig %02X/%02X", c + 1, game.pokey.audf[c], game.pokey.audc[c],
+					std::printf("  ch%d port %02X/%02X orig %02X/%02X", c + 1, game.pokey().audf[c], game.pokey().audc[c],
 						regs[2 * c], regs[2 * c + 1]);
 				std::printf("\n");
 			}

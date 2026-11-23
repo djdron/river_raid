@@ -43,32 +43,31 @@ int main(int argc, char **argv) {
 	const TvSystem tv = tvSystem(pal);
 	PokeyRandom random(seed, tv);
 	Game g(rom);
-	if (bridge) g.world.setRiver(0, bridge);
+	if (bridge) g.setRiver(0, bridge);
 	g.startAttract(pal);
 	// the plane does not crash and never runs out of fuel (as rr_oracle -ghost): the collision
 	// results that would end it are dropped after the display, so the game goes on for long
 	g.afterDisplay = [&g] {
-		g.hit.planeHitBank = g.hit.planeHitObject = g.hit.planeHitShell = g.hit.missileHitPlane = 0xFF;
-		g.plane.fuel = 0xFF;
+		g.ghost();
 	};
 	long inGame = 0, attractFrames = 0, games = 0;
 	bool menu = true;          // choosing the game: SELECT until it is the one asked for, then START
 	int maxBridge = 0;
 	for (long f = 0; f < frames; f++) {
 		Input in;
-		if ((g.attractFlags & 0x80) != 0) menu = true;   // the attract mode (after a game over too)
+		if (g.attract()) menu = true;   // the attract mode (after a game over too)
 		if (menu) {
 			attractFrames++;
-			if (g.match.gameNumber != (game - 1) % 8) in.select = true;   // (held: the next game every 30 frames)
+			if (g.match().gameNumber != (game - 1) % 8) in.select = true;   // (held: the next game every 30 frames)
 			else if (!(f & 1)) { in.start = true; menu = false; games++; }
 		} else {
 			inGame++;
 			// steer to the middle of the water run nearest the plane, 30 lines above it
-			const int px = g.plane.x - 32 + 4;
+			const int px = g.plane().x - 32 + 4;
 			const int row = 0xAA - 28 - 30;
 			int target = px;
-			if (row >= 0 && size_t(row) < g.river.runs.size()) {
-				const River::Runs &r = g.river.runs[size_t(row)];
+			if (row >= 0 && size_t(row) < g.river().runs.size()) {
+				const River::Runs &r = g.river().runs[size_t(row)];
 				int best = 1 << 30;
 				for (int i = 0; i < r.n; i++) {
 					if (r.colour[i] != 3) continue;
@@ -88,7 +87,7 @@ int main(int argc, char **argv) {
 			in.stick[0] = stick;
 			in.trigger[0] = (f & 1) != 0;
 		}
-		if (!menu) maxBridge = std::max(maxBridge, (g.match.bridges.d[0] >> 4) * 1000 + (g.match.bridges.d[0] & 15) * 100 + (g.match.bridges.d[1] >> 4) * 10 + (g.match.bridges.d[1] & 15));
+		if (!menu) maxBridge = std::max(maxBridge, (g.match().bridges.d[0] >> 4) * 1000 + (g.match().bridges.d[0] & 15) * 100 + (g.match().bridges.d[1] >> 4) * 10 + (g.match().bridges.d[1] & 15));
 		int reads = 0;
 		g.frame(in, [&] { return reads++ ? random.read(249, 13) : pal ? random.read(191, 24) : random.read(192, 13); });
 		random.nextFrame();
