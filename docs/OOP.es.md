@@ -115,8 +115,18 @@ código que sustituyen.
 16. El final: los 17 recorridos iguales (700 000 fotogramas), también en una compilación con
     AddressSanitizer, UndefinedBehaviorSanitizer y las aserciones de la biblioteca estándar, sin
     ningún aviso; este documento en todos los idiomas.
+17. `game.cpp` dividido en archivos por tema, la clase intacta: `game.cpp` (el fotograma en el
+    orden del original), `game_plane.cpp` (el avión, las explosiones, los puntos),
+    `game_players.cpp` (partidas y jugadores, el panel), `game_reset.cpp` (encendido, modo de
+    demostración, partida nueva, reinicio, el siguiente avión), `game_state.cpp` (partidas
+    guardadas); lo que comparten está en `game_internal.h`.
 
 ## Lo siguiente
 
-Nada previsto. Un cambio a partir de aquí se comprueba igual: `compare.sh -quick` después de cada
-paso, los 17 recorridos al final.
+`Game` sigue siendo lo que es, el director del fotograma; a su alrededor: la partida (`Match`:
+número de juego, de quién es el turno, puentes, puntos, vidas, el otro jugador, récords, con su
+escritura en el panel), los campos cerrados tras getters constantes y una estructura de lo que
+hay que mostrar y tocar, los modos de la consola (`Console`: contador de fotogramas, modo de
+demostración, pausa, SELECT) donde se separan sin reordenar nada, y el bucle principal como
+pasos con nombre en el mismo orden. Cada paso comprobado con `compare.sh -quick`, los 17
+recorridos al final.

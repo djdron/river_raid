@@ -41,7 +41,8 @@ port/tools/trace/compare.sh <rom> [build dir] [runs...]
 14. 从类导出 RAM（`ram_map.h`、`ram_map.cpp`）：每个类在自己的 `mapRam(RamMap &)` 中列出自己的字节及其地址（飞机、子弹、声音、碰撞、玩家、最高分、面板、滚动字幕、河道、槽位、坦克、它的炮弹和导弹、屏幕最上一行）；`World` 和 `Game` 把这些列表合在一起，`RamMap` 负责加载、写入和比较。算出来而不是保存的部分（player-missile 内存、按显示列表得到的屏幕各行）留在 `game_ram.cpp` 和 `River` 中。
 15. 文档：各 README 的文件表及其关于代码、生成器和验证的部分，HANDOFF（分支）、NOTES（存档）、HOW_IT_WORKS（碰撞），所有语言；源代码中仍提到 DLI 或说河道保存物体的注释。
 16. 收尾：全部 17 段录制相同（700 000 帧），在启用 AddressSanitizer、UndefinedBehaviorSanitizer 和标准库断言的构建上也一样，没有任何报告；本文档的所有语言版本。
+17. 按主题把 `game.cpp` 拆成多个文件，类本身不动：`game.cpp`（按原版顺序的一帧）、`game_plane.cpp`（飞机、爆炸、得分）、`game_players.cpp`（游戏与玩家、面板）、`game_reset.cpp`（开机、演示模式、新游戏、重置、下一架飞机）、`game_state.cpp`（存档）；它们共用的内容在 `game_internal.h`。
 
 ## 接下来
 
-没有计划。今后的修改照样检查：每一步之后运行 `compare.sh -quick`，最后运行全部 17 段。
+`Game` 保持它本来的角色——一帧的指挥；围绕它：一局游戏（`Match`：游戏编号、轮到谁、桥数、分数、生命、另一位玩家、最高分，以及它们在面板上的输出）；字段收起来，只留常量 getter 和一个“显示和播放什么”的结构；主机的模式（`Console`：帧计数、演示模式、暂停、SELECT），只在不必调整顺序就能分开的地方拆出；主循环按同样顺序分成有名字的步骤。每一步用 `compare.sh -quick` 检查，最后运行全部 17 段。

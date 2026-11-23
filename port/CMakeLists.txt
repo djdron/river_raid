@@ -29,7 +29,12 @@ add_library(rrcore
 	src/display.cpp
 	src/game.cpp
 	src/game.h
+	src/game_internal.h
+	src/game_plane.cpp
+	src/game_players.cpp
 	src/game_ram.cpp
+	src/game_reset.cpp
+	src/game_state.cpp
 	src/objects.cpp
 	src/objects.h
 	src/os_font.cpp

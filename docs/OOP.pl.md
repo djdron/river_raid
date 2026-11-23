@@ -105,8 +105,17 @@ zastępują.
 16. Zakończenie: wszystkie 17 przebiegów takie same (700 000 klatek), także na buildzie z
     AddressSanitizer, UndefinedBehaviorSanitizer i asercjami biblioteki standardowej, bez
     żadnego komunikatu; ten dokument we wszystkich językach.
+17. `game.cpp` pocięty na pliki według tematów, klasa nietknięta: `game.cpp` (klatka w
+    kolejności oryginału), `game_plane.cpp` (samolot, wybuchy, punkty), `game_players.cpp` (gry
+    i gracze, panel), `game_reset.cpp` (włączenie, tryb demonstracyjny, nowa gra, reset,
+    następny samolot), `game_state.cpp` (zapisy stanu); to, co wspólne, jest w
+    `game_internal.h`.
 
 ## Dalej
 
-Nic nie jest zaplanowane. Kolejne zmiany sprawdza się tak samo: `compare.sh -quick` po każdym
-kroku, wszystkie 17 przebiegów na końcu.
+`Game` zostaje tym, czym jest — dyrygentem klatki; wokół niego: partia (`Match`: numer gry,
+czyja kolej, mosty, punkty, życia, drugi gracz, rekordy, z ich wypisywaniem na panel), pola
+zamknięte za stałymi getterami i jedną strukturą „co pokazać i zagrać”, tryby konsoli
+(`Console`: licznik klatek, tryb demonstracyjny, pauza, SELECT) tam, gdzie dają się oddzielić
+bez przestawiania, i pętla główna jako nazwane kroki w tej samej kolejności. Każdy krok
+sprawdzany `compare.sh -quick`, wszystkie 17 przebiegów na końcu.

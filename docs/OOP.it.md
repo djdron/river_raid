@@ -114,8 +114,18 @@ sostituiscono.
 16. La fine: tutte le 17 partite uguali (700 000 fotogrammi), anche su una build con
     AddressSanitizer, UndefinedBehaviorSanitizer e le asserzioni della libreria standard, senza
     alcuna segnalazione; questo documento in ogni lingua.
+17. `game.cpp` diviso in file per argomento, la classe intatta: `game.cpp` (il fotogramma
+    nell'ordine dell'originale), `game_plane.cpp` (l'aereo, le esplosioni, i punti),
+    `game_players.cpp` (partite e giocatori, il pannello), `game_reset.cpp` (accensione,
+    modalità dimostrativa, nuova partita, reset, l'aereo successivo), `game_state.cpp`
+    (salvataggi); ciò che condividono è in `game_internal.h`.
 
 ## Prossimi passi
 
-Niente in programma. Una modifica da qui in poi si verifica allo stesso modo: `compare.sh -quick`
-dopo ogni passo, tutte le 17 partite alla fine.
+`Game` resta ciò che è, il direttore d'orchestra del fotogramma; attorno a lui: la partita
+(`Match`: numero del gioco, di chi è il turno, ponti, punti, vite, l'altro giocatore, record,
+con la loro scrittura nel pannello), i campi chiusi dietro getter costanti e una struttura di
+ciò che va mostrato e suonato, le modalità della console (`Console`: contatore dei fotogrammi,
+modalità dimostrativa, pausa, SELECT) dove si separano senza riordinare nulla, e il ciclo
+principale come passi con un nome nello stesso ordine. Ogni passo verificato con `compare.sh
+-quick`, tutte le 17 partite alla fine.

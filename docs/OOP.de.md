@@ -117,8 +117,18 @@ den sie ersetzen.
 16. Der Abschluss: alle 17 Läufe gleich (700 000 Bilder), auch auf einem Build mit
     AddressSanitizer, UndefinedBehaviorSanitizer und den Prüfungen der Standardbibliothek, ohne
     eine Meldung; dieses Dokument in jeder Sprache.
+17. `game.cpp` nach Themen in Dateien geteilt, die Klasse unberührt: `game.cpp` (das Bild in der
+    Reihenfolge des Originals), `game_plane.cpp` (das Flugzeug, Explosionen, Punkte),
+    `game_players.cpp` (Spiele und Spieler, die Statusleiste), `game_reset.cpp` (Einschalten,
+    Demo-Modus, neues Spiel, Reset, das nächste Flugzeug), `game_state.cpp` (Spielstände); was
+    sie gemeinsam haben, steht in `game_internal.h`.
 
 ## Als Nächstes
 
-Nichts geplant. Eine Änderung von hier an wird genauso geprüft: `compare.sh -quick` nach jedem
-Schritt, alle 17 Läufe am Ende.
+`Game` bleibt, was es ist, der Dirigent des Bilds; um es herum: die Partie (`Match`:
+Spielnummer, wer dran ist, Brücken, Punkte, Leben, der andere Spieler, Highscores, mit ihrer
+Ausgabe in die Statusleiste), die Felder hinter konstanten Gettern und einer Struktur dessen,
+was zu zeigen und zu spielen ist, die Modi der Konsole (`Console`: Bildzähler, Demo-Modus,
+Pause, SELECT), wo sie sich ohne Umstellung trennen lassen, und die Hauptschleife als benannte
+Schritte in derselben Reihenfolge. Jeder Schritt geprüft mit `compare.sh -quick`, alle 17 Läufe
+am Ende.

@@ -70,7 +70,7 @@ Klawiatura steruje oboma joystickami, więc także jedna osoba może grać w gr�
 ```
 river_view [rom] [opcje]
 ```
-Pokazuje tryb demonstracyjny oryginału, przelot nad rzeką, który gra odtwarza, gdy nikt nie wciska START: po włączeniu ekran wypełnia się rzeką gry 1, która potem przewija się o 1 linię na klatkę; statki i helikoptery budzą się i pływają, czołgi jadą do mostów i strzelają, helikoptery wystrzeliwują rakiety (przeniesiona logika gry, `src/game.cpp`); poniżej panel i przewijany pasek z autorami, „Press START key” i tęczowym logo Activision. Opcje są takie jak w grze: `rom`, `-os`, `-seed`, `-bridge` (przeglądarka najpierw dolatuje do niego od początku rzeki, samą rzeką, dla 9999 to kilka sekund, i pokazuje go tak, jak wyglądałby w locie; wstecz można oglądać aż do początku), `-random`, `-pal`, `-colours`, `-palette`, `-border`, `-filter`; oraz własna `-sound`: tryb demonstracyjny z dźwiękiem (zob. M).
+Pokazuje tryb demonstracyjny oryginału, przelot nad rzeką, który gra odtwarza, gdy nikt nie wciska START: po włączeniu ekran wypełnia się rzeką gry 1, która potem przewija się o 1 linię na klatkę; statki i helikoptery budzą się i pływają, czołgi jadą do mostów i strzelają, helikoptery wystrzeliwują rakiety (przeniesiona logika gry, `src/game*.cpp`); poniżej panel i przewijany pasek z autorami, „Press START key” i tęczowym logo Activision. Opcje są takie jak w grze: `rom`, `-os`, `-seed`, `-bridge` (przeglądarka najpierw dolatuje do niego od początku rzeki, samą rzeką, dla 9999 to kilka sekund, i pokazuje go tak, jak wyglądałby w locie; wstecz można oglądać aż do początku), `-random`, `-pal`, `-colours`, `-palette`, `-border`, `-filter`; oraz własna `-sound`: tryb demonstracyjny z dźwiękiem (zob. M).
 
 Litery i cyfry 1–9 pochodzą z czcionki systemu, której nie ma w kartridżu. Port ma wbudowaną czcionkę AltirraOS: wolnego zamiennika systemu dostarczanego z atari800 (licencja: kopiowanie i modyfikacja dozwolone z zachowaniem informacji o prawach autorskich, zob. `src/os_font.cpp`); z nią powstały też ślady wzorcowe. `-os plik` bierze czcionkę systemu samego Atari z obrazu ROM systemu (10 KB lub 16 KB) albo z pliku czcionki 1 KB.
 
@@ -113,7 +113,7 @@ To, który obiekt kiedy się budzi, rozstrzyga rejestr RANDOM układu POKEY, spr
 | `src/players.h`, `src/panel.h` | punkty, mosty i życia drugiego gracza, rekordy z bajtami kontrolnymi; 60 znaków panelu stanu |
 | `src/sound.h/.cpp` | dźwięki, o które prosi gra, i sterownik, który je gra (VBI B2A5–B3D8) |
 | `src/palette.h/.cpp` | kolory Atari komputerów NTSC i PAL (`atariRgb`): modele Altirra i atari800 |
-| `src/game.h/.cpp` | gra: pętla główna i VBI oryginału klatka po klatce — tryb demonstracyjny, klawisze konsoli, samolot, paliwo, kolizje, wybuchy, punkty, życia, gracze, śmierć i restart, koniec gry, rekordy; zawiera części wymienione wyżej |
+| `src/game.h`, `src/game*.cpp` | gra: pętla główna i VBI oryginału klatka po klatce — tryb demonstracyjny, klawisze konsoli, samolot, paliwo, kolizje, wybuchy, punkty, życia, gracze, śmierć i restart, koniec gry, rekordy; zawiera części wymienione wyżej |
 | `src/display.cpp` | rzeczna część wyświetlania: każdy obiekt na wysokości swojego slotu, kolizje jako zwykła geometria (bez przerwania listy wyświetlania, zob. [docs/DLI_REMOVAL.pl.md](../docs/DLI_REMOVAL.pl.md)), obraz obszaru rzeki |
 | `src/pokey_random.h` | licznik RANDOM układu POKEY |
 | `src/pokey_sound.h/.cpp` | dźwięk POKEY: cztery kanały, dzielniki i liczniki szumu, generowane takt po takcie |

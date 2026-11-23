@@ -107,8 +107,17 @@ replace.
 16. The end: all 17 runs the same (700 000 frames), also on a build with AddressSanitizer,
     UndefinedBehaviorSanitizer and the standard library's assertions, without a report; this
     document in every language.
+17. `game.cpp` cut into files by subject, the class untouched: `game.cpp` (the frame in the
+    original's order), `game_plane.cpp` (the plane, explosions, points), `game_players.cpp`
+    (games and players, the panel), `game_reset.cpp` (power-on, the attract mode, a new game,
+    the reset, the next plane), `game_state.cpp` (saved states); what they share is in
+    `game_internal.h`.
 
 ## Next
 
-Nothing planned. A change from here on is checked the same way: `compare.sh -quick` after each
-step, all 17 runs at the end.
+`Game` stays what it is, the conductor of the frame; around it: the game's match (`Match`: game
+number, turns, bridges, score, lives, the other player, high scores, with their panel output),
+the fields closed behind const getters and one structure of what to show and play, the console's
+modes (`Console`: frame counter, attract mode, pause, SELECT) where they come apart without
+reordering anything, and the main loop as named steps in the same order. Each step checked with
+`compare.sh -quick`, all 17 runs at the end.

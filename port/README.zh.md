@@ -70,7 +70,7 @@ river_raid [rom] [选项]
 ```
 river_view [rom] [选项]
 ```
-它显示原版的演示模式，即没人按 START 时播放的河上飞行：开机后屏幕被游戏 1 的河填满，然后每帧滚动 1 行；船和直升机醒来并移动，坦克开向桥并开火，直升机发射导弹（移植的游戏逻辑，`src/game.cpp`）；下面是状态栏和滚动字幕，有制作人员、“Press START key”和彩虹色的 Activision 标志。选项与游戏相同：`rom`、`-os`、`-seed`、`-bridge`（查看器先只用河道从河的起点飞到该桥，9999 需要几秒，然后按连续飞行时的样子显示它；可以一直往回看到起点）、`-random`、`-pal`、`-colours`、`-palette`、`-border`、`-filter`；以及它自己的 `-sound`：带声音的演示模式（见 M）。
+它显示原版的演示模式，即没人按 START 时播放的河上飞行：开机后屏幕被游戏 1 的河填满，然后每帧滚动 1 行；船和直升机醒来并移动，坦克开向桥并开火，直升机发射导弹（移植的游戏逻辑，`src/game*.cpp`）；下面是状态栏和滚动字幕，有制作人员、“Press START key”和彩虹色的 Activision 标志。选项与游戏相同：`rom`、`-os`、`-seed`、`-bridge`（查看器先只用河道从河的起点飞到该桥，9999 需要几秒，然后按连续飞行时的样子显示它；可以一直往回看到起点）、`-random`、`-pal`、`-colours`、`-palette`、`-border`、`-filter`；以及它自己的 `-sound`：带声音的演示模式（见 M）。
 
 字母和数字 1–9 来自操作系统的字体，卡带里没有。移植版内置了 AltirraOS 的字体：随 atari800 一起发布的免费替代操作系统（许可：保留版权声明即可复制和修改，见 `src/os_font.cpp`）；参考记录也是用它做的。`-os 文件` 从 OS ROM 映像（10 KB 或 16 KB）或 1 KB 字体文件中读取 Atari 自己操作系统的字体。
 
@@ -113,7 +113,7 @@ river_view [rom] [选项]
 | `src/players.h`、`src/panel.h` | 另一位玩家的分数、桥数和生命，最高分及其校验字节；状态面板的 60 个字符 |
 | `src/sound.h/.cpp` | 游戏请求的声音，以及播放它们的驱动（VBI B2A5–B3D8） |
 | `src/palette.h/.cpp` | NTSC 和 PAL 机器的 Atari 颜色（`atariRgb`）：Altirra 和 atari800 的模型 |
-| `src/game.h/.cpp` | 游戏：原版的主循环和 VBI，逐帧——演示模式、控制台按键、飞机、燃料、碰撞、爆炸、分数、生命、玩家、坠毁与重开、游戏结束、最高分；它包含上面各部分 |
+| `src/game.h`、`src/game*.cpp` | 游戏：原版的主循环和 VBI，逐帧——演示模式、控制台按键、飞机、燃料、碰撞、爆炸、分数、生命、玩家、坠毁与重开、游戏结束、最高分；它包含上面各部分 |
 | `src/display.cpp` | 显示中河的部分：每个物体位于其槽位的 y，碰撞是简单的几何（没有显示列表中断，见 [docs/DLI_REMOVAL.zh.md](../docs/DLI_REMOVAL.zh.md)），河区域的画面 |
 | `src/pokey_random.h` | POKEY 的 RANDOM 计数器 |
 | `src/pokey_sound.h/.cpp` | POKEY 声音：四个声道、分频器和噪声计数器，逐周期生成 |
