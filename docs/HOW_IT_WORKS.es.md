@@ -256,8 +256,11 @@ se comprueba para el avión, así que puede rozarlo.
 
 Como estas lecturas ocurren mientras se dibuja la imagen, el momento exacto importa: si la bala toca
 un objeto solo justo en la línea donde se lee el registro, que cuente o no depende de cuánto haya
-avanzado el haz de electrones por esa línea. El port lo reproduce ejecutando el código de la
-interrupción con el tiempo que tarda cada instrucción, línea a línea.
+avanzado el haz de electrones por esa línea. La rama `main` del port lo reproduce ejecutando el
+código de la interrupción con el tiempo que tarda cada instrucción, línea a línea. Las ramas
+posteriores (`dli_removed`, `oop`) prescinden de la interrupción: calculan los contactos como
+geometría simple y difieren del original como mucho en unos pocos fotogramas de cada mil (un
+contacto visto un fotograma después o nunca).
 
 ## Cuando nadie juega
 

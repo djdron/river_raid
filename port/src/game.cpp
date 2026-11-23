@@ -181,10 +181,10 @@ void Game::prepare() {
 	Objects &objs = world.objects;
 	spritesShown = true;
 	if (objs.tank.y >= 0xBC) objs.tank.kind = objs.tank.y = 0;
-	world.objects.shell.colour = rom_.shellColour(frameCount >> 3);
+	objs.shell.colour = rom_.shellColour(frameCount >> 3);
 	if (objs.shell.y >= 0xBC) {
 		objs.shell.timer = 0xFF;
-		world.objects.shell.frame = 0;
+		objs.shell.frame = 0;
 		objs.shell.y = 0;
 	}
 	// AF3A-AF58: lives, bridges and score into the panel
@@ -485,7 +485,7 @@ void Game::skipFrame() {
 	if (objs.tank.y >= 0xBC) objs.tank.kind = objs.tank.y = 0;
 	if (objs.shell.y >= 0xBC) {
 		objs.shell.timer = 0xFF;
-		world.objects.shell.frame = 0;
+		objs.shell.frame = 0;
 		objs.shell.y = 0;
 	}
 	// A2F5: the attract timer (in the attract mode it only goes round)

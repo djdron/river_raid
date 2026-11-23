@@ -102,11 +102,19 @@ Welches Objekt wann erwacht, entscheidet POKEYs RANDOM-Register, ein Hardwarezä
 | Datei | Was |
 |---|---|
 | `src/rom.h` | das Modulabbild und benannte Zugriffsfunktionen für jede Tabelle, die die Portierung daraus liest (Formen, Farben, Punkte, Generatortabellen, Anzeigetext ...); Objekttypen |
-| `src/river_gen.h/.cpp` | der Generator: `RiverGen::startGame(n)`, dann `nextLine(line)` — eine Bildschirmzeile pro Aufruf |
+| `src/fixed.h` | die kleinen Zahlentypen des Spiels, so wie das Original sie hält: Bytes mit Überlauf, ein Bruchteil-Byte, dessen Übertrag ein ganzes weiterzählt, BCD-Zähler (`Bcd<N>`); `tools/fixed_check.cpp` prüft sie |
+| `src/river_gen.h/.cpp` | der Flussgenerator: `RiverGen::startGame(n)`, dann `nextLine(line, bank, obstacle)` — eine Bildschirmzeile pro Aufruf; von den Objekten kennt er nur die Lage des Objekts, das oben gerade hereinkommt (`BankObstacle`) |
+| `src/objects.h/.cpp` | die Objekte: `Objects` hält die 11 Slots, den Panzer, seine Granate und die Rakete des Hubschraubers und setzt neue Objekte, während der Fluss kommt (`afterLine`); eine Klasse je Art von Verhalten (`Jet`, `Helicopter`, `Balloon`, `Ship`, `Bridge`, `FuelDepot`, `Explosion`) animiert und bewegt sie |
+| `src/tank.h/.cpp` | der Panzer auf der Uferstraße, seine Granate und die Rakete des Hubschraubers, mit ihren Bewegungen |
+| `src/world.h/.cpp` | `World`: Fluss und Objekte zusammen, Zeile für Zeile; `World::State` ist, was Spielstände von ihnen behalten |
+| `src/river.h/.cpp` | der Fluss auf dem Bildschirm: seine Zeilen, dieselben ohne Verzierung und als einfarbige Abschnitte (für die Kollisionen), die Adresse der obersten Zeile im Bildschirmspeicher des Originals |
 | `src/river_draw.h/.cpp` | eine Zeile so zeichnen, wie sie auf dem Bildschirm aussieht: Ufertöne, Straßen an Brücken, Objekt-Sprites (`drawScreenLine`) |
+| `src/plane.h`, `src/bullet.h` | das Flugzeug (Steuerung, Tempo, Treibstoff, Zustand) und sein Geschoss |
+| `src/players.h`, `src/panel.h` | Punkte, Brücken und Leben des anderen Spielers, die Highscores mit ihren Prüfbytes; die 60 Zeichen der Statusleiste |
+| `src/sound.h/.cpp` | die Töne, die das Spiel anfordert, und der Treiber, der sie spielt (VBI B2A5–B3D8) |
 | `src/palette.h/.cpp` | Atari-Farben von NTSC- und PAL-Geräten (`atariRgb`): die Modelle von Altirra und atari800 |
-| `src/game.h/.cpp` | das Spiel: Hauptschleife und VBI des Originals Bild für Bild — Demo-Modus, Konsolentasten, das Flugzeug, Treibstoff, Kollisionen, Explosionen, Punkte, Leben, Spieler, Absturz und Neustart, Spielende, Highscores, Soundtreiber |
-| `src/display.cpp` | die Flussanzeige, wie der DLI sie steuert: ein Sprite für jedes Objekt wiederverwendet, Kollisionen pro Objekt, Zeichnen des Flussbereichs |
+| `src/game.h/.cpp` | das Spiel: Hauptschleife und VBI des Originals Bild für Bild — Demo-Modus, Konsolentasten, das Flugzeug, Treibstoff, Kollisionen, Explosionen, Punkte, Leben, Spieler, Absturz und Neustart, Spielende, Highscores; es hält die Teile oben |
+| `src/display.cpp` | der Flussteil der Anzeige: jedes Objekt auf der Höhe seines Slots, die Kollisionen als einfache Geometrie (ohne Display-List-Interrupt, siehe [docs/DLI_REMOVAL.de.md](../docs/DLI_REMOVAL.de.md)), das Bild des Flussbereichs |
 | `src/pokey_random.h` | POKEYs RANDOM-Zähler |
 | `src/pokey_sound.h/.cpp` | POKEY-Sound: vier Kanäle, Teiler und Rauschzähler, Takt für Takt erzeugt |
 | `src/status_bar.h/.cpp` | Anzeige und Laufschrift: Zeichensätze, Anzeige, Schritt der Laufschrift, Zeichnen |
@@ -124,15 +132,19 @@ Welches Objekt wann erwacht, entscheidet POKEYs RANDOM-Register, ein Hardwarezä
 | `tools/render_check.cpp` | vergleicht das Zeichnen mit dem Bildschirm des Originals (`oracle/rr_oracle -ghost -strip 20`) |
 | `tools/terrain_check.cpp` | Vergleich mit einem Referenz-Trace (`oracle/rr_oracle -ram A:B`) |
 | `tools/equivalence/` | Refactoring-Prüfung: ein älterer Commit der Portierung gegen die Arbeitskopie, Bild für Bild (siehe Code) |
+| `tools/game_trace.cpp`, `tools/trace/` | eine Zeile pro Bild darüber, was das Spiel tut, in seinen eigenen Namen; `tools/trace/compare.sh` spielt 17 Läufe und vergleicht sie Bild für Bild mit einem Referenz-Commit (`-quick`: 5 davon): die Prüfung für Änderungen, die das Spiel nicht ändern sollen (siehe Code) |
+| `tools/display_bench.cpp` | lässt das Spiel viele Bilder lang mit einem Autopiloten laufen (Zeitmessung, lange Läufe) |
+| `tools/fixed_check.cpp` | prüft die Zahlentypen aus `src/fixed.h` für jede Eingabe gegen den Code, den sie ersetzt haben |
 
 Der Generator liest Tabellen und Grafik aus dem ROM des Benutzers (`rom/River_Raid.rom`); im Code stecken keine Spieldaten.
 
 ## Code
 Die Portierung ist so geschrieben, dass man sie ohne das Listing des Originals lesen kann:
-- Zustandsfelder, Funktionen und Konstanten heißen nach ihrer Bedeutung (`planeState`, `shellTimer`, `enteringSlot`, `positionObject`, `kFacingLeft`); der Kommentar jedes Felds nennt die RAM-Adresse des Originals und der jeder Funktion die Codeadressen, aus denen sie stammt, sodass man dem Listing (`disasm/`) und den Traces weiter folgen kann;
+- das Spiel besteht aus Objekten, die ihren eigenen Zustand halten und wissen, was sie tun: das Flugzeug, sein Geschoss, der Fluss (`RiverGen`), die Objekte darauf (`Objects`, eine Klasse je Art von Verhalten), der Panzer, seine Granate und die Rakete, die Spieler, die Statusleiste, die Töne; `World` lässt den Fluss und seine Objekte Zeile für Zeile laufen, `Game` hält alles und führt das Bild aus wie das Original ([docs/OOP.md](../docs/OOP.md): wie der Code dorthin kam);
+- Felder, Funktionen und Konstanten sind nach ihrer Bedeutung benannt (`plane.state`, `shell.timer`, `enteringSlot`, `positionObject`, `kFacingLeft`); der Kommentar jedes Felds nennt seine RAM-Adresse im Original und jede Funktion die Codeadressen, aus denen sie stammt, sodass sich Listing (`disasm/`) und Traces weiter verfolgen lassen; jede Klasse listet außerdem ihre Bytes mit Adressen auf (`mapRam`), sodass der Zustand mit dem RAM des Originals verglichen werden kann;
 - die Tabellen des Moduls werden über benannte Zugriffsfunktionen in `src/rom.h` gelesen (`rom.points(type)`, `rom.objectHeight(type)`, `rom.shellRise(t)` ...), nicht über Adressen;
-- Werte bleiben 8-bittig mit Überlauf, wo das im Original so ist (`lo()`), denn Positionen laufen um den Bildschirm herum; wo das Original das Übertragsflag des 6502 von einer Summe in die nächste trägt, sagen `addWithCarry`/`subtractWithBorrow` das ausdrücklich;
-- der Display-List-Interrupt (`display.cpp`) ist der einzige Teil, der nahe an den Befehlen bleibt: Sein Timing innerhalb der Rasterzeile entscheidet, welche Kollisionen gesehen werden, daher wird er mit Taktzählung ausgeführt.
+- Werte bleiben 8-bittig mit Überlauf, wo das im Original so ist (`lo()`), denn Positionen laufen um den Bildschirm herum; wo das Original das Übertragsflag des 6502 von einer Summe in die nächste trägt, sagen `addWithCarry`/`subtractWithBorrow` das ausdrücklich; BCD-Zähler (`Bcd<N>`, `src/fixed.h`) addieren wie der 6502 im Dezimalmodus, und Gleitkommazahlen gibt es keine;
+- die Anzeige hat keinen Display-List-Interrupt: Jedes Objekt steht auf der Höhe seines Slots, und die Kollisionen sind einfache Geometrie (`display.cpp`); das Spiel weicht in 0,01–0,25 % der Bilder vom Original ab, bei einer Berührung, die das Original ein Bild später oder gar nicht sieht ([docs/DLI_REMOVAL.de.md](../docs/DLI_REMOVAL.de.md)).
 
 Änderungen, die das Verhalten nicht ändern sollen, werden mit `tools/equivalence` geprüft: Es baut einen älteren Commit (ab 06ffc73) neben der Arbeitskopie und lässt beide auf 150 000 Flusszeilen jedes Spiels (NTSC und PAL), auf zufälligem Spiel ab dem Einschalten und ab 194 Zuständen aus den Traces des Originals laufen und vergleicht nach jedem Schritt den ganzen Zustand, den Bildschirm und die Soundregister. Umbenennung und Umbau von Generator, Spiel und Anzeige wurden so geprüft (0 Unterschiede), ebenso mit allen Prüfungen unten.
 
@@ -141,18 +153,26 @@ port/tools/equivalence/build.sh 06ffc73
 port/build/eq/eq
 ```
 
+Die objektorientierte Neufassung (Branch `oop`) wird mit `tools/trace/compare.sh` geprüft: `game_trace` schreibt pro Bild eine Zeile darüber, was das Spiel tut (das Flugzeug, sein Geschoss, der Panzer, seine Granate, die Rakete, die Slots, Punkte, Leben, der Fluss, die Soundregister und ein Hash des Bilds), in den eigenen Namen des Spiels, sodass sich Versionen der Portierung vergleichen lassen, die ihren Zustand verschieden halten. Das Skript spielt 17 Läufe (NTSC und PAL, ein und zwei Spieler, der Demo-Modus, Abstürze und Spielenden, ein Autopilot, der über die Ufer steuert) und vergleicht sie Bild für Bild mit dem Referenz-Commit in `tools/trace/REFERENCE`; `-quick` spielt 5 davon. Jeder Schritt der Neufassung ergab dieselben Läufe wie `dli_removed`.
+
+```
+port/tools/trace/compare.sh -quick rom/River_Raid.rom
+```
+
 ## Wie der Generator funktioniert
-Jeder Aufruf von `nextLine()` erzeugt eine neue oberste Bildschirmzeile:
+Jeder Aufruf von `World::nextLine()` erzeugt eine neue oberste Bildschirmzeile:
 1. `countLines`: Zeilenzählung (ein Block hat 32 Zeilen, ein Abschnitt 2 Blöcke, 16 Abschnitte bis zur Brücke), LFSR-Schritt, ein neues Breitenziel am Abschnittsanfang (`chooseSectionWidth`: Inseln öffnen und schließen sich);
 2. `changeIsland`: Insel und Wasserbreite bewegen sich gleichmäßig zum Ziel;
 3. `moveBank`: der Zufallsweg des Ufers, Umkehr an den Grenzen und vor dem neuen Objekt (`bankWouldHitObject`);
 4. `startDecoration`: ein Haus oder Berg am Ufer;
 5. `drawLine`: die 48 Bytes der Zeile (Füllungen, Randstücke aus der Tabelle bei `$B800`, eine Zeile der Verzierung);
-6. `scrollObjects` / `placeObject`: die Objekt-Slots rücken weiter, alle 16 Zeilen wird ein neues Objekt platziert (`chooseEnemy`, `positionObject`, `placeTank`).
+6. dann die Objekte (`Objects::afterLine`): Die Slots rücken eine Zeile nach unten, und alle 16 Zeilen wird ein neues Objekt gesetzt (`chooseEnemy`, `positionObject`, `placeTank`). Der Generator selbst kennt von den Objekten nur die Lage des neuesten (`BankObstacle`), dem Schritt 3 ausweicht.
 
 Die Erzeugung hängt weder vom Spieler noch von `RANDOM` ab. Das wurde am Referenzlauf geprüft: verschiedene POKEY-Seeds und ein Bot-Lauf gegenüber einem Flug ohne Eingabe ergeben in jeder Zeile denselben Zustand.
 
 ## Überprüfung
+Die Prüfungen gegen das Original unten wurden im Branch `main` gemacht, dessen Anzeige den Display-List-Interrupt des Originals ausführt. Dieser Branch spielt genau wie `dli_removed` (`tools/trace/compare.sh`), der sich vom Original nur in den Kollisionen unterscheidet ([docs/DLI_REMOVAL.de.md](../docs/DLI_REMOVAL.de.md)).
+
 - Ab dem Referenzzustand: 119 758 Zeilen des ganzen Flusses (120 000 Bilder), 0 Unterschiede im Zustand und in den Bitmap-Zeilen.
 - Von Grund auf (`startGame(1)`, ohne Emulator): nach den 165 Zeilen, die den Bildschirm füllen, stimmt der Zustand mit dem Original überein, dann 29 757 Zeilen ohne Unterschiede.
 - Bot-Spiel mit zerstörten Brücken und dem Blitzeffekt: Unterschiede nur in den Bildern des Wiedereinstiegs. Die stammen aus dem Neustart-Code, der noch nicht portiert ist.
@@ -197,7 +217,7 @@ port/build/game_check rom/River_Raid.rom out/ram.bin out/random.log 25 5974 -att
 ```
 
 Wo das Ergebnis des Originals von CPU-Takten abhängt:
-- Der DLI (`display.cpp`) läuft mit Taktzählung, so wie der Referenz-Emulator eine Rasterzeile einteilt: Player/Missile- und Display-List-Zugriffe am Anfang, die CPU bis Takt 28, dann wird die ganze Zeile gezeichnet (samt Kollisionen), dann die Bildschirmdaten-Zugriffe, WSYNC bei Takt 106. So ist bekannt, ob ein Lesen eines Kollisionsregisters die aktuelle Rasterzeile schon sieht: Eine Kugel, die ein Objekt nur in der Zeile des Lesens berührt, zählt auf einer Brücke (dieser Pfad liest nach Takt 28) und anderswo nicht, wie im Original.
+- Der DLI (`display.cpp` im Branch `main`) läuft mit Taktzählung, so wie der Referenz-Emulator eine Rasterzeile einteilt: Player/Missile- und Display-List-Zugriffe am Anfang, die CPU bis Takt 28, dann wird die ganze Zeile gezeichnet (samt Kollisionen), dann die Bildschirmdaten-Zugriffe, WSYNC bei Takt 106. So ist bekannt, ob ein Lesen eines Kollisionsregisters die aktuelle Rasterzeile schon sieht: Eine Kugel, die ein Objekt nur in der Zeile des Lesens berührt, zählt auf einer Brücke (dieser Pfad liest nach Takt 28) und anderswo nicht, wie im Original.
 - Der RAM-Schnappschuss wird am Ende des Bilds genommen; normalerweise wartet die Hauptschleife des Originals dann auf das nächste Bild (AE99–AE9E). Gleich nach dem Spielbeginn, während der Fluss mit 2 Zeilen pro Bild neu gefüllt wird, zeichnet sie manchmal noch die zweite Zeile (1 Bild pro Neufüllung). `game_check` meldet solche Bilder getrennt und vergleicht sie nicht; das nächste Bild ist wieder identisch.
 - Nicht nachgebildet: das Spielende. Die Spiellogik der Hauptschleife beginnt in Rasterzeile 160 und teilt sich die CPU mit DLI und VBI (Rasterzeile 248). Im Bild des Spielendes brauchen die Highscore-Prüfung und ihre Prüfbytes (sub $B261, $B298) tausende Takte, sodass `sub_B21A` den Bildzähler vor dem VBI auf $FF setzt, nach ihm oder (Spiel für zwei) erst im nächsten Bild, je nach den Takten von allem davor in diesem Bild. Die Portierung tut es vor dem VBI; dann kann der Bildzähler um eins abweichen, was den folgenden Demo-Modus um ein Bild verschiebt. Um das nachzubilden, bräuchte man die Taktzahl der ganzen Hauptschleife in diesem Bild (einschließlich des Interrupt-Handlers des Betriebssystems).
 

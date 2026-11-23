@@ -254,8 +254,11 @@ controllato per l'aereo, che quindi può sfiorarlo.
 
 Poiché queste letture avvengono mentre l'immagine viene disegnata, il momento esatto conta: se il
 proiettile tocca un oggetto solo proprio sulla riga in cui il registro viene letto, che valga o no
-dipende da quanto il fascio elettronico è avanzato su quella riga. Il port lo riproduce eseguendo il
-codice dell'interrupt con il tempo di ogni istruzione, riga per riga.
+dipende da quanto il fascio elettronico è avanzato su quella riga. Il branch `main` del port lo
+riproduce eseguendo il codice dell'interrupt con il tempo di ogni istruzione, riga per riga. I
+branch successivi (`dli_removed`, `oop`) fanno a meno dell'interrupt: calcolano i contatti come
+semplice geometria e differiscono dall'originale al massimo in pochi fotogrammi su mille (un
+contatto visto un fotogramma dopo o per niente).
 
 ## Quando nessuno gioca
 

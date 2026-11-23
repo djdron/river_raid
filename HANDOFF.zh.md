@@ -25,6 +25,7 @@
 | [docs/HOW_IT_WORKS.zh.md](docs/HOW_IT_WORKS.zh.md) | 游戏如何运作，写给所有人：河、敌人、桥、碰撞、为什么越来越难 |
 | [docs/NOTES.zh.md](docs/NOTES.zh.md) | 带地址的发现 |
 | [docs/DLI_REMOVAL.zh.md](docs/DLI_REMOVAL.zh.md) | 实验：去掉 DLI 模型的显示（分支 `dli_removal`、`dli_removed`） |
+| [docs/OOP.md](docs/OOP.md) | 面向对象的重写（分支 `oop`）：规则、检查、步骤（暂为英文） |
 | `disasm/river_raid_a8.asm` | 带文件头的完整反汇编（入口点、帧、变量） |
 | `tools/dis6502.py` | 反汇编器：`python dis6502.py <rom> <out.asm> B500 B2A5 B485` |
 | `tools/check_lfsr.py`、`tools/verify_trace.py` | 用参考记录检验文档中的规则 |
@@ -39,11 +40,11 @@
 3. **起点。**游戏 1–8 从同一条河的第 1/5/20/50 座桥开始：表 $B494–$B4A8 保存那里的 LFSR、河岸、关卡和桥计数；从游戏 1 起点运行生成器，恰好到达这些值。移植版通过运行生成器来填同一张表，用于 `-seed N`（另一条河）和 `-bridge N`（从任意桥开始）。
 4. **难度。**关卡（= 你正飞向的桥，到 80 为止，之后 79/80 交替）移动与随机数比较的阈值：块中间的敌人、加油站减少到第 46 关（PAL 上为 47）、热气球从 3 关起、喷气战机从 5 关起、岸上坦克从 7 关起、导弹直升机从 13 关起、弯道更大。表格见 [docs/HOW_IT_WORKS.zh.md](docs/HOW_IT_WORKS.zh.md)。
 5. **RANDOM（$D20A）。**游戏逻辑只在 A205 读取它：每 16 帧随机唤醒一个槽位（0–10）（`$42,X` 的位 $40）。B362/B3D0：声音用的噪声。其值取决于读取时的 CPU 周期；移植版模拟了这个计数器（`src/pokey_random.h`），像真机开机一样从时钟启动；`-random N` 可重复一次运行。
-6. **碰撞**来自 GTIA 的碰撞寄存器，DLI 在每个物体的带之后读取；在读取那一行上的接触是否算数取决于周期。移植版按周期计数运行 DLI（`src/display.cpp`，即 atari800 的非周期精确时序）。在 `dli_removed` 分支上没有 DLI：碰撞就是简单的几何（见下文）。
+6. **碰撞**来自 GTIA 的碰撞寄存器，DLI 在每个物体的带之后读取；在读取那一行上的接触是否算数取决于周期。移植版按周期计数运行 DLI（`src/display.cpp`，即 atari800 的非周期精确时序）。在 `dli_removed` 和 `oop` 分支上没有 DLI：碰撞就是简单的几何（见下文）。
 7. **PAL/NTSC。**两者共用一个卡带：PAL 位（$D014 → $BF）选择显示列表的变体（$B77A）和加油站界限（$CB = $2E/$2F）。每帧的游戏逻辑相同，所以在 PAL 上整个游戏以每秒 50 帧运行，大约慢 17%；不同的只有取决于每帧 CPU 时间的部分：开机在第 25 帧而不是第 38 帧进入演示模式，sub $B0F1 用 8 帧而不是 13 帧清空内存，游戏结束时 VBI 先于 sub $B21A。移植版的 `-pal` 都做到了（与 `rr_oracle -pal` 核对过，见 [port/README.zh.md](port/README.zh.md)）。英国的磁带版（`.cas`，2 个文件：加载器在 $0A00，游戏在 $1000–$31FF）是同样的代码搬到了 RAM 中，有不同的防拷贝措施，滚动字幕中是“1982, 1983, 1984”。
 8. **字体**从操作系统 ROM 复制（$E000/$E100/$E300）；移植版内置 AltirraOS 的字体，`-os` 加载 Atari 的字体。
 9. **参考运行。**atari800 从时钟启动 POKEY；`rr_oracle -seed`（默认 0）使运行逐字节相同。atari800 的构建在 `-Werror` 下因 ULONG 重定义而失败；`build.sh` 用 `CFLAGS="-g -O2 -DNETSIO"` 构建。测试过的 atari800 提交：98cc2dc。
-10. **确定性。**河只取决于桥（桥与桥之间 LFSR 走 993 步；1680 万座桥后才重复），物体只取决于最近约 200 帧。因此只跑河、再跑几百个完整帧，就能到达任意时刻；查看器就是这样跳转的。详见 [docs/NOTES.zh.md](docs/NOTES.zh.md) 的“确定性与跳转”。游戏中的存档也用了同样的方法：屏幕内存由生成器状态重新生成，所以一个存档约 0.5 KB。
+10. **确定性。**河只取决于桥（桥与桥之间 LFSR 走 993 步；1680 万座桥后才重复），物体只取决于最近约 200 帧。因此只跑河、再跑几百个完整帧，就能到达任意时刻；查看器就是这样跳转的。详见 [docs/NOTES.zh.md](docs/NOTES.zh.md) 的“确定性与跳转”。游戏中的存档也用了同样的方法：屏幕内存由生成器状态重新生成（在 `oop` 分支上是河道和物体的状态），所以一个存档约 0.2–0.6 KB。
 
 ## 环境限制
 - `oracle/build.sh` 可在 Linux、macOS、WSL 和 MSYS2 上构建（被拦截的模拟器函数在编译时重命名，不用 GNU 的 `--wrap`）；C++ 移植用普通的 CMake 构建（MSVC、Xcode、gcc）。
@@ -59,8 +60,11 @@
 ## 分支 `dli_removed`
 这个分支（从 `dli_removal` 分出）没有 DLI：`Game::displayGeometry` 把每个物体放在其槽位的 y 上，把碰撞当作简单的几何来计算——只要精灵和物体的行有任何接触就算；河岸和边缘用一行的第一个和最后一个点与该行的色段比较。这里它是默认模式（`RR_DISPLAY=geometry`）；`RR_DISPLAY=simple` 是带读取的 DLI 循环，与原版一样，`beam` 是周期模型，`check` 两者都跑。游戏在 0.01–0.25% 的帧上与原版不同（原版晚一帧才看到或根本看不到的接触），所以与原版比较的 `game_check` 要用 `RR_DISPLAY=simple` 运行；`RR_DISPLAY=simple RR_GEOMCHECK=1` 统计几何与读取不一致的帧（`=2` 逐帧打印）。ZX Spectrum Next 和 TS-Conf 的移植版（[river_raid_zx](https://github.com/djdron/river_raid_zx)）建立在这种显示之上，并逐帧与它比较。各步骤及其检验：[docs/DLI_REMOVAL.zh.md](docs/DLI_REMOVAL.zh.md)。
 
+## 分支 `oop`
+本分支（自 `dli_removed`）是同一个游戏，用各自保存状态的对象写成：飞机、它的子弹、河道生成器（`RiverGen`，只管河道）、河上的物体（`Objects`，每种行为一个类）、坦克、它的炮弹和导弹、玩家、面板、声音、屏幕上的河；`World` 让河道和物体一起推进，`Game` 持有一切并运行每一帧。字节和 BCD 与原版的存放方式相同，没有浮点数；没有 player-missile 内存，也没有任何 DLI 模型（`RR_DISPLAY` 已去掉：显示就是 `dli_removed` 的几何）。它的运行与 `dli_removed` 完全相同：`port/tools/trace/compare.sh` 把 17 段录制与参考提交逐帧比较（`-quick`：5 段）。每个类列出自己在原版 RAM 中的字节（`mapRam`），因此 `game_check` 和 ZX 移植的检查仍然可用。步骤：[docs/OOP.md](docs/OOP.md)（暂为英文）。
+
 ## 方法
-规则先从反汇编中读出，再用参考记录检验（`tools/verify_trace.py`，然后是 C++ 比对工具）。记录本身只用来找该看哪里。不应改变行为的修改（重命名、重构）用 `port/tools/equivalence` 与旧提交对比：要求 0 差异，并通过 [port/README.zh.md](port/README.zh.md)“验证”中的所有检查。
+规则先从反汇编中读出，再用参考记录检验（`tools/verify_trace.py`，然后是 C++ 比对工具）。记录本身只用来找该看哪里。不应改变行为的修改（重命名、重构）用 `port/tools/equivalence` 与旧提交对比：要求 0 差异，并通过 [port/README.zh.md](port/README.zh.md)“验证”中的所有检查。面向对象的重写（分支 `oop`）则用 `port/tools/trace/compare.sh` 检查：游戏的 17 段录制与参考提交逐帧对比。
 
 ## 决定
 - 移植用 C++ 编写，而不是包装一个模拟器。

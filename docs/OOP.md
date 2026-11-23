@@ -102,6 +102,10 @@ replace.
     (the player-missile memory, the screen lines from the display list) stays in
     `game_ram.cpp` and `River`.
 
+15. The documents: the READMEs' file tables and their Code, generator and verification parts,
+    HANDOFF (the branch), NOTES (saved states), HOW_IT_WORKS (the collisions), in all languages;
+    the source comments that still spoke of the DLI or of the river keeping the objects.
+
 ## Next
 
-15. The documents: the READMEs' file tables and the CODE documents with the new classes.
+16. The end: all 17 runs of `compare.sh`, the sanitizer build, this document in every language.

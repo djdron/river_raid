@@ -252,8 +252,11 @@ so it may graze it.
 
 Because these reads happen while the picture is being drawn, their exact moment matters: if the
 bullet touches an object only on the very line where the register is read, whether that counts
-depends on how far the electron beam has got along that line. The port reproduces this by
-executing the interrupt code with the time each instruction takes, scanline by scanline.
+depends on how far the electron beam has got along that line. The port's `main` branch
+reproduces this by executing the interrupt code with the time each instruction takes, scanline
+by scanline. Its later branches (`dli_removed`, `oop`) do without the interrupt: they work out
+the touches as plain geometry, and differ from the original on at most a few frames in a
+thousand (a touch seen a frame later or not at all).
 
 ## When nobody plays
 

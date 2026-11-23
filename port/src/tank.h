@@ -1,6 +1,7 @@
 // The tank on the bank road, the shell it fires across the river, and the missile of the
-// helicopter that fires (one at a time). They scroll with the river, so the river keeps them
-// (RiverState); the game moves them (Game::driveTank, moveShell, moveMissile).
+// helicopter that fires (one at a time). They scroll with the river, so the objects keep them
+// (Objects, objects.h); the game moves them each frame (Game::logic: Tank::drive, Shell::move,
+// Missile::move).
 #pragma once
 #include <cstdint>
 

@@ -102,11 +102,19 @@ Which object wakes up when is decided by POKEY's RANDOM register, a hardware cou
 | File | What |
 |---|---|
 | `src/rom.h` | the cartridge image and named accessors for every table the port reads from it (shapes, colours, points, generator tables, panel text...); object types |
-| `src/river_gen.h/.cpp` | the generator: `RiverGen::startGame(n)`, then `nextLine(line)` — one screen line per call |
+| `src/fixed.h` | the game's small number types, kept as the original keeps them: bytes that wrap round, a fraction byte whose carry moves a whole one on, BCD counters (`Bcd<N>`); `tools/fixed_check.cpp` tests them |
+| `src/river_gen.h/.cpp` | the river generator: `RiverGen::startGame(n)`, then `nextLine(line, bank, obstacle)` — one screen line per call; of the objects it knows only where the one being drawn in at the top is (`BankObstacle`) |
+| `src/objects.h/.cpp` | the objects: `Objects` keeps the 11 slots, the tank, its shell and the helicopter's missile, and places new objects as the river comes (`afterLine`); a class per kind of behaviour (`Jet`, `Helicopter`, `Balloon`, `Ship`, `Bridge`, `FuelDepot`, `Explosion`) animates and moves them |
+| `src/tank.h/.cpp` | the tank on the bank road, its shell and the helicopter's missile, with their moves |
+| `src/world.h/.cpp` | `World`: the river and the objects run together a line at a time; `World::State` is what saved states keep of them |
+| `src/river.h/.cpp` | the river on the screen: its lines, the same without decoration and as runs of one colour (for the collisions), the top line's address in the original's screen memory |
 | `src/river_draw.h/.cpp` | drawing a line as on screen: bank shades, roads at bridges, object sprites (`drawScreenLine`) |
+| `src/plane.h`, `src/bullet.h` | the plane (steering, speed, fuel, its state) and its bullet |
+| `src/players.h`, `src/panel.h` | the other player's score, bridges and lives, the high scores with their check bytes; the status panel's 60 characters |
+| `src/sound.h/.cpp` | the sounds the game asks for and the driver that plays them (VBI B2A5–B3D8) |
 | `src/palette.h/.cpp` | Atari colours of NTSC and PAL machines (`atariRgb`): the models of Altirra and atari800 |
-| `src/game.h/.cpp` | the game: the original's main loop and VBI frame by frame — attract mode, console keys, the plane, fuel, collisions, explosions, score, lives, players, death and restart, game over, high scores, sound driver |
-| `src/display.cpp` | the river display as the DLI drives it: one sprite re-used for every object, collisions per object, drawing of the river area |
+| `src/game.h/.cpp` | the game: the original's main loop and VBI frame by frame — attract mode, console keys, the plane, fuel, collisions, explosions, score, lives, players, death and restart, game over, high scores; it holds the parts above |
+| `src/display.cpp` | the river part of the display: each object at its slot's y, the collisions as plain geometry (no display list interrupt, see [docs/DLI_REMOVAL.md](../docs/DLI_REMOVAL.md)), the picture of the river area |
 | `src/pokey_random.h` | POKEY's RANDOM counter |
 | `src/pokey_sound.h/.cpp` | POKEY sound: four channels, dividers and noise counters, generated cycle by cycle |
 | `src/status_bar.h/.cpp` | status panel and scrolling line: character sets, panel, scroller step, drawing |
@@ -124,15 +132,19 @@ Which object wakes up when is decided by POKEY's RANDOM register, a hardware cou
 | `tools/render_check.cpp` | compares the drawing with the original screen (`oracle/rr_oracle -ghost -strip 20`) |
 | `tools/terrain_check.cpp` | comparison with a reference trace (`oracle/rr_oracle -ram A:B`) |
 | `tools/equivalence/` | refactoring check: an older commit of the port against the working tree, frame by frame (see Code) |
+| `tools/game_trace.cpp`, `tools/trace/` | one line per frame of what the game does, in the game's own names; `tools/trace/compare.sh` plays 17 runs and compares them frame by frame with a reference commit (`-quick`: 5 of them): the check for changes that should not change the game (see Code) |
+| `tools/display_bench.cpp` | runs the game for many frames with an autopilot (timing, long runs) |
+| `tools/fixed_check.cpp` | tests the number types of `src/fixed.h` on every input against the code they replaced |
 
 The generator reads tables and graphics from the user's ROM (`rom/River_Raid.rom`); there is no game data in the code.
 
 ## Code
 The port is written to be read without the original's listing at hand:
-- state fields, functions and constants are named by what they mean (`planeState`, `shellTimer`, `enteringSlot`, `positionObject`, `kFacingLeft`); each field's comment gives the original's RAM address and each function the code addresses it comes from, so the listing (`disasm/`) and the traces can still be followed;
+- the game is made of objects that keep their own state and know what they do: the plane, its bullet, the river (`RiverGen`), the objects on it (`Objects`, a class per kind of behaviour), the tank, its shell and the missile, the players, the panel, the sounds; `World` runs the river and its objects line by line, `Game` holds everything and runs the frame as the original does ([docs/OOP.md](../docs/OOP.md): how the code got there);
+- fields, functions and constants are named by what they mean (`plane.state`, `shell.timer`, `enteringSlot`, `positionObject`, `kFacingLeft`); each field's comment gives the original's RAM address and each function the code addresses it comes from, so the listing (`disasm/`) and the traces can still be followed; each class also lists its bytes with their addresses (`mapRam`), so the state can be compared with the original's RAM;
 - the cartridge's tables are read through named accessors in `src/rom.h` (`rom.points(type)`, `rom.objectHeight(type)`, `rom.shellRise(t)`...), not by address;
-- values stay 8-bit with wrap-around where the original's do (`lo()`), because positions wrap round the screen; where the original carries the 6502's carry flag from one sum into the next, `addWithCarry`/`subtractWithBorrow` say so explicitly;
-- the display list interrupt (`display.cpp`) is the one part that stays close to the instructions: its timing within the scanline decides which collisions are seen, so it is executed with cycle counts.
+- values stay 8-bit with wrap-around where the original's do (`lo()`), because positions wrap round the screen; where the original carries the 6502's carry flag from one sum into the next, `addWithCarry`/`subtractWithBorrow` say so explicitly; BCD counters (`Bcd<N>`, `src/fixed.h`) add as the 6502 adds in decimal mode, and there is no floating point;
+- the display has no display list interrupt: each object is at its slot's y and the collisions are plain geometry (`display.cpp`); the game differs from the original on 0.01–0.25% of frames, a touch the original sees a frame later or not at all ([docs/DLI_REMOVAL.md](../docs/DLI_REMOVAL.md)).
 
 Changes that should not change behaviour are checked with `tools/equivalence`: it builds an older commit (from 06ffc73 on) next to the working tree and runs both on 150 000 river lines of every game (NTSC and PAL), on random play from power-on and from 194 states of the original's traces, comparing the whole state, the screen and the sound registers after every step. The renaming and restructuring of the generator, the game and the display were checked this way (0 differences), as well as with all the checks below.
 
@@ -141,18 +153,26 @@ port/tools/equivalence/build.sh 06ffc73
 port/build/eq/eq
 ```
 
+The object-oriented rewrite (branch `oop`) is checked with `tools/trace/compare.sh`: `game_trace` writes one line per frame of what the game does (the plane, its bullet, the tank, its shell, the missile, the slots, score, lives, the river, the sound registers and a hash of the picture) in the game's own names, so versions of the port that keep their state differently can be compared. The script plays 17 runs (NTSC and PAL, one and two players, the attract mode, crashes and game overs, an autopilot steering over the banks) and compares them frame by frame with the reference commit in `tools/trace/REFERENCE`; `-quick` plays 5 of them. Every step of the rewrite gave the same runs as `dli_removed`.
+
+```
+port/tools/trace/compare.sh -quick rom/River_Raid.rom
+```
+
 ## How the generator works
-Each `nextLine()` call produces a new top line of the screen:
+Each `World::nextLine()` call produces a new top line of the screen:
 1. `countLines`: line counting (a block is 32 lines, a section 2 blocks, 16 sections to a bridge), LFSR step, a new width target at the start of a section (`chooseSectionWidth`: islands open and close);
 2. `changeIsland`: the island and the water width move smoothly toward the target;
 3. `moveBank`: the bank's random walk, turning round at its limits and before the new object (`bankWouldHitObject`);
 4. `startDecoration`: a house or mountain on the bank;
 5. `drawLine`: the 48 bytes of the line (fills, edge pieces from the table at `$B800`, a decoration row);
-6. `scrollObjects` / `placeObject`: object slots shift, a new object is placed every 16 lines (`chooseEnemy`, `positionObject`, `placeTank`).
+6. then the objects (`Objects::afterLine`): the slots move down a line, and every 16 lines a new object is placed (`chooseEnemy`, `positionObject`, `placeTank`). The generator knows of the objects only where the newest one is (`BankObstacle`), which step 3 keeps clear of.
 
 Generation depends neither on the player nor on `RANDOM`. This was checked on the reference runner: different POKEY seeds, and a bot run vs. flying without input, give the same state on every line.
 
 ## Verification
+The checks against the original below were made on the `main` branch, whose display runs the original's display list interrupt. This branch plays exactly as `dli_removed` (`tools/trace/compare.sh`), which differs from the original only in the collisions ([docs/DLI_REMOVAL.md](../docs/DLI_REMOVAL.md)).
+
 - Starting from the reference state: 119 758 lines of the whole river (120 000 frames), 0 differences in state and in bitmap lines.
 - From scratch (`startGame(1)`, no emulator): after the 165 lines that fill the screen the state matches the original, then 29 757 lines without differences.
 - Bot game with bridges destroyed and the flash effect: differences only in respawn frames. Those come from the restart code, not ported yet.
@@ -197,7 +217,7 @@ port/build/game_check rom/River_Raid.rom out/ram.bin out/random.log 25 5974 -att
 ```
 
 Where the original's result depends on CPU cycles:
-- The DLI (`display.cpp`) runs with cycle counts, as the reference emulator times a scanline: player/missile and display list fetches at the start, the CPU up to cycle 28, then the whole line is drawn (collisions included), then screen data fetches, WSYNC at cycle 106. So it is known whether a collision register read already sees the current scanline: a bullet touching an object only on the scanline of the read counts on a bridge (that path reads after cycle 28) and not elsewhere, as in the original.
+- The DLI (`display.cpp` on the `main` branch) runs with cycle counts, as the reference emulator times a scanline: player/missile and display list fetches at the start, the CPU up to cycle 28, then the whole line is drawn (collisions included), then screen data fetches, WSYNC at cycle 106. So it is known whether a collision register read already sees the current scanline: a bullet touching an object only on the scanline of the read counts on a bridge (that path reads after cycle 28) and not elsewhere, as in the original.
 - The RAM snapshot is taken at the end of the frame; normally the original's main loop is then waiting for the next frame (AE99–AE9E). Right after the start of a game, while the river is refilled at 2 lines per frame, it is sometimes still drawing the second line (1 frame per refill). `game_check` reports such frames separately and does not compare them; the next frame is identical again.
 - Not modelled: the game over. The main loop's game logic starts at scanline 160 and shares the CPU with the DLI and the VBI (scanline 248). In the game-over frame the high-score check and its check bytes (sub $B261, $B298) take thousands of cycles, so `sub_B21A` sets the frame counter to $FF before the VBI, after it, or (two-player game) only in the next frame, depending on the cycles of everything before it in that frame. The port does it before the VBI; then the frame counter can differ by one, which shifts the following attract mode by a frame. Reproducing it would need the cycle count of the whole main loop for that frame (including the OS interrupt handler).
 

@@ -102,11 +102,19 @@ river_view [rom] [选项]
 | 文件 | 内容 |
 |---|---|
 | `src/rom.h` | 卡带映像，以及移植版从中读取的每张表的具名访问函数（形状、颜色、分数、生成器表、状态栏文字……）；物体类型 |
-| `src/river_gen.h/.cpp` | 生成器：`RiverGen::startGame(n)`，然后 `nextLine(line)`——每次调用一行屏幕 |
+| `src/fixed.h` | 游戏的小数值类型，按原版的存放方式：会回绕的字节、进位推动整数字节的小数字节、BCD 计数器（`Bcd<N>`）；由 `tools/fixed_check.cpp` 检验 |
+| `src/river_gen.h/.cpp` | 河道生成器：`RiverGen::startGame(n)`，然后 `nextLine(line, bank, obstacle)`——每次调用生成一行屏幕；关于物体它只知道正在顶部出现的那个在哪里（`BankObstacle`） |
+| `src/objects.h/.cpp` | 物体：`Objects` 保存 11 个槽位、坦克、它的炮弹和直升机的导弹，并随着河道的到来放置新物体（`afterLine`）；每种行为一个类（`Jet`、`Helicopter`、`Balloon`、`Ship`、`Bridge`、`FuelDepot`、`Explosion`），负责动画和移动 |
+| `src/tank.h/.cpp` | 岸边道路上的坦克、它的炮弹和直升机的导弹，以及它们的移动 |
+| `src/world.h/.cpp` | `World`：河道和物体一起逐行运行；`World::State` 是存档中保存的它们的状态 |
+| `src/river.h/.cpp` | 屏幕上的河：它的各行、去掉装饰的同样各行及其单色线段（用于碰撞）、最上一行在原版屏幕内存中的地址 |
 | `src/river_draw.h/.cpp` | 像屏幕上那样绘制一行：河岸色调、桥边的公路、物体的精灵（`drawScreenLine`） |
+| `src/plane.h`、`src/bullet.h` | 飞机（转向、速度、燃料、状态）和它的子弹 |
+| `src/players.h`、`src/panel.h` | 另一位玩家的分数、桥数和生命，最高分及其校验字节；状态面板的 60 个字符 |
+| `src/sound.h/.cpp` | 游戏请求的声音，以及播放它们的驱动（VBI B2A5–B3D8） |
 | `src/palette.h/.cpp` | NTSC 和 PAL 机器的 Atari 颜色（`atariRgb`）：Altirra 和 atari800 的模型 |
-| `src/game.h/.cpp` | 游戏：原版的主循环和 VBI，逐帧——演示模式、控制台按键、飞机、燃料、碰撞、爆炸、分数、生命、玩家、坠毁与重开、游戏结束、最高分、声音驱动 |
-| `src/display.cpp` | 由 DLI 驱动的河流显示：一个精灵复用于每个物体，按物体的碰撞，绘制河的区域 |
+| `src/game.h/.cpp` | 游戏：原版的主循环和 VBI，逐帧——演示模式、控制台按键、飞机、燃料、碰撞、爆炸、分数、生命、玩家、坠毁与重开、游戏结束、最高分；它包含上面各部分 |
+| `src/display.cpp` | 显示中河的部分：每个物体位于其槽位的 y，碰撞是简单的几何（没有显示列表中断，见 [docs/DLI_REMOVAL.zh.md](../docs/DLI_REMOVAL.zh.md)），河区域的画面 |
 | `src/pokey_random.h` | POKEY 的 RANDOM 计数器 |
 | `src/pokey_sound.h/.cpp` | POKEY 声音：四个声道、分频器和噪声计数器，逐周期生成 |
 | `src/status_bar.h/.cpp` | 状态栏和滚动字幕：字符集、状态栏、滚动步进、绘制 |
@@ -124,15 +132,19 @@ river_view [rom] [选项]
 | `tools/render_check.cpp` | 把绘制结果与原版屏幕比较（`oracle/rr_oracle -ghost -strip 20`） |
 | `tools/terrain_check.cpp` | 与参考记录比较（`oracle/rr_oracle -ram A:B`） |
 | `tools/equivalence/` | 重构检查：移植版的旧提交与工作副本逐帧对比（见“代码”） |
+| `tools/game_trace.cpp`、`tools/trace/` | 每帧一行，用游戏自己的名称记录游戏做了什么；`tools/trace/compare.sh` 运行 17 段录制并与参考提交逐帧比较（`-quick`：其中 5 段）：检查不应改变游戏的修改（见“代码”） |
+| `tools/display_bench.cpp` | 用自动驾驶让游戏运行很多帧（计时、长时间运行） |
+| `tools/fixed_check.cpp` | 对每个输入，把 `src/fixed.h` 的数值类型与它们取代的代码对照检验 |
 
 生成器从用户的 ROM（`rom/River_Raid.rom`）读取表和图形；代码中没有游戏数据。
 
 ## 代码
 移植版写得不需要手边有原版的反汇编也能读懂：
-- 状态字段、函数和常量按含义命名（`planeState`、`shellTimer`、`enteringSlot`、`positionObject`、`kFacingLeft`）；每个字段的注释给出原版的 RAM 地址，每个函数的注释给出它来自的代码地址，所以仍然可以对照反汇编（`disasm/`）和记录；
+- 游戏由各自保存状态、知道自己该做什么的对象组成：飞机、它的子弹、河道（`RiverGen`）、河上的物体（`Objects`，每种行为一个类）、坦克、它的炮弹和导弹、玩家、面板、声音；`World` 逐行推进河道及其物体，`Game` 持有一切并像原版一样运行每一帧（[docs/OOP.md](../docs/OOP.md)：代码是如何走到这一步的）；
+- 字段、函数和常量按含义命名（`plane.state`、`shell.timer`、`enteringSlot`、`positionObject`、`kFacingLeft`）；每个字段的注释给出它在原版 RAM 中的地址，每个函数给出它所来自的代码地址，因此仍可对照反汇编（`disasm/`）和记录；每个类还列出自己的字节及其地址（`mapRam`），因此状态可以与原版的 RAM 比较；
 - 卡带的表通过 `src/rom.h` 中的具名访问函数读取（`rom.points(type)`、`rom.objectHeight(type)`、`rom.shellRise(t)`……），而不是按地址；
-- 原版中 8 位回绕的值在这里也保持 8 位回绕（`lo()`），因为位置会绕过屏幕边缘；原版把 6502 的进位标志从一次加法带到下一次时，`addWithCarry`/`subtractWithBorrow` 会明确写出来；
-- 显示列表中断（`display.cpp`）是唯一仍然贴近指令的部分：它在扫描线内的时序决定哪些碰撞会被看到，所以它按周期计数执行。
+- 原版中 8 位回绕的值在这里也保持 8 位回绕（`lo()`），因为位置会绕过屏幕边缘；原版把 6502 的进位标志从一次加法带到下一次时，`addWithCarry`/`subtractWithBorrow` 会明确写出来；BCD 计数器（`Bcd<N>`，`src/fixed.h`）按 6502 十进制模式的方式相加，没有浮点数；
+- 显示没有显示列表中断：每个物体位于其槽位的 y，碰撞是简单的几何（`display.cpp`）；游戏在 0.01–0.25% 的帧上与原版不同，即原版晚一帧才看到或根本没看到的某次接触（[docs/DLI_REMOVAL.zh.md](../docs/DLI_REMOVAL.zh.md)）。
 
 不应改变行为的修改用 `tools/equivalence` 检查：它在工作副本旁构建一个旧提交（06ffc73 及以后），让两者在每局的 150 000 行河上（NTSC 和 PAL）、在从开机开始和从原版记录中 194 个状态开始的随机游戏上运行，每一步之后比较全部状态、屏幕和声音寄存器。生成器、游戏和显示的重命名和重构都这样检查过（0 差异），也通过了下面所有的检查。
 
@@ -141,18 +153,26 @@ port/tools/equivalence/build.sh 06ffc73
 port/build/eq/eq
 ```
 
+面向对象的重写（分支 `oop`）用 `tools/trace/compare.sh` 检查：`game_trace` 用游戏自己的名称，每帧写一行游戏做了什么（飞机、它的子弹、坦克、它的炮弹、导弹、槽位、分数、生命、河道、声音寄存器和画面的哈希），因此可以比较以不同方式保存状态的移植版本。脚本运行 17 段录制（NTSC 和 PAL、单人和双人、演示模式、坠毁和游戏结束、在河岸上空飞行的自动驾驶），并与 `tools/trace/REFERENCE` 中的参考提交逐帧比较；`-quick` 只运行其中 5 段。重写的每一步得到的录制都与 `dli_removed` 相同。
+
+```
+port/tools/trace/compare.sh -quick rom/River_Raid.rom
+```
+
 ## 生成器如何工作
-每次调用 `nextLine()` 生成屏幕最上方的新一行：
+每次调用 `World::nextLine()` 生成屏幕最上方的新一行：
 1. `countLines`：数行（块是 32 行，段是 2 块，到桥共 16 段），LFSR 走一步，在段的开头设定新的目标宽度（`chooseSectionWidth`：岛的出现与合拢）；
 2. `changeIsland`：岛和水宽平滑地趋向目标；
 3. `moveBank`：河岸的随机游走，在界限处和新物体前掉头（`bankWouldHitObject`）；
 4. `startDecoration`：河岸上的房子或山；
 5. `drawLine`：一行的 48 个字节（填充、来自 `$B800` 表的岸边片段、装饰的一行）；
-6. `scrollObjects` / `placeObject`：物体槽位移动，每 16 行放置一个新物体（`chooseEnemy`、`positionObject`、`placeTank`）。
+6. 然后是物体（`Objects::afterLine`）：槽位下移一行，每 16 行放置一个新物体（`chooseEnemy`、`positionObject`、`placeTank`）。生成器本身对物体只知道最新那个在哪里（`BankObstacle`），第 3 步会避开它。
 
 生成既不依赖玩家，也不依赖 `RANDOM`。这在参考运行上检查过：不同的 POKEY 种子，以及机器人运行与无输入飞行相比，每一行的状态都相同。
 
 ## 验证
+下面与原版的比对是在 `main` 分支上做的，那里的显示运行原版的显示列表中断。本分支的运行与 `dli_removed` 完全相同（`tools/trace/compare.sh`），而后者与原版的区别只在碰撞（[docs/DLI_REMOVAL.zh.md](../docs/DLI_REMOVAL.zh.md)）。
+
 - 从参考状态开始：整条河 119 758 行（120 000 帧），状态和位图行 0 差异。
 - 从零开始（`startGame(1)`，不用模拟器）：在填满屏幕的 165 行之后，状态与原版一致，之后 29 757 行没有差异。
 - 摧毁桥并有闪光效果的机器人游戏：只有重生帧有差异。它们来自尚未移植的重开代码。
@@ -197,7 +217,7 @@ port/build/game_check rom/River_Raid.rom out/ram.bin out/random.log 25 5974 -att
 ```
 
 原版结果取决于 CPU 周期的地方：
-- DLI（`display.cpp`）按周期计数运行，与参考模拟器对一条扫描线的时间分配相同：开头是 player/missile 和显示列表的读取，CPU 运行到第 28 周期，然后绘制整行（包括碰撞），再读取屏幕数据，WSYNC 在第 106 周期。这样就知道读取碰撞寄存器时是否已经看到当前扫描线：只在读取那一行碰到物体的子弹，在桥上算数（那条路径在第 28 周期之后读取），在别处不算，与原版一样。
+- DLI（`main` 分支的 `display.cpp`）按周期计数运行，与参考模拟器对一条扫描线的时间分配相同：开头是 player/missile 和显示列表的读取，CPU 运行到第 28 周期，然后绘制整行（包括碰撞），再读取屏幕数据，WSYNC 在第 106 周期。这样就知道读取碰撞寄存器时是否已经看到当前扫描线：只在读取那一行碰到物体的子弹，在桥上算数（那条路径在第 28 周期之后读取），在别处不算，与原版一样。
 - RAM 快照在帧末获取；通常这时原版的主循环正在等待下一帧（AE99–AE9E）。刚开始游戏时，河以每帧 2 行重新填充，此时它有时还在绘制第二行（每次填充 1 帧）。`game_check` 单独报告这样的帧，不做比较；下一帧又完全相同。
 - 未模拟：游戏结束。主循环的游戏逻辑从第 160 条扫描线开始，与 DLI 和 VBI（第 248 条扫描线）共享 CPU。在游戏结束的那一帧，最高分检查及其校验字节（sub $B261、$B298）要花几千个周期，因此 `sub_B21A` 把帧计数器设为 $FF 的时机可能在 VBI 之前、之后，或者（双人游戏）在下一帧，取决于该帧中它之前所有代码的周期数。移植版在 VBI 之前做；这时帧计数器可能相差一，使之后的演示模式移动一帧。要重现它，需要该帧整个主循环的周期数（包括操作系统的中断处理程序）。
 

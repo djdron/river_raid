@@ -2,14 +2,14 @@
 //
 // The original's main loop (A197-A6EA, AE99-AF52) and its interrupts run in this order in each
 // frame, and Game::frame() follows it:
-//   1. prepare(): at the top of the frame (AE99) copy the tank, tank shell, helicopter missile
-//      and plane shapes into player-missile memory;
-//   2. display(): the screen is drawn; the display list interrupt (DLI) re-uses player 3 for
-//      every object slot down the river and reads the hardware collision registers after each
-//      object (display.cpp);
+//   1. prepare(): at the top of the frame (AE99) the sprites are shown again, the tank and its
+//      shell go once below the screen, the panel is updated;
+//   2. display(): the screen is drawn: each object at its slot's y, the collisions as plain
+//      geometry (display.cpp; the original's display list interrupt re-uses one sprite for
+//      every object and reads the hardware's collision registers, docs/DLI_REMOVAL.md);
 //   3. logic(): from scanline 160 (A197): object activation and movement, the tank on the
 //      road and its shell, the helicopter missile, then 1 river line per frame (A6FD-A711 and
-//      the generator);
+//      the river with its objects, World);
 //   4. vbi(): the vertical blank interrupt (B2A5): sound driver, frame counter, timers.
 //
 // Everything the original does is ported: the attract mode (no player, $76 = $FF, $29 bit 7),
@@ -39,7 +39,7 @@
 
 namespace rr {
 
-// Collision results of one frame, set by the DLI to the slot whose band saw the collision
+// Collision results of one frame, set by the display (display.cpp) to the slot of the object hit
 // ($FF = none). Addresses $1A-$22.
 struct Collisions {
 	uint8_t bulletHitBank = 0xFF;    // $1A missile 2 (the plane's bullet) with bank or edge

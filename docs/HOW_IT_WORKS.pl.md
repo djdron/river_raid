@@ -247,8 +247,10 @@ samolotu się nie sprawdza, więc można go musnąć.
 
 Ponieważ te odczyty odbywają się podczas rysowania obrazu, liczy się dokładna chwila: jeśli pocisk
 dotyka obiektu tylko w tej samej linii, w której czytany jest rejestr, to czy się to liczy, zależy
-od tego, jak daleko wiązka doszła w tej linii. Port odtwarza to, wykonując kod przerwania z czasem
-każdej instrukcji, linia po linii.
+od tego, jak daleko wiązka doszła w tej linii. Gałąź `main` portu odtwarza to, wykonując kod
+przerwania z czasem każdej instrukcji, linia po linii. Późniejsze gałęzie (`dli_removed`, `oop`)
+obywają się bez przerwania: dotknięcia liczą jako zwykłą geometrię i różnią się od oryginału
+najwyżej w kilku klatkach na tysiąc (dotknięcie zauważone klatkę później albo wcale).
 
 ## Gdy nikt nie gra
 

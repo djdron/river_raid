@@ -259,8 +259,11 @@ für das Flugzeug nicht geprüft, es darf ihn also streifen.
 
 Weil diese Abfragen während des Zeichnens geschehen, kommt es auf den genauen Moment an: Berührt die
 Kugel ein Objekt nur genau in der Zeile, in der das Register gelesen wird, hängt es davon ab, wie
-weit der Elektronenstrahl in dieser Zeile schon ist, ob das zählt. Die Portierung bildet das nach,
-indem sie den Interrupt-Code mit der Zeit jedes Befehls ausführt, Zeile für Zeile.
+weit der Elektronenstrahl in dieser Zeile schon ist, ob das zählt. Der Branch `main` der Portierung
+bildet das nach, indem er den Interrupt-Code mit der Zeit jedes Befehls ausführt, Zeile für Zeile.
+Die späteren Branches (`dli_removed`, `oop`) kommen ohne den Interrupt aus: Sie bestimmen die
+Berührungen als einfache Geometrie und weichen vom Original höchstens in wenigen Bildern von tausend
+ab (eine Berührung wird ein Bild später oder gar nicht bemerkt).
 
 ## Wenn niemand spielt
 
