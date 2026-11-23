@@ -73,6 +73,7 @@ struct RiverState {
 	uint8_t bankMargin = 0;         // $B5  6 below level 9: objects keep away from the banks
 	// bank decoration (house, mountain) being drawn
 	uint8_t decoFlags = 0;          // $36  0: none; bit 7: on the left bank
+	uint8_t unused_ = 0;            // (so that there is no padding: the state is saved as bytes)
 	uint16_t decoBitmap = 0;        // $BA/$BB ROM address of the next bitmap row
 	uint8_t decoWidth = 0;          // $BC  bytes per row
 	uint8_t decoOffset = 0;         // $BD  bytes from the line edge

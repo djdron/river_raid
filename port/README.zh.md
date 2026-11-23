@@ -110,6 +110,7 @@ river_view [rom] [选项]
 | `src/river.h/.cpp` | 屏幕上的河：它的各行、去掉装饰的同样各行及其单色线段（用于碰撞）、最上一行在原版屏幕内存中的地址 |
 | `src/river_draw.h/.cpp` | 像屏幕上那样绘制一行：河岸色调、桥边的公路、物体的精灵（`drawScreenLine`） |
 | `src/plane.h`、`src/bullet.h` | 飞机（转向、速度、燃料、状态）和它的子弹 |
+| `src/match.h/.cpp` | 一局游戏：游戏编号、轮到谁、两位玩家的分数、桥数和生命、最高分；加分和奖励飞机；它们在面板上的显示 |
 | `src/players.h`、`src/panel.h` | 另一位玩家的分数、桥数和生命，最高分及其校验字节；状态面板的 60 个字符 |
 | `src/sound.h/.cpp` | 游戏请求的声音，以及播放它们的驱动（VBI B2A5–B3D8） |
 | `src/palette.h/.cpp` | NTSC 和 PAL 机器的 Atari 颜色（`atariRgb`）：Altirra 和 atari800 的模型 |

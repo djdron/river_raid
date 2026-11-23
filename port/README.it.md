@@ -110,6 +110,7 @@ Quale oggetto si sveglia quando lo decide il registro RANDOM di POKEY, un contat
 | `src/river.h/.cpp` | il fiume sullo schermo: le sue righe, le stesse senza decorazioni e come tratti di un solo colore (per le collisioni), l'indirizzo della riga in cima nella memoria dello schermo dell'originale |
 | `src/river_draw.h/.cpp` | disegno di una riga come sullo schermo: tonalità della riva, strade ai ponti, sprite degli oggetti (`drawScreenLine`) |
 | `src/plane.h`, `src/bullet.h` | l'aereo (guida, velocità, carburante, stato) e il suo proiettile |
+| `src/match.h/.cpp` | la partita: numero del gioco, di chi è il turno, punti, ponti e vite di entrambi i giocatori, i record; i punti e gli aerei bonus; come appaiono nel pannello |
 | `src/players.h`, `src/panel.h` | punti, ponti e vite dell'altro giocatore, i record con i loro byte di controllo; i 60 caratteri del pannello di stato |
 | `src/sound.h/.cpp` | i suoni che il gioco richiede e il driver che li suona (VBI B2A5–B3D8) |
 | `src/palette.h/.cpp` | colori Atari delle macchine NTSC e PAL (`atariRgb`): i modelli di Altirra e atari800 |

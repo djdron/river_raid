@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
 		if ((g.attractFlags & 0x80) != 0) menu = true;   // the attract mode (after a game over too)
 		if (menu) {
 			attractFrames++;
-			if (g.gameNumber != (game - 1) % 8) in.select = true;   // (held: the next game every 30 frames)
+			if (g.match.gameNumber != (game - 1) % 8) in.select = true;   // (held: the next game every 30 frames)
 			else if (!(f & 1)) { in.start = true; menu = false; games++; }
 		} else {
 			inGame++;
@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
 			in.stick[0] = stick;
 			in.trigger[0] = (f & 1) != 0;
 		}
-		if (!menu) maxBridge = std::max(maxBridge, (g.bridges.d[0] >> 4) * 1000 + (g.bridges.d[0] & 15) * 100 + (g.bridges.d[1] >> 4) * 10 + (g.bridges.d[1] & 15));
+		if (!menu) maxBridge = std::max(maxBridge, (g.match.bridges.d[0] >> 4) * 1000 + (g.match.bridges.d[0] & 15) * 100 + (g.match.bridges.d[1] >> 4) * 10 + (g.match.bridges.d[1] & 15));
 		int reads = 0;
 		g.frame(in, [&] { return reads++ ? random.read(249, 13) : pal ? random.read(191, 24) : random.read(192, 13); });
 		random.nextFrame();

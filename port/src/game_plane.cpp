@@ -64,7 +64,7 @@ void Game::flyPlane(const Input &input) {
 		moveBullet(1);
 	} else if (bullet.y >= 0x1C) {
 		moveBullet(bullet.y - 6);
-	} else if (input.trigger[player & 1]) {
+	} else if (input.trigger[match.player & 1]) {
 		sound.fire = 0x0F;
 		moveBullet(0xA9);
 	} else {
@@ -83,31 +83,26 @@ void Game::explode(int n, uint8_t kind) {
 	sound.explosion = 0x17;
 	if (type == kBridge) {
 		bridgeFlash = 0x17;
-		bridges.add(0, 1);                      // bridge counter +1
+		match.bridges.add(0, 1);                      // bridge counter +1
 		s.bridgeHit++;
 		// A500: a tank on the bridge goes with it
 		if (lo(obj.x - 8) < objs.tank.x && lo(obj.x + 0x1F) >= objs.tank.x) {
 			objs.tank.kind |= 0x80;
 			sound.explosion = 0x37;
 			type = kBridgeWithTank;
-		} else if (bridges.d[0] != 0 || bridges.d[1] >= 5) {
+		} else if (match.bridges.d[0] != 0 || match.bridges.d[1] >= 5) {
 			// A52B: from bridge 5 on, a tank close to the bridge fires
 			const bool near = objs.tank.kind < 6 ? lo(obj.x - objs.tank.x) < 0x29 : lo(objs.tank.x - obj.x) < 0x41;
 			if (near) objs.shell.timer++;
 		}
 	}
-	// A547: points (BCD); every 10 000 points a new plane, up to 9
-	const uint8_t tenThousands = score.d[1] & 0xF0;
-	if (score.add(rom_.points(type))) {         // past 999 999: the game ends
-		score = {{0x99, 0x99, 0x99}};
-		lives = 0;
+	// A547: points; every 10 000 points a new plane, up to 9
+	const Match::Points points = match.addPoints(rom_.points(type));
+	if (points == Match::Points::GameEnds) {    // past 999 999
 		crash(kCrashSound, 0x1F);
 		return;
 	}
-	if ((score.d[1] & 0xF0) != tenThousands && lives != 9) {
-		lives++;
-		sound.bonus = 0x40;
-	}
+	if (points == Match::Points::BonusLife) sound.bonus = 0x40;
 	moveBullet(1);                                // A589: the bullet is used up
 }
 

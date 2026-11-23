@@ -275,7 +275,7 @@ void Game::drawRiver(uint8_t out[240][kRowWidth]) const {
 		for (const DrawnObject &o : drawn)                                   // the objects
 			if (line >= o.first && line < o.first + int(o.rows.size()))
 				sprite(row, o.rows[size_t(line - o.first)], o.x, o.size, o.colours[size_t(line - o.first)]);
-		const uint8_t planeColour = player ? 0x8E : 0x1E;                 // COLPM2 (B542)
+		const uint8_t planeColour = match.player ? 0x8E : 0x1E;                 // COLPM2 (B542)
 		sprite(row, spriteRow(2, line), plane.x, 0, planeColour);         // the plane
 		const uint8_t m2 = spriteRow(5, line);                              // its bullet
 		for (int b = 0; b < 2; b++)

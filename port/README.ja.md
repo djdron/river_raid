@@ -110,6 +110,7 @@ river_view [rom] [オプション]
 | `src/river.h/.cpp` | 画面上の川：そのライン、装飾を除いた同じラインとその単色の区間（衝突用）、オリジナルの画面メモリーでの最上ラインのアドレス |
 | `src/river_draw.h/.cpp` | 画面と同じようにラインを描く：岸の色合い、橋の道路、物体のスプライト（`drawScreenLine`） |
 | `src/plane.h`、`src/bullet.h` | 飛行機（操縦、速度、燃料、状態）とその弾 |
+| `src/match.h/.cpp` | 対戦：ゲーム番号、誰の番か、両プレイヤーの得点・橋・残機、ハイスコア。得点の加算とボーナスの飛行機。パネルへの表示 |
 | `src/players.h`、`src/panel.h` | もう一人のプレイヤーの得点・橋・残機、ハイスコアとそのチェックバイト。ステータスパネルの 60 文字 |
 | `src/sound.h/.cpp` | ゲームが求める音と、それを鳴らすドライバー（VBI B2A5–B3D8） |
 | `src/palette.h/.cpp` | NTSC 機と PAL 機の Atari の色（`atariRgb`）：Altirra と atari800 のモデル |

@@ -110,6 +110,7 @@ Welches Objekt wann erwacht, entscheidet POKEYs RANDOM-Register, ein Hardwarezä
 | `src/river.h/.cpp` | der Fluss auf dem Bildschirm: seine Zeilen, dieselben ohne Verzierung und als einfarbige Abschnitte (für die Kollisionen), die Adresse der obersten Zeile im Bildschirmspeicher des Originals |
 | `src/river_draw.h/.cpp` | eine Zeile so zeichnen, wie sie auf dem Bildschirm aussieht: Ufertöne, Straßen an Brücken, Objekt-Sprites (`drawScreenLine`) |
 | `src/plane.h`, `src/bullet.h` | das Flugzeug (Steuerung, Tempo, Treibstoff, Zustand) und sein Geschoss |
+| `src/match.h/.cpp` | die Partie: Spielnummer, wer dran ist, Punkte, Brücken und Leben beider Spieler, die Highscores; Punkte und Bonusflugzeuge; ihre Anzeige in der Statusleiste |
 | `src/players.h`, `src/panel.h` | Punkte, Brücken und Leben des anderen Spielers, die Highscores mit ihren Prüfbytes; die 60 Zeichen der Statusleiste |
 | `src/sound.h/.cpp` | die Töne, die das Spiel anfordert, und der Treiber, der sie spielt (VBI B2A5–B3D8) |
 | `src/palette.h/.cpp` | Atari-Farben von NTSC- und PAL-Geräten (`atariRgb`): die Modelle von Altirra und atari800 |

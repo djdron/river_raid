@@ -122,13 +122,20 @@ den sie ersetzen.
     `game_players.cpp` (Spiele und Spieler, die Statusleiste), `game_reset.cpp` (Einschalten,
     Demo-Modus, neues Spiel, Reset, das nächste Flugzeug), `game_state.cpp` (Spielstände); was
     sie gemeinsam haben, steht in `game_internal.h`.
+18. Die Partie (`match.h`, `match.cpp`): `Match` hält die Spielnummer, wer dran ist, Brücken,
+    Punkte und Leben beider Spieler, `respawned` und die Highscores, mit `setUp` (sub $AF80),
+    `selectNext`, `swapPlayers` (bekommt den Zustand des Flusses: Level und Neustartpunkt
+    wechseln auch den Spieler), `updateHighScore`, `addPoints` (A547: Punkte, das Bonusflugzeug,
+    das Ende nach 999 999) und den Zahlen in der Statusleiste (im Demo-Modus nicht gezeigt, was
+    `Game` ihm sagt). Seine Bytes kommen in der Reihenfolge der früheren Felder, also bleiben
+    Spielstände gleich. Unterwegs gefunden: `World::State` hatte zwei Füllbytes, gespeichert mit
+    dem, was gerade im Speicher stand; jetzt sind es ausdrückliche Nullbytes, und derselbe
+    Zustand wird immer als dieselben Bytes gespeichert.
 
 ## Als Nächstes
 
-`Game` bleibt, was es ist, der Dirigent des Bilds; um es herum: die Partie (`Match`:
-Spielnummer, wer dran ist, Brücken, Punkte, Leben, der andere Spieler, Highscores, mit ihrer
-Ausgabe in die Statusleiste), die Felder hinter konstanten Gettern und einer Struktur dessen,
-was zu zeigen und zu spielen ist, die Modi der Konsole (`Console`: Bildzähler, Demo-Modus,
-Pause, SELECT), wo sie sich ohne Umstellung trennen lassen, und die Hauptschleife als benannte
-Schritte in derselben Reihenfolge. Jeder Schritt geprüft mit `compare.sh -quick`, alle 17 Läufe
-am Ende.
+`Game` bleibt, was es ist, der Dirigent des Bilds; um es herum: die Felder hinter konstanten
+Gettern und einer Struktur dessen, was zu zeigen und zu spielen ist, die Modi der Konsole
+(`Console`: Bildzähler, Demo-Modus, Pause, SELECT), wo sie sich ohne Umstellung trennen lassen,
+und die Hauptschleife als benannte Schritte in derselben Reihenfolge. Jeder Schritt geprüft mit
+`compare.sh -quick`, alle 17 Läufe am Ende.

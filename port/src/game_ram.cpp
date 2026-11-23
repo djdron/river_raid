@@ -15,15 +15,12 @@ void Game::mapRam(RamMap &m) {
 	m.byte("frameCount", 0x18, frameCount).byte("attractFlags", 0x29, attractFlags).byte("attractTimer", 0x2A, attractTimer);
 	m.byte("idleTime", 0x78, idleTime).byte("pauseState", 0x24, pauseState).byte("selectDelay", 0x25, selectDelay);
 	m.byte("powerOnDone", 0x28, powerOnDone).byte("screenOn", 0xC7, screenOn);
-	m.byte("gameNumber", 0x09, gameNumber).byte("player", 0x77, player).byte("respawned", 0x79, respawned);
-	m.bytes("bridges", 0x61, bridges.d, 2).bytes("score", 0x63, score.d, 3).byte("lives", 0x6A, lives);
 	m.byte("scrollFrac", 0x30, scrollFrac).byte("bridgeFlash", 0x31, bridgeFlash);
 	plane.mapRam(m);
 	bullet.mapRam(m);
 	sound.mapRam(m);
 	hit.mapRam(m);
-	other.mapRam(m);
-	highScores.mapRam(m);
+	match.mapRam(m);
 	panel.mapRam(m);
 	scroller.mapRam(m);
 }

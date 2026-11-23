@@ -49,6 +49,8 @@ template <typename T> void get(const std::vector<uint8_t> &raw, size_t &at, T &v
 }  // namespace
 
 static_assert(std::is_trivially_copyable_v<World::State>, "saved as bytes");
+// no padding, whose bytes would be whatever was in memory
+static_assert(std::has_unique_object_representations_v<World::State>, "saved as bytes, no padding");
 
 void Game::resetState() {
 	Game fresh(rom_);
@@ -61,7 +63,8 @@ void Game::resetState() {
 std::vector<uint8_t> Game::save() const {
 	std::vector<uint8_t> raw;
 	eachState([&](auto &x) {
-		static_assert(std::is_trivially_copyable_v<std::decay_t<decltype(x)>>, "saved as bytes");
+		using T = std::decay_t<decltype(x)>;
+		static_assert(std::is_trivially_copyable_v<T> && (std::has_unique_object_representations_v<T> || std::is_same_v<T, bool>), "saved as bytes, no padding");
 		put(raw, x);
 	});
 	put(raw, world.state());

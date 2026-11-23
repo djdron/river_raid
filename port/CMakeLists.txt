@@ -35,6 +35,8 @@ add_library(rrcore
 	src/game_ram.cpp
 	src/game_reset.cpp
 	src/game_state.cpp
+	src/match.cpp
+	src/match.h
 	src/objects.cpp
 	src/objects.h
 	src/os_font.cpp

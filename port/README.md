@@ -110,6 +110,7 @@ Which object wakes up when is decided by POKEY's RANDOM register, a hardware cou
 | `src/river.h/.cpp` | the river on the screen: its lines, the same without decoration and as runs of one colour (for the collisions), the top line's address in the original's screen memory |
 | `src/river_draw.h/.cpp` | drawing a line as on screen: bank shades, roads at bridges, object sprites (`drawScreenLine`) |
 | `src/plane.h`, `src/bullet.h` | the plane (steering, speed, fuel, its state) and its bullet |
+| `src/match.h/.cpp` | the match: the game number, whose turn it is, both players' score, bridges and lives, the high scores; points and bonus planes; how they show in the panel |
 | `src/players.h`, `src/panel.h` | the other player's score, bridges and lives, the high scores with their check bytes; the status panel's 60 characters |
 | `src/sound.h/.cpp` | the sounds the game asks for and the driver that plays them (VBI B2A5–B3D8) |
 | `src/palette.h/.cpp` | Atari colours of NTSC and PAL machines (`atariRgb`): the models of Altirra and atari800 |

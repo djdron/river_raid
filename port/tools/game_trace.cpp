@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
 		Input in;
 		if ((g.attractFlags & 0x80) != 0) menu = true;
 		if (menu) {
-			if (g.gameNumber != (game - 1) % 8) in.select = true;
+			if (g.match.gameNumber != (game - 1) % 8) in.select = true;
 			else if (!attract && !(f & 1)) { in.start = true; menu = false; }
 		} else {
 			const int px = g.plane.x - 32 + 4;
@@ -122,14 +122,14 @@ int main(int argc, char **argv) {
 		else drawStatusBar(rom, cs, s.panel.chars, s.plane.fuel, s.scroller, s.logoShown, screen, pal);
 
 		std::printf("%ld fc%02X at%02X/%02X ps%02X pz%02X game%u pl%u busy%d", f, s.frameCount, s.attractFlags,
-			s.attractTimer, s.pauseState, s.plane.state, s.gameNumber, s.player, g.busy() ? 1 : 0);
+			s.attractTimer, s.pauseState, s.plane.state, s.match.gameNumber, s.match.player, g.busy() ? 1 : 0);
 		std::printf(" | plane %02X.%02X a%02X f%u sp%02X.%02X fuel%02X.%02X bul%02X", s.plane.x, s.plane.xFrac,
 			s.plane.accel, s.plane.frame, s.plane.speed, s.scrollFrac, s.plane.fuel, s.plane.fuelFrac, s.bullet.y);
 		std::printf(" | tank %02X %02X,%02X fire%02X shell t%02X f%u %02X.%02X,%02X v%02X.%02X | missile %02X,%02X st%02X",
 			o.tank.kind, o.tank.x, o.tank.y, o.tank.fires, o.shell.timer, o.shell.frame, o.shell.x, o.shell.xFrac, o.shell.y,
 			o.shell.speed, o.shell.speedFrac, o.missile.x, o.missile.y, o.missile.step);
-		std::printf(" | score %s br %s lives %u other %s/%s/%u hi %s", hex(s.score.d, 3).c_str(), hex(s.bridges.d, 2).c_str(),
-			s.lives, hex(s.other.score.d, 3).c_str(), hex(s.other.bridges.d, 2).c_str(), s.other.lives, hex(s.highScores.table, 16).c_str());
+		std::printf(" | score %s br %s lives %u other %s/%s/%u hi %s", hex(s.match.score.d, 3).c_str(), hex(s.match.bridges.d, 2).c_str(),
+			s.match.lives, hex(s.match.other.score.d, 3).c_str(), hex(s.match.other.bridges.d, 2).c_str(), s.match.other.lives, hex(s.match.highScores.table, 16).c_str());
 		std::printf(" | slots %u..", o.firstSlot);
 		for (int i = o.firstSlot; i < kSlots; i++) {
 			const Slot &sl = o.slot[size_t(i)];

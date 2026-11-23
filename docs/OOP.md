@@ -112,12 +112,19 @@ replace.
     (games and players, the panel), `game_reset.cpp` (power-on, the attract mode, a new game,
     the reset, the next plane), `game_state.cpp` (saved states); what they share is in
     `game_internal.h`.
+18. The match (`match.h`, `match.cpp`): `Match` keeps the game number, whose turn it is, both
+    players' bridges, score and lives, `respawned` and the high scores, with `setUp` (sub
+    $AF80), `selectNext`, `swapPlayers` (given the river's state: the level and the restart
+    point change hands too), `updateHighScore`, `addPoints` (A547: points, the bonus plane, the
+    end past 999 999) and the panel's numbers (not shown in the attract mode, which `Game` tells
+    it). Its bytes come in the order the fields had, so saved states stay the same. Found on the
+    way: `World::State` had two bytes of padding, saved as whatever was in memory; they are now
+    explicit zero bytes, and the same state is always saved as the same bytes.
 
 ## Next
 
-`Game` stays what it is, the conductor of the frame; around it: the game's match (`Match`: game
-number, turns, bridges, score, lives, the other player, high scores, with their panel output),
-the fields closed behind const getters and one structure of what to show and play, the console's
-modes (`Console`: frame counter, attract mode, pause, SELECT) where they come apart without
-reordering anything, and the main loop as named steps in the same order. Each step checked with
-`compare.sh -quick`, all 17 runs at the end.
+`Game` stays what it is, the conductor of the frame; around it: the fields closed behind const
+getters and one structure of what to show and play, the console's modes (`Console`: frame
+counter, attract mode, pause, SELECT) where they come apart without reordering anything, and the
+main loop as named steps in the same order. Each step checked with `compare.sh -quick`, all 17
+runs at the end.

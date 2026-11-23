@@ -30,7 +30,7 @@
 #include "plane.h"
 #include "ram_map.h"
 #include "panel.h"
-#include "players.h"
+#include "match.h"
 #include "sound.h"
 #include "river.h"
 #include "river_gen.h"
@@ -87,15 +87,7 @@ public:
 	uint8_t selectDelay = 0;    // $25 frames until SELECT/OPTION changes the game again
 	uint8_t powerOnDone = 0;    // $28
 	uint8_t screenOn = 0;       // $C7 0 while the screen is being cleared (colours off)
-	// the game and the players
-	uint8_t gameNumber = 0;     // $09 0..7 (shown as 1..8); odd: two players
-	uint8_t player = 0;         // $77 whose turn it is (0 or 1)
-	Bcd<2> bridges;             // $61-$62 bridges passed
-	Bcd<3> score;               // $63-$65
-	uint8_t lives = 0;          // $6A planes left
-	PlayerData other;           // $6B-$75 the other player in a two-player game
-	uint8_t respawned = 0;      // $79 1 once a plane of this game has been lost (the panel marks the player)
-	HighScores highScores;      // $80-$9F
+	Match match;                // the game and the players: $09, $61-$75, $77, $79, $80-$9F
 	Plane plane;                // $76, $57-$59, $5B-$5C, $5E, $2B, $19, $B9
 	Bullet bullet;              // $56 the plane's bullet
 	uint8_t scrollFrac = 0;     // $30 the river's scrolling: the plane's speed added to it twice a frame
@@ -219,14 +211,7 @@ private:
 		f(s.selectDelay);
 		f(s.powerOnDone);
 		f(s.screenOn);
-		f(s.gameNumber);
-		f(s.player);
-		f(s.bridges);
-		f(s.score);
-		f(s.lives);
-		f(s.other);
-		f(s.respawned);
-		f(s.highScores);
+		f(s.match);
 		f(s.plane);
 		f(s.bullet);
 		f(s.scrollFrac);
@@ -266,15 +251,8 @@ private:
 	void explode(int n, uint8_t kind);            // A4E0-A589
 	void removePlaneThings();                     // B204-B220
 	void moveBullet(int y);                       // A5AA-A5B4
-	void swapPlayers();                           // sub $B247
-	void updateHighScore(bool otherPlayer);       // sub $B261
-	void showLives();                             // sub $AF5B
-	void setUpGame();                             // sub $AF80
-	template <int N> void printBcd(const Bcd<N> &bcd, int at, uint8_t digitZero);   // B086-B0C6
-	void showBridges();                           // sub $B05C
-	void showScore();                             // sub $B07C
-	void showOtherScore();                        // sub $B068
-	void showHighScore();                         // sub $B06E
+	void setUpGame();                             // sub $AF80 (Match::setUp)
+	void showLives();                             // sub $AF5B (Match::showLives)
 	void gameOverScreen();                        // sub $B21A
 	void scrollRiver();                           // A6FD-A70F and the generator
 	void pushLine();             // the generator's next line goes to the top of the screen

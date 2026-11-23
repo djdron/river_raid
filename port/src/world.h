@@ -25,8 +25,9 @@ public:
 	struct State {
 		RiverState river;
 		Objects objects;
+		uint8_t unused_ = 0;   // (so that there is no padding: the state is saved as bytes)
 	};
-	State state() const { return {gen.s, objects}; }
+	State state() const { return {gen.s, objects, 0}; }
 	void setState(const State &s) {
 		gen.s = s.river;
 		objects = s.objects;

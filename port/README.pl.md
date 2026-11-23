@@ -110,6 +110,7 @@ To, który obiekt kiedy się budzi, rozstrzyga rejestr RANDOM układu POKEY, spr
 | `src/river.h/.cpp` | rzeka na ekranie: jej linie, te same bez ozdób i jako odcinki jednego koloru (do kolizji), adres górnej linii w pamięci ekranu oryginału |
 | `src/river_draw.h/.cpp` | rysowanie linii tak jak na ekranie: odcienie brzegu, drogi przy mostach, sprite'y obiektów (`drawScreenLine`) |
 | `src/plane.h`, `src/bullet.h` | samolot (sterowanie, prędkość, paliwo, stan) i jego pocisk |
+| `src/match.h/.cpp` | partia: numer gry, czyja kolej, punkty, mosty i życia obu graczy, rekordy; naliczanie punktów i premiowe samoloty; ich wyświetlanie na panelu |
 | `src/players.h`, `src/panel.h` | punkty, mosty i życia drugiego gracza, rekordy z bajtami kontrolnymi; 60 znaków panelu stanu |
 | `src/sound.h/.cpp` | dźwięki, o które prosi gra, i sterownik, który je gra (VBI B2A5–B3D8) |
 | `src/palette.h/.cpp` | kolory Atari komputerów NTSC i PAL (`atariRgb`): modele Altirra i atari800 |

@@ -110,12 +110,19 @@ zastępują.
     i gracze, panel), `game_reset.cpp` (włączenie, tryb demonstracyjny, nowa gra, reset,
     następny samolot), `game_state.cpp` (zapisy stanu); to, co wspólne, jest w
     `game_internal.h`.
+18. Partia (`match.h`, `match.cpp`): `Match` trzyma numer gry, czyja kolej, mosty, punkty i
+    życia obu graczy, `respawned` i rekordy, z `setUp` (sub $AF80), `selectNext`, `swapPlayers`
+    (dostaje stan rzeki: poziom i punkt restartu też przechodzą do drugiego gracza),
+    `updateHighScore`, `addPoints` (A547: punkty, premiowy samolot, koniec gry po 999 999) i
+    liczbami na panelu (w trybie demonstracyjnym niewyświetlanymi, o czym mówi mu `Game`). Jego
+    bajty idą w kolejności dawnych pól, więc zapisy stanu się nie zmieniły. Przy okazji
+    znalezione: `World::State` miał dwa bajty wyrównania, zapisywane z tym, co akurat było w
+    pamięci; teraz to jawne bajty zerowe i ten sam stan zawsze zapisuje się tymi samymi bajtami.
 
 ## Dalej
 
-`Game` zostaje tym, czym jest — dyrygentem klatki; wokół niego: partia (`Match`: numer gry,
-czyja kolej, mosty, punkty, życia, drugi gracz, rekordy, z ich wypisywaniem na panel), pola
-zamknięte za stałymi getterami i jedną strukturą „co pokazać i zagrać”, tryby konsoli
-(`Console`: licznik klatek, tryb demonstracyjny, pauza, SELECT) tam, gdzie dają się oddzielić
-bez przestawiania, i pętla główna jako nazwane kroki w tej samej kolejności. Każdy krok
-sprawdzany `compare.sh -quick`, wszystkie 17 przebiegów na końcu.
+`Game` zostaje tym, czym jest — dyrygentem klatki; wokół niego: pola zamknięte za stałymi
+getterami i jedną strukturą „co pokazać i zagrać”, tryby konsoli (`Console`: licznik klatek,
+tryb demonstracyjny, pauza, SELECT) tam, gdzie dają się oddzielić bez przestawiania, i pętla
+główna jako nazwane kroki w tej samej kolejności. Każdy krok sprawdzany `compare.sh -quick`,
+wszystkie 17 przebiegów na końcu.

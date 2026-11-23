@@ -119,13 +119,20 @@ sostituiscono.
     `game_players.cpp` (partite e giocatori, il pannello), `game_reset.cpp` (accensione,
     modalità dimostrativa, nuova partita, reset, l'aereo successivo), `game_state.cpp`
     (salvataggi); ciò che condividono è in `game_internal.h`.
+18. La partita (`match.h`, `match.cpp`): `Match` tiene il numero del gioco, di chi è il turno,
+    ponti, punti e vite di entrambi i giocatori, `respawned` e i record, con `setUp` (sub
+    $AF80), `selectNext`, `swapPlayers` (riceve lo stato del fiume: anche il livello e il punto
+    di ripartenza passano all'altro giocatore), `updateHighScore`, `addPoints` (A547: i punti,
+    l'aereo bonus, la fine oltre 999 999) e i numeri del pannello (non mostrati nella modalità
+    dimostrativa, cosa che gli dice `Game`). I suoi byte seguono l'ordine dei campi di prima,
+    quindi i salvataggi restano uguali. Trovato strada facendo: `World::State` aveva due byte di
+    riempimento, salvati con ciò che c'era in memoria; ora sono byte zero espliciti, e lo stesso
+    stato viene sempre salvato con gli stessi byte.
 
 ## Prossimi passi
 
-`Game` resta ciò che è, il direttore d'orchestra del fotogramma; attorno a lui: la partita
-(`Match`: numero del gioco, di chi è il turno, ponti, punti, vite, l'altro giocatore, record,
-con la loro scrittura nel pannello), i campi chiusi dietro getter costanti e una struttura di
-ciò che va mostrato e suonato, le modalità della console (`Console`: contatore dei fotogrammi,
-modalità dimostrativa, pausa, SELECT) dove si separano senza riordinare nulla, e il ciclo
-principale come passi con un nome nello stesso ordine. Ogni passo verificato con `compare.sh
--quick`, tutte le 17 partite alla fine.
+`Game` resta ciò che è, il direttore d'orchestra del fotogramma; attorno a lui: i campi chiusi
+dietro getter costanti e una struttura di ciò che va mostrato e suonato, le modalità della
+console (`Console`: contatore dei fotogrammi, modalità dimostrativa, pausa, SELECT) dove si
+separano senza riordinare nulla, e il ciclo principale come passi con un nome nello stesso
+ordine. Ogni passo verificato con `compare.sh -quick`, tutte le 17 partite alla fine.

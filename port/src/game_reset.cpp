@@ -22,8 +22,8 @@ void Game::startAttract(bool pal) {
 	attractFlags = 0x80;
 	setUpGame();
 	bullet.y = 1;
-	lives = other.lives = 4;
-	respawned = 1;
+	match.lives = match.other.lives = 4;
+	match.respawned = 1;
 	powerOnDone = 1;
 	screenOn = 1;
 	attractFlags = 0x81;
@@ -45,9 +45,9 @@ void Game::startAttract(bool pal) {
 
 // A688-A17E: a new game (START), or the attract mode's river starting.
 void Game::newGame() {
-	player = gameNumber & 1;
+	match.player = match.gameNumber & 1;
 	// A15D with X = $79: $79-$7F cleared
-	respawned = 0;
+	match.respawned = 0;
 	sound.event = sound.eventTime = sound.explosion = sound.fire = sound.bonus = sound.missile = 0;
 	reset(true);   // the rest (AF80, A17E) when the reset ends: finishReset()
 	resume_ = Resume::NewGame;
@@ -69,15 +69,15 @@ void Game::reset(bool full) {
 	plane.fuelFrac = table(0x5C);
 	plane.frame = table(0x5E);
 	if (full) {
-		bridges = {{table(0x61), table(0x62)}};
-		score = {{table(0x63), table(0x64), table(0x65)}};
+		match.bridges = {{table(0x61), table(0x62)}};
+		match.score = {{table(0x63), table(0x64), table(0x65)}};
 		for (int i = 0; i < 4; i++) s.checkpoint[i] = table(uint16_t(0x66 + i));
-		lives = table(0x6A);
-		other.level = table(0x6B);
-		other.bridges = {{table(0x6C), table(0x6D)}};
-		other.score = {{table(0x6E), table(0x6F), table(0x70)}};
-		for (int i = 0; i < 4; i++) other.checkpoint[i] = table(uint16_t(0x71 + i));
-		other.lives = table(0x75);
+		match.lives = table(0x6A);
+		match.other.level = table(0x6B);
+		match.other.bridges = {{table(0x6C), table(0x6D)}};
+		match.other.score = {{table(0x6E), table(0x6F), table(0x70)}};
+		for (int i = 0; i < 4; i++) match.other.checkpoint[i] = table(uint16_t(0x71 + i));
+		match.other.lives = table(0x75);
 		plane.state = table(0x76);
 	}
 	// $2B-$4C cleared (the river's part in restoreCheckpoint)
@@ -96,22 +96,22 @@ void Game::reset(bool full) {
 // A36E-A3B6: the explosion is over: the next player, the next plane, or game over.
 // Returns true when the river is reset for the next plane (the loop continues after it).
 bool Game::respawnOrGameOver() {
-	if (other.lives) swapPlayers();
-	respawned = 1;
-	if (lives) {
+	if (match.other.lives) match.swapPlayers(world.gen.s);
+	match.respawned = 1;
+	if (match.lives) {
 		reset(false);                             // A3BC; then finishRespawn()
 		resume_ = Resume::Respawn;
 		return true;
 	}
 	// A37D: game over
-	updateHighScore(false);
-	updateHighScore(true);
-	if (gameNumber & 1) {
-		if (player) swapPlayers();
+	match.updateHighScore(false);
+	match.updateHighScore(true);
+	if (match.twoPlayers()) {
+		if (match.player) match.swapPlayers(world.gen.s);
 		for (int i = 0; i < 4; i++) panel.chars[Panel::kLives + i] = rom_.playerTwoText(i) ^ 0xC0;
-		printBcd(other.bridges, Panel::kOtherBridges, Panel::kDigitsOther);
+		match.showOtherBridges(panel, attract(*this));
 	} else {
-		showHighScore();
+		match.showHighScore(panel, attract(*this));
 	}
 	// (In the original the high score check makes this frame's work end close to the vertical
 	// blank: depending on the objects on screen, sub $B21A sets the frame counter to $FF just

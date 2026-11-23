@@ -1,9 +1,9 @@
 // River Raid game frame: the frame in the original's order (prepare, the main loop, the river
 // scrolling, the vertical blank) and one frame of the river alone. See game.h. Addresses refer
 // to the original cartridge code. The rest of Game: game_plane.cpp (the plane, explosions,
-// points), game_players.cpp (games and players, the panel), game_reset.cpp (power-on, the
-// attract mode, new game, reset, respawn), game_state.cpp (saved states), game_ram.cpp (the
-// original's RAM).
+// points), game_players.cpp (choosing and setting up a game; the match itself is Match,
+// match.h), game_reset.cpp (power-on, the attract mode, new game, reset, respawn),
+// game_state.cpp (saved states), game_ram.cpp (the original's RAM).
 #include "game.h"
 
 #include "game_internal.h"
@@ -56,9 +56,9 @@ void Game::prepare() {
 	}
 	// AF3A-AF58: lives, bridges and score into the panel
 	if (attractTimer == 0) showLives();
-	showBridges();
-	if (player == 0) showScore();
-	else showOtherScore();
+	match.showBridges(panel, attract(*this));
+	if (match.player == 0) match.showScore(panel, attract(*this));
+	else match.showOtherScore(panel, attract(*this));
 }
 
 void Game::logic(const Input &input, const std::function<uint8_t()> &random) { mainLoop(input, random); }
@@ -75,8 +75,8 @@ void Game::finishReset(const Input &input, const std::function<uint8_t()> &rando
 		setUpGame();
 		if (!attract(*this)) {
 			showLives();
-			showBridges();
-			showScore();
+			match.showBridges(panel, false);
+			match.showScore(panel, false);
 		}
 		mainLoop(input, random);
 	}
@@ -146,7 +146,7 @@ void Game::mainLoop(const Input &input, const std::function<uint8_t()> &random) 
 		attractTimer = timer;
 	}
 	// A312: the joystick of the player whose turn it is
-	const int stick = player & 1;
+	const int stick = match.player & 1;
 	plane.stickPrev = lo(plane.stick << 4);
 	plane.stick = input.stick[stick] & 0x0F;
 	if ((plane.stick != 0x0F || input.trigger[stick]) && plane.state == kWaiting) {
@@ -166,7 +166,7 @@ void Game::mainLoop(const Input &input, const std::function<uint8_t()> &random) 
 	} else if (state >= kLifeLost) {              // A348: the river refilling
 		if (state == kLifeLost) {
 			sound.crashPitch = 0x80;
-			lives--;
+			match.lives--;
 		}
 		plane.state--;
 	}
@@ -201,7 +201,7 @@ void Game::mainLoopEnd(const Input &input) {
 	// A6DE: scrolling
 	if (plane.state & 0x80) {
 		if (!attract(*this)) return;                  // exploding: the river stops
-		plane.speed = gameNumber < 4 ? 0x80 : 0xFE; // A6F1: attract mode
+		plane.speed = match.gameNumber < 4 ? 0x80 : 0xFE; // A6F1: attract mode
 	} else if (plane.state == kWaiting) {        // the plane level, no scrolling
 		plane.frame = 9;
 		return;

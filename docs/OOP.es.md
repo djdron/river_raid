@@ -120,13 +120,20 @@ código que sustituyen.
     `game_players.cpp` (partidas y jugadores, el panel), `game_reset.cpp` (encendido, modo de
     demostración, partida nueva, reinicio, el siguiente avión), `game_state.cpp` (partidas
     guardadas); lo que comparten está en `game_internal.h`.
+18. La partida (`match.h`, `match.cpp`): `Match` guarda el número de juego, de quién es el
+    turno, los puentes, puntos y vidas de ambos jugadores, `respawned` y los récords, con
+    `setUp` (sub $AF80), `selectNext`, `swapPlayers` (recibe el estado del río: el nivel y el
+    punto de reinicio también cambian de jugador), `updateHighScore`, `addPoints` (A547: los
+    puntos, el avión de premio, el final pasado 999 999) y los números del panel (no se muestran
+    en el modo de demostración, lo que le dice `Game`). Sus bytes van en el orden que tenían los
+    campos, así que las partidas guardadas no cambian. Encontrado por el camino: `World::State`
+    tenía dos bytes de relleno, guardados con lo que hubiera en memoria; ahora son bytes cero
+    explícitos, y el mismo estado se guarda siempre con los mismos bytes.
 
 ## Lo siguiente
 
-`Game` sigue siendo lo que es, el director del fotograma; a su alrededor: la partida (`Match`:
-número de juego, de quién es el turno, puentes, puntos, vidas, el otro jugador, récords, con su
-escritura en el panel), los campos cerrados tras getters constantes y una estructura de lo que
-hay que mostrar y tocar, los modos de la consola (`Console`: contador de fotogramas, modo de
-demostración, pausa, SELECT) donde se separan sin reordenar nada, y el bucle principal como
-pasos con nombre en el mismo orden. Cada paso comprobado con `compare.sh -quick`, los 17
-recorridos al final.
+`Game` sigue siendo lo que es, el director del fotograma; a su alrededor: los campos cerrados
+tras getters constantes y una estructura de lo que hay que mostrar y tocar, los modos de la
+consola (`Console`: contador de fotogramas, modo de demostración, pausa, SELECT) donde se
+separan sin reordenar nada, y el bucle principal como pasos con nombre en el mismo orden. Cada
+paso comprobado con `compare.sh -quick`, los 17 recorridos al final.
