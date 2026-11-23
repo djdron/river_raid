@@ -117,11 +117,11 @@ int main(int argc, char **argv) {
 		const Game &s = g;
 		const RiverState &r = g.world().gen.s;
 		const Objects &o = g.world().objects;
-		if (s.idleTime() & 0x80) std::memset(screen, 0, sizeof screen);
+		if (s.console().idleTime & 0x80) std::memset(screen, 0, sizeof screen);
 		else drawStatusBar(rom, cs, s.panel().chars, s.plane().fuel, s.scroller(), s.logoShown(), screen, pal);
 
-		std::printf("%ld fc%02X at%02X/%02X ps%02X pz%02X game%u pl%u busy%d", f, s.frameCount(), s.attractFlags(),
-			s.attractTimer(), s.pauseState(), s.plane().state, s.match().gameNumber, s.match().player, g.busy() ? 1 : 0);
+		std::printf("%ld fc%02X at%02X/%02X ps%02X pz%02X game%u pl%u busy%d", f, s.console().frameCount, s.console().attractFlags,
+			s.console().attractTimer, s.console().pauseState, s.plane().state, s.match().gameNumber, s.match().player, g.busy() ? 1 : 0);
 		std::printf(" | plane %02X.%02X a%02X f%u sp%02X.%02X fuel%02X.%02X bul%02X", s.plane().x, s.plane().xFrac,
 			s.plane().accel, s.plane().frame, s.plane().speed, s.scrollFrac(), s.plane().fuel, s.plane().fuelFrac, s.bullet().y);
 		std::printf(" | tank %02X %02X,%02X fire%02X shell t%02X f%u %02X.%02X,%02X v%02X.%02X | missile %02X,%02X st%02X",

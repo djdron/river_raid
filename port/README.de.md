@@ -115,6 +115,7 @@ Welches Objekt wann erwacht, entscheidet POKEYs RANDOM-Register, ein Hardwarezä
 | `src/sound.h/.cpp` | die Töne, die das Spiel anfordert, und der Treiber, der sie spielt (VBI B2A5–B3D8) |
 | `src/palette.h/.cpp` | Atari-Farben von NTSC- und PAL-Geräten (`atariRgb`): die Modelle von Altirra und atari800 |
 | `src/game.h`, `src/game*.cpp` | das Spiel: Hauptschleife und VBI des Originals Bild für Bild — Demo-Modus, Konsolentasten, das Flugzeug, Treibstoff, Kollisionen, Explosionen, Punkte, Leben, Spieler, Absturz und Neustart, Spielende, Highscores; es hält die Teile oben |
+| `src/console.h/.cpp` | Modi und Zähler der Konsole: der Bildzähler, der Demo-Modus und sein Zeitgeber, die Zeit ohne Eingabe (der Bildschirm geht aus), die Pause, die Wiederholung von SELECT |
 | `src/display.cpp` | der Flussteil der Anzeige: jedes Objekt auf der Höhe seines Slots, die Kollisionen als einfache Geometrie (ohne Display-List-Interrupt, siehe [docs/DLI_REMOVAL.de.md](../docs/DLI_REMOVAL.de.md)), das Bild des Flussbereichs |
 | `src/pokey_random.h` | POKEYs RANDOM-Zähler |
 | `src/pokey_sound.h/.cpp` | POKEY-Sound: vier Kanäle, Teiler und Rauschzähler, Takt für Takt erzeugt |

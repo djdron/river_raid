@@ -127,10 +127,16 @@ replace.
     viewer's anchors), `playSound` and `stayAwake` (the viewer), `ghost` (the tools' ghost
     mode), `setPokey` (`sound_check`). `sound_check` loads the bytes the driver reads through
     `mapRam`, the same bytes as before.
+20. The console (`console.h`, `console.cpp`): `Console` keeps the frame counter, the attract
+    flags and timer, the idle time, the pause, SELECT's delay, `powerOnDone` and `screenOn`,
+    with `keys` (A19E-A1F5: activity, the pause, the screen off), `attractTimerTick` (A2F5),
+    `countFrame` (the VBI's counters, also for `skipFrame`) and `selectRepeat` (A699). Where the
+    order of the frame mixes them with the rest (a new game, choosing a game, game over, the PAL
+    VBI before game over), `Game` still sets the fields itself. Same bytes in the same order, so
+    saved states stay the same; pausing, SELECT, OPTION, START and the screen going off were
+    checked against the commit before on 390 000 frames with such keys.
 
 ## Next
 
-`Game` stays what it is, the conductor of the frame; around it: the console's modes (`Console`:
-frame counter, attract mode, pause, SELECT) where they come apart without reordering anything,
-and the main loop as named steps in the same order. Each step checked with `compare.sh -quick`,
-all 17 runs at the end.
+`Game` stays what it is, the conductor of the frame; what is left is the main loop as named
+steps in the same order. Each step checked with `compare.sh -quick`, all 17 runs at the end.

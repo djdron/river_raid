@@ -27,6 +27,7 @@
 
 #include "river_draw.h"
 #include "bullet.h"
+#include "console.h"
 #include "plane.h"
 #include "ram_map.h"
 #include "panel.h"
@@ -119,7 +120,7 @@ public:
 		bool screenOff;            // idle too long: the original turns the screen off
 		const PokeyRegs &pokey;    // the sound registers
 	};
-	Output output() const { return {panel_, plane_.fuel, scroller_, logoShown_, (idleTime_ & 0x80) != 0, pokey_}; }
+	Output output() const { return {panel_, plane_.fuel, scroller_, logoShown_, console_.screenOff(), pokey_}; }
 
 	// Reading the state (field comments in the private part give the original's RAM addresses)
 	const World &world() const { return world_; }
@@ -133,15 +134,11 @@ public:
 	const Panel &panel() const { return panel_; }
 	const Scroller &scroller() const { return scroller_; }
 	uint8_t logoShown() const { return logoShown_; }
-	uint8_t frameCount() const { return frameCount_; }
-	uint8_t attractFlags() const { return attractFlags_; }
-	uint8_t attractTimer() const { return attractTimer_; }
-	uint8_t idleTime() const { return idleTime_; }
-	uint8_t pauseState() const { return pauseState_; }
+	const Console &console() const { return console_; }
 	uint8_t scrollFrac() const { return scrollFrac_; }
 	bool busy() const { return busy_ > 0; }
-	// The attract mode: the game plays itself, nobody has pressed START (attractFlags bit 7)
-	bool attract() const { return (attractFlags_ & 0x80) != 0; }
+	// The attract mode: the game plays itself, nobody has pressed START
+	bool attract() const { return console_.attract(); }
 
 	// A saved state (needs keepLineStates): only what the game cannot make again. The variables
 	// (the state's members, eachState) and the river's and objects' state are kept; screen
@@ -173,7 +170,7 @@ public:
 		uint16_t screenTop;
 	};
 	SkipState skipState() const {
-		return {world_.state(), frameCount_, attractFlags_, attractTimer_, scrollFrac_, logoShown_, scroller_, river_.top};
+		return {world_.state(), console_.frameCount, console_.attractFlags, console_.attractTimer, scrollFrac_, logoShown_, scroller_, river_.top};
 	}
 	void setSkipState(const SkipState &s);
 
@@ -191,7 +188,7 @@ public:
 	enum class Sound { Explosion, Fire, Bonus };
 	void playSound(Sound s);
 	// The river viewer keeps the screen on (no idle time)
-	void stayAwake() { idleTime_ = 0; }
+	void stayAwake() { console_.idleTime = 0; }
 
 	// For the tools' ghost mode (game_trace, display_bench -ghost), from afterDisplay: the plane
 	// is not hit this frame and its tank stays full.
@@ -217,15 +214,7 @@ private:
 
 	// The state of the game (field comments give the original's RAM address)
 
-	// frame, modes, timers
-	uint8_t frameCount_ = 0;      // $18 +1 per frame (VBI)
-	uint8_t attractFlags_ = 0;    // $29 bit 7: attract mode (no player); bits 2-0 count frameCount wraps
-	uint8_t attractTimer_ = 0;    // $2A counts down every 8 frames while not playing; 0 while playing
-	uint8_t idleTime_ = 0;        // $78 +1 every 2048 frames without input; bit 7: screen off
-	uint8_t pauseState_ = 0;      // $24 3 key pressed, 2 paused, 1 key pressed again, 0 playing
-	uint8_t selectDelay_ = 0;     // $25 frames until SELECT/OPTION changes the game again
-	uint8_t powerOnDone_ = 0;     // $28
-	uint8_t screenOn_ = 0;        // $C7 0 while the screen is being cleared (colours off)
+	Console console_;             // frame counter, attract mode, idle time, pause, SELECT: $18, $24-$2A, $78, $C7
 	Match match_;                 // the game and the players: $09, $61-$75, $77, $79, $80-$9F
 	Plane plane_;                 // $76, $57-$59, $5B-$5C, $5E, $2B, $19, $B9
 	Bullet bullet_;               // $56 the plane's bullet
@@ -263,14 +252,7 @@ private:
 	uint8_t spriteRow(int sprite, int line) const;
 
 	template <class Self, class F> static void eachStateOf(Self &s, F f) {
-		f(s.frameCount_);
-		f(s.attractFlags_);
-		f(s.attractTimer_);
-		f(s.idleTime_);
-		f(s.pauseState_);
-		f(s.selectDelay_);
-		f(s.powerOnDone_);
-		f(s.screenOn_);
+		f(s.console_);
 		f(s.match_);
 		f(s.plane_);
 		f(s.bullet_);

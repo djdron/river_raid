@@ -115,6 +115,7 @@ To, który obiekt kiedy się budzi, rozstrzyga rejestr RANDOM układu POKEY, spr
 | `src/sound.h/.cpp` | dźwięki, o które prosi gra, i sterownik, który je gra (VBI B2A5–B3D8) |
 | `src/palette.h/.cpp` | kolory Atari komputerów NTSC i PAL (`atariRgb`): modele Altirra i atari800 |
 | `src/game.h`, `src/game*.cpp` | gra: pętla główna i VBI oryginału klatka po klatce — tryb demonstracyjny, klawisze konsoli, samolot, paliwo, kolizje, wybuchy, punkty, życia, gracze, śmierć i restart, koniec gry, rekordy; zawiera części wymienione wyżej |
+| `src/console.h/.cpp` | tryby i liczniki konsoli: licznik klatek, tryb demonstracyjny i jego zegar, czas bez wejścia (ekran gaśnie), pauza, powtarzanie SELECT |
 | `src/display.cpp` | rzeczna część wyświetlania: każdy obiekt na wysokości swojego slotu, kolizje jako zwykła geometria (bez przerwania listy wyświetlania, zob. [docs/DLI_REMOVAL.pl.md](../docs/DLI_REMOVAL.pl.md)), obraz obszaru rzeki |
 | `src/pokey_random.h` | licznik RANDOM układu POKEY |
 | `src/pokey_sound.h/.cpp` | dźwięk POKEY: cztery kanały, dzielniki i liczniki szumu, generowane takt po takcie |

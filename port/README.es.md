@@ -115,6 +115,7 @@ Qué objeto despierta y cuándo lo decide el registro RANDOM de POKEY, un contad
 | `src/sound.h/.cpp` | los sonidos que pide el juego y el controlador que los toca (VBI B2A5–B3D8) |
 | `src/palette.h/.cpp` | colores del Atari de máquinas NTSC y PAL (`atariRgb`): los modelos de Altirra y atari800 |
 | `src/game.h`, `src/game*.cpp` | el juego: el bucle principal y el VBI del original fotograma a fotograma — modo de demostración, teclas de la consola, el avión, el combustible, colisiones, explosiones, puntos, vidas, jugadores, muerte y reinicio, fin de partida, récords; contiene las partes de arriba |
+| `src/console.h/.cpp` | modos y contadores de la consola: el contador de fotogramas, el modo de demostración y su temporizador, el tiempo sin entrada (la pantalla se apaga), la pausa, la repetición de SELECT |
 | `src/display.cpp` | la parte del río en la visualización: cada objeto a la altura de su hueco, las colisiones como geometría simple (sin interrupción de la lista de visualización, ver [docs/DLI_REMOVAL.es.md](../docs/DLI_REMOVAL.es.md)), la imagen de la zona del río |
 | `src/pokey_random.h` | el contador RANDOM de POKEY |
 | `src/pokey_sound.h/.cpp` | el sonido de POKEY: cuatro canales, divisores y contadores de ruido, generados ciclo a ciclo |

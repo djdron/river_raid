@@ -14,9 +14,6 @@ inline uint8_t lo(int v) { return uint8_t(v & 0xFF); }
 constexpr uint8_t kFlying = Plane::kFlying, kWaiting = Plane::kWaiting, kLifeLost = Plane::kLifeLost;
 constexpr uint8_t kCrashed = Plane::kCrashed, kNoPlane = Plane::kNoPlane;
 
-// pauseState: a key press pauses, the next press resumes
-constexpr uint8_t kPlaying = 0, kResuming = 1, kPaused = 2, kPausing = 3;
-
 // channel 1's event sounds
 constexpr uint8_t kCrashSound = Sounds::kCrash, kOutOfFuelSound = Sounds::kOutOfFuel, kTankFullSound = Sounds::kTankFull, kRefuelSound = Sounds::kRefuel;
 

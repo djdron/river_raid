@@ -115,6 +115,7 @@ Which object wakes up when is decided by POKEY's RANDOM register, a hardware cou
 | `src/sound.h/.cpp` | the sounds the game asks for and the driver that plays them (VBI B2A5–B3D8) |
 | `src/palette.h/.cpp` | Atari colours of NTSC and PAL machines (`atariRgb`): the models of Altirra and atari800 |
 | `src/game.h`, `src/game*.cpp` | the game: the original's main loop and VBI frame by frame — attract mode, console keys, the plane, fuel, collisions, explosions, score, lives, players, death and restart, game over, high scores; it holds the parts above |
+| `src/console.h/.cpp` | the console's modes and counters: the frame counter, the attract mode and its timer, the time without input (the screen goes off), the pause, SELECT's repeat |
 | `src/display.cpp` | the river part of the display: each object at its slot's y, the collisions as plain geometry (no display list interrupt, see [docs/DLI_REMOVAL.md](../docs/DLI_REMOVAL.md)), the picture of the river area |
 | `src/pokey_random.h` | POKEY's RANDOM counter |
 | `src/pokey_sound.h/.cpp` | POKEY sound: four channels, dividers and noise counters, generated cycle by cycle |

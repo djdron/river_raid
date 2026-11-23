@@ -44,7 +44,8 @@ port/tools/trace/compare.sh <rom> [build dir] [runs...]
 17. `game.cpp` をテーマごとのファイルに分けました。クラスはそのまま：`game.cpp`（オリジナルの順序どおりのフレーム）、`game_plane.cpp`（飛行機、爆発、得点）、`game_players.cpp`（ゲームとプレイヤー、パネル）、`game_reset.cpp`（電源投入、デモモード、新しいゲーム、リセット、次の飛行機）、`game_state.cpp`（セーブ）。共通のものは `game_internal.h` に。
 18. 対戦（`match.h`、`match.cpp`）：`Match` はゲーム番号、誰の番か、両プレイヤーの橋・得点・残機、`respawned`、ハイスコアを持ち、`setUp`（sub $AF80）、`selectNext`、`swapPlayers`（川の状態を受け取る：レベルと再開地点も相手に移る）、`updateHighScore`、`addPoints`（A547：得点、ボーナスの飛行機、999 999 を超えたときの終了）、パネルの数字（デモモードでは表示しない。それは `Game` が伝える）を備えます。バイトは以前のフィールドと同じ順序なので、セーブは変わりません。途中で見つけたこと：`World::State` に 2 バイトの詰め物があり、メモリーにたまたまあった値で保存されていました。今は明示的なゼロのバイトで、同じ状態はいつも同じバイトで保存されます。
 19. `Game` のフィールドを private に（`name_`）。外からは const のゲッター（`world()`、`plane()`、`match()`、`pokey()`…）、`output()`（フレームが見せて鳴らすもの：パネル、燃料、スクロールする行、ロゴ、画面オフ、音のレジスター）、そしてフィールドへの書き込みの代わりにいくつかの名前付きの操作：`setRiver`、`keepLineStates`、`skipState` / `setSkipState`（川ビューアーのアンカー）、`playSound` と `stayAwake`（ビューアー）、`ghost`（ツールのゴーストモード）、`setPokey`（`sound_check`）。`sound_check` はドライバーが読むバイトを `mapRam` 経由で読み込みます。以前と同じバイトです。
+20. 本体（`console.h`、`console.cpp`）：`Console` はフレームカウンター、デモモードのフラグとタイマー、無操作の時間、ポーズ、SELECT の遅延、`powerOnDone`、`screenOn` を持ち、`keys`（A19E-A1F5：操作の有無、ポーズ、画面オフ）、`attractTimerTick`（A2F5）、`countFrame`（VBI のカウンター。`skipFrame` でも使う）、`selectRepeat`（A699）を備えます。フレームの順序がそれらを他の処理と混ぜるところ（新しいゲーム、ゲームの選択、ゲームオーバー、ゲームオーバー前の PAL の VBI）では、今も `Game` がフィールドを直接設定します。同じバイトが同じ順序なので、セーブは変わりません。ポーズ、SELECT、OPTION、START、画面オフは、こうしたキー入力のある 390 000 フレームで前のコミットと照合しました。
 
 ## 次に
 
-`Game` は本来の役割、フレームの指揮者のままにします。その周りに：本体のモード（`Console`：フレームカウンター、デモモード、ポーズ、SELECT。順序を変えずに分けられるところだけ）、同じ順序の名前付きの手順にしたメインループ。各段階を `compare.sh -quick` で確認し、最後に 17 本すべて。
+`Game` は本来の役割、フレームの指揮者のままにします。残りは、メインループを同じ順序の名前付きの手順にすること。各段階を `compare.sh -quick` で確認し、最後に 17 本すべて。

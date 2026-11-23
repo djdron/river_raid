@@ -137,10 +137,18 @@ código que sustituyen.
     `stayAwake` (el visor), `ghost` (el modo fantasma de las herramientas), `setPokey`
     (`sound_check`). `sound_check` carga los bytes que lee el controlador mediante `mapRam`, los
     mismos bytes que antes.
+20. La consola (`console.h`, `console.cpp`): `Console` guarda el contador de fotogramas, los
+    indicadores y el temporizador del modo de demostración, el tiempo de inactividad, la pausa,
+    el retardo de SELECT, `powerOnDone` y `screenOn`, con `keys` (A19E-A1F5: actividad, pausa,
+    pantalla apagada), `attractTimerTick` (A2F5), `countFrame` (los contadores del VBI, también
+    para `skipFrame`) y `selectRepeat` (A699). Donde el orden del fotograma los mezcla con el
+    resto (una partida nueva, la elección del juego, el fin de la partida, el VBI de PAL antes
+    del fin), `Game` sigue poniendo los campos él mismo. Los mismos bytes en el mismo orden, así
+    que las partidas guardadas no cambian; la pausa, SELECT, OPTION, START y el apagado de la
+    pantalla se comprobaron frente al commit anterior en 390 000 fotogramas con esas teclas.
 
 ## Lo siguiente
 
-`Game` sigue siendo lo que es, el director del fotograma; a su alrededor: los modos de la
-consola (`Console`: contador de fotogramas, modo de demostración, pausa, SELECT) donde se
-separan sin reordenar nada, y el bucle principal como pasos con nombre en el mismo orden. Cada
-paso comprobado con `compare.sh -quick`, los 17 recorridos al final.
+`Game` sigue siendo lo que es, el director del fotograma; queda el bucle principal como pasos
+con nombre en el mismo orden. Cada paso comprobado con `compare.sh -quick`, los 17 recorridos al
+final.

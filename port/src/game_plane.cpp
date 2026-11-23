@@ -127,15 +127,15 @@ void Game::crash(uint8_t event, uint8_t length) {
 	plane_.frame = 6;
 	// B200
 	plane_.state = kCrashed;
-	attractTimer_ = 0;
+	console_.attractTimer = 0;
 	removePlaneThings();
 }
 
 // sub $B21A: no plane (game over or attract mode).
 void Game::gameOverScreen() {
-	frameCount_ = 0xFF;
+	console_.frameCount = 0xFF;
 	plane_.state = kNoPlane;
-	attractTimer_ = 0xFF;
+	console_.attractTimer = 0xFF;
 	removePlaneThings();
 }
 

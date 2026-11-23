@@ -139,10 +139,18 @@ den sie ersetzen.
     (der Betrachter), `ghost` (der Geistermodus der Werkzeuge), `setPokey` (`sound_check`).
     `sound_check` lädt die Bytes, die der Treiber liest, über `mapRam`, dieselben Bytes wie
     zuvor.
+20. Die Konsole (`console.h`, `console.cpp`): `Console` hält den Bildzähler, die Flags und den
+    Zeitgeber des Demo-Modus, die Leerlaufzeit, die Pause, die Verzögerung von SELECT,
+    `powerOnDone` und `screenOn`, mit `keys` (A19E-A1F5: Aktivität, Pause, Bildschirm aus),
+    `attractTimerTick` (A2F5), `countFrame` (die Zähler des VBI, auch für `skipFrame`) und
+    `selectRepeat` (A699). Wo die Reihenfolge des Bilds sie mit dem Rest mischt (ein neues
+    Spiel, die Spielwahl, Spielende, der PAL-VBI vor dem Spielende), setzt `Game` die Felder
+    weiter selbst. Dieselben Bytes in derselben Reihenfolge, also bleiben Spielstände gleich;
+    Pause, SELECT, OPTION, START und das Ausgehen des Bildschirms wurden auf 390 000 Bildern mit
+    solchen Tasten gegen den Commit davor geprüft.
 
 ## Als Nächstes
 
-`Game` bleibt, was es ist, der Dirigent des Bilds; um es herum: die Modi der Konsole (`Console`:
-Bildzähler, Demo-Modus, Pause, SELECT), wo sie sich ohne Umstellung trennen lassen, und die
-Hauptschleife als benannte Schritte in derselben Reihenfolge. Jeder Schritt geprüft mit
-`compare.sh -quick`, alle 17 Läufe am Ende.
+`Game` bleibt, was es ist, der Dirigent des Bilds; übrig ist die Hauptschleife als benannte
+Schritte in derselben Reihenfolge. Jeder Schritt geprüft mit `compare.sh -quick`, alle 17 Läufe
+am Ende.

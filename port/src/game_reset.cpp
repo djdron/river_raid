@@ -19,15 +19,15 @@ void Game::startAttract(bool pal) {
 	for (int i = 0; i < kPanelBytes; i++) panel_.chars[i] = rom_.panelText(i);   // A0F0
 	// the attract mode's new game: B0F1 with X = $29, AF80, then the respawn (A36E-A3E3) which
 	// in the attract mode ends with sub $B21A; then frame 38
-	attractFlags_ = 0x80;
+	console_.attractFlags = 0x80;
 	setUpGame();
 	bullet_.y = 1;
 	match_.lives = match_.other.lives = 4;
 	match_.respawned = 1;
-	powerOnDone_ = 1;
-	screenOn_ = 1;
-	attractFlags_ = 0x81;
-	attractTimer_ = 0xFF;
+	console_.powerOnDone = 1;
+	console_.screenOn = 1;
+	console_.attractFlags = 0x81;
+	console_.attractTimer = 0xFF;
 	plane_.state = kNoPlane;
 	plane_.speed = 0x80;
 	plane_.fuel = 0xFF;
@@ -89,7 +89,7 @@ void Game::reset(bool full) {
 	// player-missile memory rows 1-$BB cleared (the sprites gone until prepare()), screen memory cleared
 	spritesShown_ = false;
 	river_.clear();
-	screenOn_ = 0;                               // B101: colours off while clearing
+	console_.screenOn = 0;                               // B101: colours off while clearing
 	busy_ = resetFrames();
 }
 
@@ -121,9 +121,9 @@ bool Game::respawnOrGameOver() {
 	// first: it still sees the frame counter, the plane and the attract timer as they were.)
 	if (pal_) {
 		vbiSeesBeforeGameOver_ = true;
-		beforeGameOver_[0] = frameCount_;
+		beforeGameOver_[0] = console_.frameCount;
 		beforeGameOver_[1] = plane_.state;
-		beforeGameOver_[2] = attractTimer_;
+		beforeGameOver_[2] = console_.attractTimer;
 	}
 	gameOverScreen();
 	gameOverText_ = true;                         // A3B4, after this frame's VBI (see vbi())
@@ -152,8 +152,8 @@ void Game::powerOn(bool pal) {
 	// A15D (X = $09): zero page cleared, then a new game's reset
 	reset(true);
 	setUpGame();
-	powerOnDone_ = 1;
-	attractTimer_ = 1;
+	console_.powerOnDone = 1;
+	console_.attractTimer = 1;
 	plane_.state = kNoPlane;
 }
 

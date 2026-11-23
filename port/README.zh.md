@@ -115,6 +115,7 @@ river_view [rom] [选项]
 | `src/sound.h/.cpp` | 游戏请求的声音，以及播放它们的驱动（VBI B2A5–B3D8） |
 | `src/palette.h/.cpp` | NTSC 和 PAL 机器的 Atari 颜色（`atariRgb`）：Altirra 和 atari800 的模型 |
 | `src/game.h`、`src/game*.cpp` | 游戏：原版的主循环和 VBI，逐帧——演示模式、控制台按键、飞机、燃料、碰撞、爆炸、分数、生命、玩家、坠毁与重开、游戏结束、最高分；它包含上面各部分 |
+| `src/console.h/.cpp` | 主机的模式和计数器：帧计数、演示模式及其计时器、无输入的时间（屏幕会关闭）、暂停、SELECT 的重复 |
 | `src/display.cpp` | 显示中河的部分：每个物体位于其槽位的 y，碰撞是简单的几何（没有显示列表中断，见 [docs/DLI_REMOVAL.zh.md](../docs/DLI_REMOVAL.zh.md)），河区域的画面 |
 | `src/pokey_random.h` | POKEY 的 RANDOM 计数器 |
 | `src/pokey_sound.h/.cpp` | POKEY 声音：四个声道、分频器和噪声计数器，逐周期生成 |

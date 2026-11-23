@@ -26,7 +26,7 @@ void Game::frame(const Input &input, const std::function<uint8_t()> &random) {
 	if (busy_ > 0) {
 		// sub $B0F1 is clearing memory: the main loop is stuck, only the interrupts run
 		busy_--;
-		if (busy_ == 1) screenOn_ = 1;           // screen memory clear: colours back on
+		if (busy_ == 1) console_.screenOn = 1;           // screen memory clear: colours back on
 		display();
 		if (afterDisplay) afterDisplay();
 		if (busy_ == 0) finishReset(input, random);
@@ -48,14 +48,14 @@ void Game::prepare() {
 	Objects &objs = world_.objects;
 	spritesShown_ = true;
 	if (objs.tank.y >= 0xBC) objs.tank.kind = objs.tank.y = 0;
-	objs.shell.colour = rom_.shellColour(frameCount_ >> 3);
+	objs.shell.colour = rom_.shellColour(console_.frameCount >> 3);
 	if (objs.shell.y >= 0xBC) {
 		objs.shell.timer = 0xFF;
 		objs.shell.frame = 0;
 		objs.shell.y = 0;
 	}
 	// AF3A-AF58: lives, bridges and score into the panel
-	if (attractTimer_ == 0) showLives();
+	if (console_.attractTimer == 0) showLives();
 	match_.showBridges(panel_, attract());
 	if (match_.player == 0) match_.showScore(panel_, attract());
 	else match_.showOtherScore(panel_, attract());
@@ -88,37 +88,12 @@ void Game::mainLoop(const Input &input, const std::function<uint8_t()> &random) 
 	// A19E: any joystick, fire or console key: not idle, and no pause
 	const bool active = input.stick[0] != 0x0F || input.stick[1] != 0x0F || input.trigger[0] || input.trigger[1] ||
 		input.start || input.select || input.option;
-	if (active) {
-		idleTime_ = 0;
-		pauseState_ = kPlaying;
-	}
-	// A1C5-A1F3: pause with any key of the keyboard (SKSTAT bit 2): press, release (paused),
-	// press, release (playing again)
-	const bool keyDown = input.key;
-	if (keyDown) idleTime_ = 0;
-	switch (pauseState_) {
-	case kPlaying:
-		if (keyDown) {
-			pauseState_ = kPausing;
-			return;
-		}
-		break;
-	case kResuming:
-		if (!keyDown) pauseState_--;
-		break;
-	case kPaused:
-		if (!keyDown) return;
-		pauseState_--;
-		break;
-	default:                                      // kPausing
-		if (keyDown) return;
-		pauseState_--;
-		return;
-	}
-	if (idleTime_ & 0x80) return;                // A1F5: screen off after a long time without input
+	// A1C5-A1F5: the pause (any key of the keyboard), and the screen off after a long time
+	// without input
+	if (!console_.keys(active, input.key)) return;
 
 	// A1FF: every 16 frames a random slot wakes up (it may move); 11-15 count as 6-10
-	if ((frameCount_ & 0x0F) == 0) {
+	if ((console_.frameCount & 0x0F) == 0) {
 		uint8_t n = random() & 0x0F;
 		if (n >= kSlots) n = lo(n - 5);
 		if (n != objs.enteringSlot) objs.slot[n].flags |= slotflag::kAwake;
@@ -126,24 +101,16 @@ void Game::mainLoop(const Input &input, const std::function<uint8_t()> &random) 
 	{
 		RiverState &s = world_.gen.s;
 		Objects &objs = world_.objects;
-		objs.tank.drive(frameCount_, objs.shell, attract() || plane_.flying(), !(hit_.tankAtEdge & 0x80), s.bridgeHit != 0, rom_);
+		objs.tank.drive(console_.frameCount, objs.shell, attract() || plane_.flying(), !(hit_.tankAtEdge & 0x80), s.bridgeHit != 0, rom_);
 	}
-	moveObjects(world_.objects, world_.gen.s.level, frameCount_, attract() || plane_.flying(), rom_);   // A26C
+	moveObjects(world_.objects, world_.gen.s.level, console_.frameCount, attract() || plane_.flying(), rom_);   // A26C
 
 	// A2F5: the attract timer, -1 every 8 frames; when it runs out after a game, the attract
 	// mode starts (with a new game 1 river)
-	if (attractTimer_ && !(frameCount_ & 7)) {
-		uint8_t timer = lo(attractTimer_ - 1);
-		if (timer == 0) {
-			timer = 0xFF;
-			if (!attract()) {
-				attractFlags_ |= 0x80;
-				attractTimer_ = timer;
-				newGame();
-				return;
-			}
-		}
-		attractTimer_ = timer;
+	if (console_.attractTimerTick() && !attract()) {
+		console_.attractFlags |= 0x80;
+		newGame();
+		return;
 	}
 	// A312: the joystick of the player whose turn it is
 	const int stick = match_.player & 1;
@@ -187,16 +154,12 @@ void Game::mainLoopEnd(const Input &input) {
 	// A673: console keys
 	if (input.start) {
 		sound_.startBeep = 2;
-		attractFlags_ = 0;
-		attractTimer_ = 0;
+		console_.attractFlags = 0;
+		console_.attractTimer = 0;
 		newGame();
 		return;
 	}
-	if (input.select || input.option) {
-		if (selectDelay_-- == 0) selectGame();   // A699: every 30 frames while held
-	} else {
-		selectDelay_ = 0;
-	}
+	if (console_.selectRepeat(input.select || input.option)) selectGame();   // A699: every 30 frames while held
 
 	// A6DE: scrolling
 	if (plane_.state & 0x80) {
@@ -225,37 +188,30 @@ void Game::scrollRiver() {
 // B2A5-B3F0: the vertical blank: the sound driver, then the frame counter.
 void Game::vbi(const std::function<uint8_t()> &random) {
 	if (vbiSeesBeforeGameOver_) {                 // PAL: sub $B21A comes after this VBI
-		frameCount_ = beforeGameOver_[0];
+		console_.frameCount = beforeGameOver_[0];
 		plane_.state = beforeGameOver_[1];
-		attractTimer_ = beforeGameOver_[2];
+		console_.attractTimer = beforeGameOver_[2];
 	}
 	soundDriver(random);
-	frameCount_++;
-	if (frameCount_ == 0) {
-		attractFlags_ = lo(attractFlags_ + 1) & 0xC7;
-		if (!(attractFlags_ & 7)) {
-			idleTime_++;
-			if (idleTime_ == 0) idleTime_ = 0x80;
-		}
-	}
+	console_.countFrame();
 	// B3F2-B43E: colours for the next frame. The water flashes red while a hit bridge flashes;
 	// while sub $B0F1 clears the screen the playfield colours are off.
 	colourWater_ = 0x84;
-	if (pauseState_ < kPaused && bridgeFlash_) {
+	if (!console_.paused() && bridgeFlash_) {
 		if (bridgeFlash_ & 1) colourWater_ = 0x42;
 		bridgeFlash_--;
 	}
 	colourEdge_ = 0x20;
 	colourBank_ = bankColour(world_.gen.s, world_.objects);              // sub $AFD0
-	if (!screenOn_) colourBank_ = colourEdge_ = colourWater_ = 0;
+	if (!console_.screenOn) colourBank_ = colourEdge_ = colourWater_ = 0;
 	// B44B-B47F: the scrolling line moves while the game is not being played
 	logoShown_ = scroller_.logoX;
-	scroller_.step(attractTimer_ != 0);
+	scroller_.step(console_.attractTimer != 0);
 	if (vbiSeesBeforeGameOver_) {
 		vbiSeesBeforeGameOver_ = false;
-		frameCount_ = 0xFF;
+		console_.frameCount = 0xFF;
 		plane_.state = kNoPlane;
-		attractTimer_ = 0xFF;
+		console_.attractTimer = 0xFF;
 	}
 	if (gameOverText_) {                          // A3B4: "Game over" scrolls past first
 		gameOverText_ = false;
@@ -266,7 +222,7 @@ void Game::vbi(const std::function<uint8_t()> &random) {
 // B2A5-B3D8: the sound driver (sound.cpp), with what it needs of the game.
 void Game::soundDriver(const std::function<uint8_t()> &random) {
 	SoundContext c{plane_};
-	c.paused = pauseState_ >= kPaused;
+	c.paused = console_.paused();
 	c.attract = attract();
 	c.attractSound = attractSound;
 	c.attractEnginePitch = attractEnginePitch;
@@ -288,30 +244,19 @@ void Game::skipFrame() {
 		objs.shell.y = 0;
 	}
 	// A2F5: the attract timer (in the attract mode it only goes round)
-	if (attractTimer_ && !(frameCount_ & 7)) {
-		const uint8_t timer = lo(attractTimer_ - 1);
-		attractTimer_ = timer ? timer : 0xFF;
-	}
+	console_.attractTimerTick();
 	scrollRiver();
-	// the counters of vbi()
-	frameCount_++;
-	if (frameCount_ == 0) {
-		attractFlags_ = lo(attractFlags_ + 1) & 0xC7;
-		if (!(attractFlags_ & 7)) {
-			idleTime_++;
-			if (idleTime_ == 0) idleTime_ = 0x80;
-		}
-	}
+	console_.countFrame();   // the counters of vbi()
 	colourBank_ = bankColour(world_.gen.s, world_.objects);
 	logoShown_ = scroller_.logoX;
-	scroller_.step(attractTimer_ != 0);
+	scroller_.step(console_.attractTimer != 0);
 }
 
 void Game::setSkipState(const SkipState &s) {
 	world_.setState(s.world);
-	frameCount_ = s.frameCount;
-	attractFlags_ = s.attractFlags;
-	attractTimer_ = s.attractTimer;
+	console_.frameCount = s.frameCount;
+	console_.attractFlags = s.attractFlags;
+	console_.attractTimer = s.attractTimer;
 	scrollFrac_ = s.scrollFrac;
 	logoShown_ = s.logoShown;
 	scroller_ = s.scroller;

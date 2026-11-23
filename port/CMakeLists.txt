@@ -26,6 +26,8 @@ endif()
 
 # Game logic library: no platform code, reads the user's ROM for tables and graphics.
 add_library(rrcore
+	src/console.cpp
+	src/console.h
 	src/display.cpp
 	src/game.cpp
 	src/game.h

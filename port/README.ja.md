@@ -115,6 +115,7 @@ river_view [rom] [オプション]
 | `src/sound.h/.cpp` | ゲームが求める音と、それを鳴らすドライバー（VBI B2A5–B3D8） |
 | `src/palette.h/.cpp` | NTSC 機と PAL 機の Atari の色（`atariRgb`）：Altirra と atari800 のモデル |
 | `src/game.h`、`src/game*.cpp` | ゲーム：オリジナルのメインループと VBI をフレームごとに。デモモード、コンソールキー、飛行機、燃料、衝突、爆発、得点、残機、プレイヤー、墜落と再開、ゲームオーバー、ハイスコア。上の各部分をまとめて持つ |
+| `src/console.h/.cpp` | 本体のモードとカウンター：フレームカウンター、デモモードとそのタイマー、入力のない時間（画面が消える）、ポーズ、SELECT のくり返し |
 | `src/display.cpp` | 表示の川の部分：各物体はそのスロットの y に置かれ、衝突は単純な幾何（ディスプレイリスト割り込みなし。[docs/DLI_REMOVAL.ja.md](../docs/DLI_REMOVAL.ja.md) を参照）、川の領域の絵 |
 | `src/pokey_random.h` | POKEY の RANDOM カウンター |
 | `src/pokey_sound.h/.cpp` | POKEY のサウンド：4 チャンネル、分周器とノイズのカウンター、サイクルごとに生成 |

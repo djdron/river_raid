@@ -12,9 +12,7 @@ namespace rr {
 void Game::mapRam(RamMap &m) {
 	world_.mapRam(m);
 	river_.mapRam(m);
-	m.byte("frameCount", 0x18, frameCount_).byte("attractFlags", 0x29, attractFlags_).byte("attractTimer", 0x2A, attractTimer_);
-	m.byte("idleTime", 0x78, idleTime_).byte("pauseState", 0x24, pauseState_).byte("selectDelay", 0x25, selectDelay_);
-	m.byte("powerOnDone", 0x28, powerOnDone_).byte("screenOn", 0xC7, screenOn_);
+	console_.mapRam(m);
 	m.byte("scrollFrac", 0x30, scrollFrac_).byte("bridgeFlash", 0x31, bridgeFlash_);
 	plane_.mapRam(m);
 	bullet_.mapRam(m);
@@ -32,10 +30,10 @@ void Game::loadFromRam(const uint8_t *ram) {
 	pal_ = ram[0xBF] == 0;   // A06F: GTIA's PAL bits, 0 on a PAL machine
 	river_.linesFromRam(ram);
 	// colours the VBI set (not in RAM): as it computes them
-	colourWater_ = (pauseState_ < 2 && bridgeFlash_ && !((bridgeFlash_ + 1) & 1)) ? 0x42 : 0x84;
+	colourWater_ = (!console_.paused() && bridgeFlash_ && !((bridgeFlash_ + 1) & 1)) ? 0x42 : 0x84;
 	colourEdge_ = 0x20;
 	colourBank_ = bankColour(world_.gen.s, world_.objects);
-	if (!screenOn_) colourBank_ = colourEdge_ = colourWater_ = 0;
+	if (!console_.screenOn) colourBank_ = colourEdge_ = colourWater_ = 0;
 }
 
 void Game::saveToRam(uint8_t *ram) const {

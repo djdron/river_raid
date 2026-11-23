@@ -125,10 +125,17 @@ zastępują.
     `playSound` i `stayAwake` (przeglądarka), `ghost` (tryb ducha w narzędziach), `setPokey`
     (`sound_check`). `sound_check` wczytuje bajty, które czyta sterownik, przez `mapRam` — te
     same bajty co wcześniej.
+20. Konsola (`console.h`, `console.cpp`): `Console` trzyma licznik klatek, flagi i zegar trybu
+    demonstracyjnego, czas bezczynności, pauzę, opóźnienie SELECT, `powerOnDone` i `screenOn`, z
+    `keys` (A19E-A1F5: aktywność, pauza, wyłączony ekran), `attractTimerTick` (A2F5),
+    `countFrame` (liczniki VBI, także dla `skipFrame`) i `selectRepeat` (A699). Tam, gdzie
+    kolejność klatki miesza je z resztą (nowa gra, wybór gry, koniec gry, VBI na PAL przed
+    końcem gry), `Game` nadal sam ustawia pola. Te same bajty w tej samej kolejności, więc
+    zapisy stanu się nie zmieniły; pauzę, SELECT, OPTION, START i gaśnięcie ekranu sprawdzono
+    wobec poprzedniego commitu na 390 000 klatkach z takimi klawiszami.
 
 ## Dalej
 
-`Game` zostaje tym, czym jest — dyrygentem klatki; wokół niego: tryby konsoli (`Console`:
-licznik klatek, tryb demonstracyjny, pauza, SELECT) tam, gdzie dają się oddzielić bez
-przestawiania, i pętla główna jako nazwane kroki w tej samej kolejności. Każdy krok sprawdzany
-`compare.sh -quick`, wszystkie 17 przebiegów na końcu.
+`Game` zostaje tym, czym jest — dyrygentem klatki; zostało podzielić pętlę główną na nazwane
+kroki w tej samej kolejności. Każdy krok sprawdzany `compare.sh -quick`, wszystkie 17 przebiegów
+na końcu.

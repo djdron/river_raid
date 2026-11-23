@@ -135,10 +135,18 @@ sostituiscono.
     `skipState` / `setSkipState` (le ancore del visualizzatore), `playSound` e `stayAwake` (il
     visualizzatore), `ghost` (la modalità fantasma degli strumenti), `setPokey` (`sound_check`).
     `sound_check` carica i byte che il driver legge tramite `mapRam`, gli stessi byte di prima.
+20. La console (`console.h`, `console.cpp`): `Console` tiene il contatore dei fotogrammi, i flag
+    e il timer della modalità dimostrativa, il tempo di inattività, la pausa, il ritardo di
+    SELECT, `powerOnDone` e `screenOn`, con `keys` (A19E-A1F5: attività, pausa, schermo spento),
+    `attractTimerTick` (A2F5), `countFrame` (i contatori del VBI, anche per `skipFrame`) e
+    `selectRepeat` (A699). Dove l'ordine del fotogramma li mescola al resto (una nuova partita,
+    la scelta del gioco, la fine della partita, il VBI PAL prima della fine), `Game` imposta
+    ancora i campi da sé. Gli stessi byte nello stesso ordine, quindi i salvataggi restano
+    uguali; pausa, SELECT, OPTION, START e lo spegnersi dello schermo sono stati verificati
+    contro il commit precedente su 390 000 fotogrammi con questi tasti.
 
 ## Prossimi passi
 
-`Game` resta ciò che è, il direttore d'orchestra del fotogramma; attorno a lui: le modalità
-della console (`Console`: contatore dei fotogrammi, modalità dimostrativa, pausa, SELECT) dove
-si separano senza riordinare nulla, e il ciclo principale come passi con un nome nello stesso
-ordine. Ogni passo verificato con `compare.sh -quick`, tutte le 17 partite alla fine.
+`Game` resta ciò che è, il direttore d'orchestra del fotogramma; resta da fare il ciclo
+principale come passi con un nome nello stesso ordine. Ogni passo verificato con `compare.sh
+-quick`, tutte le 17 partite alla fine.
