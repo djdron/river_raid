@@ -66,7 +66,7 @@
 #include "pokey_random.h"
 #include "pokey_sound.h"
 #include "river_draw.h"
-#include "river_gen.h"
+#include "world.h"
 #include "status_bar.h"
 
 #include "host.h"
@@ -96,7 +96,7 @@ constexpr int kSampleRate = 48000;
 // same, at hundreds of points of several rivers, from settle times of 200 frames on, about the
 // time an object takes to cross the screen; kSettleFrames has twice that.)
 // So B flies ahead by the river only, and far back the replay starts from a small anchor
-// (the river's state, about 170 bytes, every kAnchorFrames frames). Whole snapshots (about
+// (the river and object state, about 130 bytes, every kAnchorFrames frames). Whole snapshots (about
 // 16 KB) are kept only near the present and around where the replay is, for running back
 // smoothly.
 class Attract {
@@ -109,7 +109,7 @@ public:
 
 	void restart() {
 		head_ = Machine(rom_, seed_, pal_);
-		head_.game.gen.setRiver(riverSeed_, 0);
+		head_.game.world.setRiver(riverSeed_, 0);
 		sections_.clear();
 		anchors_.clear();
 		snapshots_.clear();
@@ -205,12 +205,12 @@ public:
 	long nextBridge(long line) {
 		const long known = bridgeAfter(line);
 		if (known >= 0) return known;
-		rr::RiverGen gen = head_.game.gen;
-		const uint8_t level = sections_.empty() ? gen.s.level : sections_.back().level;
+		rr::World world = head_.game.world;
+		const uint8_t level = sections_.empty() ? world.gen.s.level : sections_.back().level;
 		uint8_t buf[rr::kLineBytes];
 		for (long n = lines(); n < lines() + 100000; n++) {
-			gen.nextLine(buf);
-			if (gen.s.level != level && n > line) return n;
+			world.nextLine(buf);
+			if (world.gen.s.level != level && n > line) return n;
 		}
 		return -1;
 	}
@@ -328,7 +328,7 @@ private:
 			frame++;
 			game.afterLine = [this, &newLine](const uint8_t *) {
 				lines++;
-				if (newLine) newLine(game.gen.s);
+				if (newLine) newLine(game.world.gen.s);
 			};
 			if (frame == rr::Game::attractStartFrame(pal)) {
 				game.startAttract(pal);
@@ -361,7 +361,7 @@ private:
 			exactFrom = frame + kSettleFrames;
 			game.afterLine = [this, &newLine](const uint8_t *) {
 				lines++;
-				if (newLine) newLine(game.gen.s);
+				if (newLine) newLine(game.world.gen.s);
 			};
 			game.idleTime = 0;
 			game.skipFrame();
@@ -375,7 +375,7 @@ private:
 	// What Machine::skip changes: the river and the counters. A machine set to it runs on
 	// exactly, but its objects are those of another moment until it has settled.
 	struct Anchor {
-		rr::RiverState river;
+		rr::World::State world;
 		uint8_t frameCount, attractFlags, attractTimer, scrollFrac, gameLogo;
 		rr::Scroller gameScroller;
 		uint16_t screenTop;
@@ -384,12 +384,12 @@ private:
 		uint8_t logoShown;
 		long frame, lines;
 		explicit Anchor(const Machine &m)
-			: river(m.game.gen.s), frameCount(m.game.frameCount), attractFlags(m.game.attractFlags),
+			: world(m.game.world.state()), frameCount(m.game.frameCount), attractFlags(m.game.attractFlags),
 			  attractTimer(m.game.attractTimer), scrollFrac(m.game.scrollFrac), gameLogo(m.game.logoShown),
 			  gameScroller(m.game.scroller), screenTop(m.game.river.top), random(m.random), scroller(m.scroller),
 			  logoShown(m.logoShown), frame(m.frame), lines(m.lines) {}
 		void setUp(Machine &m) const {
-			m.game.gen.s = river;
+			m.game.world.setState(world);
 			m.game.frameCount = frameCount;
 			m.game.attractFlags = attractFlags;
 			m.game.attractTimer = attractTimer;
@@ -420,7 +420,7 @@ private:
 	std::function<void(const rr::RiverState &)> newLine() {
 		return [this](const rr::RiverState &s) {
 			const long line = head_.lines - 1;
-			if (sections_.empty()) sections_.push_back({line, s.level, head_.game.gen.start(0).bridge});
+			if (sections_.empty()) sections_.push_back({line, s.level, head_.game.world.gen.start(0).bridge});
 			else if (s.level != sections_.back().level) sections_.push_back({line, s.level, sections_.back().bridge + 1});
 		};
 	}

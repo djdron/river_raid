@@ -1,7 +1,7 @@
 // The tank, its shell and the helicopter's missile. See tank.h.
 #include "tank.h"
 
-#include "river_gen.h"
+#include "objects.h"
 #include "rom.h"
 
 namespace rr {

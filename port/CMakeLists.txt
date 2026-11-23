@@ -53,6 +53,8 @@ add_library(rrcore
 	src/status_bar.h
 	src/tank.cpp
 	src/tank.h
+	src/world.cpp
+	src/world.h
 )
 target_include_directories(rrcore PUBLIC src)
 target_compile_options(rrcore PRIVATE ${RR_WARNINGS})

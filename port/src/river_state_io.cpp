@@ -1,7 +1,7 @@
-// Mapping of RiverState fields to the original's RAM, for loading and byte-exact comparison.
+// Mapping of the river's and the objects' fields (World) to the original's RAM, for loading and byte-exact comparison.
 #include <cstdio>
 
-#include "river_gen.h"
+#include "world.h"
 
 namespace rr {
 namespace {
@@ -10,10 +10,10 @@ struct Field {
 	const char *name;
 	uint16_t addr;
 	bool gameOwned;   // also changed by the rest of the game: injected, not compared
-	uint8_t *(*ref)(RiverState &);
+	uint8_t *(*ref)(World &);
 };
 
-#define F(name, addr, owned, expr) {name, addr, owned, [](RiverState &s) -> uint8_t * { return &(expr); }}
+#define F(name, addr, owned, expr) {name, addr, owned, [](World &w) -> uint8_t * { RiverState &s = w.gen.s; Objects &o = w.objects; (void)s; (void)o; return &(expr); }}
 
 const Field kFields[] = {
 	F("lineInBlock", 0x2F, false, s.lineInBlock),
@@ -43,26 +43,26 @@ const Field kFields[] = {
 	F("prevSectionWidth", 0x2C, false, s.prevSectionWidth),
 	F("bankMargin", 0xB5, false, s.bankMargin),
 	F("decoFlags", 0x36, false, s.decoFlags),
-	F("islandObjectSide", 0x37, false, s.islandObjectSide),
+	F("islandObjectSide", 0x37, false, o.islandObjectSide),
 	F("decoPtrLo", 0xBA, false, *reinterpret_cast<uint8_t *>(&s.decoBitmap)),
 	F("decoPtrHi", 0xBB, false, *(reinterpret_cast<uint8_t *>(&s.decoBitmap) + 1)),
 	F("decoWidth", 0xBC, false, s.decoWidth),
 	F("decoOffset", 0xBD, false, s.decoOffset),
 	F("decoRows", 0xBE, false, s.decoRows),
-	F("firstSlot", 0x4D, false, s.firstSlot),
-	F("enteringSlot", 0x4E, false, s.enteringSlot),
-	F("shooterSlot", 0x51, true, s.shooterSlot),
-	F("enteringLines", 0x32, false, s.enteringLines),
-	F("slotParity", 0x33, true, s.slotParity),
+	F("firstSlot", 0x4D, false, o.firstSlot),
+	F("enteringSlot", 0x4E, false, o.enteringSlot),
+	F("shooterSlot", 0x51, true, o.shooterSlot),
+	F("enteringLines", 0x32, false, o.enteringLines),
+	F("slotParity", 0x33, true, o.slotParity),
 	F("sectionBankColour", 0x0B, true, s.sectionBankColour),
-	F("wideObject", 0xB8, false, s.wideObject),
-	F("placeWidth", 0xB3, false, s.placeWidth),
-	F("tankKind", 0x38, true, s.tank.kind),
-	F("tankX", 0x39, true, s.tank.x),
-	F("tankY", 0x3A, true, s.tank.y),
-	F("shellSpeed", 0x3E, true, s.shell.speed), F("shellSpeedFrac", 0x3F, true, s.shell.speedFrac), F("shellY", 0x40, true, s.shell.y),
-	F("tankFires", 0x41, true, s.tank.fires), F("shellTimer", 0x50, true, s.shell.timer), F("missileX", 0xC1, true, s.missile.x),
-	F("missileY", 0xC2, true, s.missile.y),
+	F("wideObject", 0xB8, false, o.wideObject),
+	F("placeWidth", 0xB3, false, o.placeWidth),
+	F("tankKind", 0x38, true, o.tank.kind),
+	F("tankX", 0x39, true, o.tank.x),
+	F("tankY", 0x3A, true, o.tank.y),
+	F("shellSpeed", 0x3E, true, o.shell.speed), F("shellSpeedFrac", 0x3F, true, o.shell.speedFrac), F("shellY", 0x40, true, o.shell.y),
+	F("tankFires", 0x41, true, o.tank.fires), F("shellTimer", 0x50, true, o.shell.timer), F("missileX", 0xC1, true, o.missile.x),
+	F("missileY", 0xC2, true, o.missile.y),
 	F("flashLines", 0x4F, true, s.flashLines),
 	F("depotLevelLimit", 0xCB, false, s.depotLevelLimit),
 };
@@ -82,28 +82,28 @@ void forEachSlotField(Fn fn) {
 
 }  // namespace
 
-void RiverGen::loadFromRam(const uint8_t *ram) {
-	for (const Field &f : kFields) *f.ref(s) = ram[f.addr];
-	forEachSlotField([&](const char *, int i, uint16_t addr, bool, uint8_t Slot::*m) { s.slot[i].*m = ram[addr]; });
+void World::loadFromRam(const uint8_t *ram) {
+	for (const Field &f : kFields) *f.ref(*this) = ram[f.addr];
+	forEachSlotField([&](const char *, int i, uint16_t addr, bool, uint8_t Slot::*m) { objects.slot[i].*m = ram[addr]; });
 }
 
-void RiverGen::saveToRam(uint8_t *ram) const {
-	RiverState copy = s;
+void World::saveToRam(uint8_t *ram) const {
+	World copy = *this;
 	for (const Field &f : kFields) ram[f.addr] = *f.ref(copy);
-	forEachSlotField([&](const char *, int i, uint16_t addr, bool, uint8_t Slot::*m) { ram[addr] = copy.slot[i].*m; });
+	forEachSlotField([&](const char *, int i, uint16_t addr, bool, uint8_t Slot::*m) { ram[addr] = copy.objects.slot[i].*m; });
 }
 
-void RiverGen::loadGameOwned(const uint8_t *ram) {
+void World::loadGameOwned(const uint8_t *ram) {
 	for (const Field &f : kFields)
-		if (f.gameOwned) *f.ref(s) = ram[f.addr];
+		if (f.gameOwned) *f.ref(*this) = ram[f.addr];
 	forEachSlotField([&](const char *, int i, uint16_t addr, bool owned, uint8_t Slot::*m) {
-		if (owned) s.slot[i].*m = ram[addr];
+		if (owned) objects.slot[i].*m = ram[addr];
 	});
 }
 
-std::vector<std::string> RiverGen::diffWithRam(const uint8_t *ram, bool includeGameOwned) const {
+std::vector<std::string> World::diffWithRam(const uint8_t *ram, bool includeGameOwned) const {
 	std::vector<std::string> out;
-	RiverState copy = s;
+	World copy = *this;
 	char buf[160];
 	for (const Field &f : kFields) {
 		if (f.gameOwned && !includeGameOwned) continue;
@@ -116,7 +116,7 @@ std::vector<std::string> RiverGen::diffWithRam(const uint8_t *ram, bool includeG
 	forEachSlotField([&](const char *name, int i, uint16_t addr, bool owned, uint8_t Slot::*m) {
 		if (owned && !includeGameOwned) return;
 		if (i < ram[0x4D]) return;   // free slot: every field is rewritten before it is read
-		uint8_t v = copy.slot[i].*m;
+		uint8_t v = copy.objects.slot[i].*m;
 		if (v != ram[addr]) {
 			std::snprintf(buf, sizeof buf, "%s[%d] $%04X: port=%02X orig=%02X", name, i, addr, v, ram[addr]);
 			out.push_back(buf);

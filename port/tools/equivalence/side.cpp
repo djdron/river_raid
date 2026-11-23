@@ -12,14 +12,14 @@
 namespace {
 std::unique_ptr<rr::Rom> rom;
 std::unique_ptr<rr::Game> game;
-std::unique_ptr<rr::RiverGen> gen;
+std::unique_ptr<rr::World> gen;
 }
 
 void F(Init)(const char *romPath, int mode, const uint8_t *ram, int gameNumber, bool pal) {
 	rom = std::make_unique<rr::Rom>();
 	rom->load(romPath);
 	game = std::make_unique<rr::Game>(*rom);
-	gen = std::make_unique<rr::RiverGen>(*rom);
+	gen = std::make_unique<rr::World>(*rom);
 	if (mode == 0) game->startAttract(pal);
 	else if (mode == 1) game->loadFromRam(ram);
 	else gen->startGame(gameNumber, pal);
@@ -44,7 +44,7 @@ void F(Snapshot)(Snapshot &out) {
 	for (int k = 0; k < 4; k++) { out.audf[k] = game->pokey.audf[k]; out.audc[k] = game->pokey.audc[k]; }
 	out.busy = game->busy();
 	out.colours[0] = game->colourBank; out.colours[1] = game->colourEdge; out.colours[2] = game->colourWater;
-	out.colours[3] = game->logoShown; out.colours[4] = game->gen.s.shell.colour;
+	out.colours[3] = game->logoShown; out.colours[4] = game->world.objects.shell.colour;
 }
 
 void F(GenLine)(uint8_t line[48], uint8_t *ram) {

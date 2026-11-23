@@ -13,7 +13,7 @@
 #include <vector>
 
 #include "../src/river_draw.h"
-#include "../src/river_gen.h"
+#include "../src/world.h"
 
 namespace {
 
@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
 		else if (!std::strcmp(argv[i], "-flat")) flat = true;
 		else if (!std::strcmp(argv[i], "-raw") && i + 1 < argc) rawPath = argv[++i];
 	}
-	rr::RiverGen gen(rom);
+	rr::World gen(rom);
 	gen.startGame(game, pal);
 	std::vector<uint8_t> all(size_t(lines) * rr::kLineBytes);
 	const int w = rr::kVisibleLast + 1 - rr::kVisibleFirst;
@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
 		if (flat) {
 			for (int p = 0; p < rr::kRowWidth; p++) screen[p] = flatColours[(src[p >> 3] >> (6 - 2 * ((p >> 1) & 3))) & 3];
 		} else {
-			rr::drawScreenLine(rom, gen.s, src, screen);
+			rr::drawScreenLine(rom, gen.gen.s, gen.objects, src, screen);
 		}
 		uint8_t *row = &rgb[size_t(lines - 1 - i) * w * 3];   // newest line at the top
 		for (int x = 0; x < w; x++) rr::atariRgb(screen[rr::kVisibleFirst + x], row + x * 3);
@@ -115,6 +115,6 @@ int main(int argc, char **argv) {
 	}
 	initCrc();
 	if (!writePng(argv[4], w, lines, rgb)) { std::fprintf(stderr, "cannot write %s\n", argv[4]); return 1; }
-	std::printf("game %d, %d lines, level reached %d -> %s\n", game, lines, gen.s.level, argv[4]);
+	std::printf("game %d, %d lines, level reached %d -> %s\n", game, lines, gen.gen.s.level, argv[4]);
 	return 0;
 }

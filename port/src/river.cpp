@@ -30,13 +30,13 @@ void River::add(const Line &line, const Line &bank) {
 	runs.insert(runs.begin(), makeRuns(bank.data()));
 }
 
-void River::push(RiverGen &gen) {
+void River::push(World &world) {
 	Line line, bank;
 	if (keepLineStates) {
-		lineStates.insert(lineStates.begin(), gen.s);
+		lineStates.insert(lineStates.begin(), world.state());
 		if (lineStates.size() > 256) lineStates.pop_back();
 	}
-	gen.nextLine(line.data(), bank.data());
+	world.nextLine(line.data(), bank.data());
 	add(line, bank);
 	if (lines.size() > 256) {
 		lines.pop_back();
@@ -51,13 +51,13 @@ void River::push(RiverGen &gen) {
 	top = uint16_t(topLo | (topHi << 8));
 }
 
-void River::rebuild(RiverGen gen, const RiverState &oldest, int count) {
-	gen.s = oldest;
+void River::rebuild(World world, const World::State &oldest, int count) {
+	world.setState(oldest);
 	clear();
 	Line line, bank;
 	for (int i = 0; i < count; i++) {
-		if (keepLineStates) lineStates.insert(lineStates.begin(), gen.s);
-		gen.nextLine(line.data(), bank.data());
+		if (keepLineStates) lineStates.insert(lineStates.begin(), world.state());
+		world.nextLine(line.data(), bank.data());
 		add(line, bank);
 	}
 }

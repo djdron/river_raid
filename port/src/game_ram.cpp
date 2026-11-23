@@ -13,13 +13,13 @@ namespace {
 // Game fields compared with RAM (address, reference into the game).
 std::vector<std::pair<std::pair<const char *, uint16_t>, uint8_t *>> gameFields(const Game &game) {
 	Game &g = const_cast<Game &>(game);
-	RiverGen &gen = const_cast<RiverGen &>(game.gen);
+	World &world = const_cast<World &>(game.world);
 	return {
 		{{"frameCount", 0x18}, &g.frameCount}, {{"attractFlags", 0x29}, &g.attractFlags},
 		{{"attractTimer", 0x2A}, &g.attractTimer}, {{"planeState", 0x76}, &g.plane.state},
 		{{"idleTime", 0x78}, &g.idleTime}, {{"speed", 0x59}, &g.plane.speed}, {{"scrollFrac", 0x30}, &g.scrollFrac},
-		{{"shellFrame", 0x3B}, &gen.s.shell.frame}, {{"shellX", 0x3C}, &gen.s.shell.x}, {{"shellXFrac", 0x3D}, &gen.s.shell.xFrac},
-		{{"missileStep", 0xC0}, &gen.s.missile.step}, {{"planeX", 0x57}, &g.plane.x}, {{"planeFrame", 0x5E}, &g.plane.frame},
+		{{"shellFrame", 0x3B}, &world.objects.shell.frame}, {{"shellX", 0x3C}, &world.objects.shell.x}, {{"shellXFrac", 0x3D}, &world.objects.shell.xFrac},
+		{{"missileStep", 0xC0}, &world.objects.missile.step}, {{"planeX", 0x57}, &g.plane.x}, {{"planeFrame", 0x5E}, &g.plane.frame},
 		{{"soundExplosion", 0x7C}, &g.sound.explosion}, {{"soundMissile", 0x7F}, &g.sound.missile},
 		{{"bridgeFlash", 0x31}, &g.bridgeFlash}, {{"fuel", 0x5B}, &g.plane.fuel}, {{"joystick", 0x19}, &g.plane.stick},
 		{{"joystickPrev", 0xB9}, &g.plane.stickPrev}, {{"startBeep", 0xC6}, &g.sound.startBeep}, {{"pauseState", 0x24}, &g.pauseState},
@@ -70,7 +70,7 @@ std::vector<std::array<uint8_t, kLineBytes>> screenFromRam(const uint8_t *ram) {
 }  // namespace
 
 void Game::loadFromRam(const uint8_t *ram) {
-	gen.loadFromRam(ram);
+	world.loadFromRam(ram);
 	for (auto &f : gameFields(*this)) *f.second = ram[f.first.second];
 	for (auto &a : gameArrays(*this)) std::memcpy(std::get<2>(a), ram + std::get<1>(a), size_t(std::get<3>(a)));
 	pal_ = ram[0xBF] == 0;   // A06F: GTIA's PAL bits, 0 on a PAL machine
@@ -79,12 +79,12 @@ void Game::loadFromRam(const uint8_t *ram) {
 	// colours the VBI set (not in RAM): as it computes them
 	colourWater = (pauseState < 2 && bridgeFlash && !((bridgeFlash + 1) & 1)) ? 0x42 : 0x84;
 	colourEdge = 0x20;
-	colourBank = bankColour(gen.s);
+	colourBank = bankColour(world.gen.s, world.objects);
 	if (!screenOn) colourBank = colourEdge = colourWater = 0;
 }
 
 void Game::saveToRam(uint8_t *ram) const {
-	gen.saveToRam(ram);
+	world.saveToRam(ram);
 	for (auto &f : gameFields(*this)) ram[f.first.second] = *f.second;
 	for (auto &a : gameArrays(*this)) std::memcpy(ram + std::get<1>(a), std::get<2>(a), size_t(std::get<3>(a)));
 	// player-missile memory as the original has it at the top of the frame (AE99): the sprites'
@@ -111,10 +111,10 @@ std::vector<std::string> Game::diffWithRam(const uint8_t *orig) const {
 	// the display tests only theirs, and the others' is not compared
 	std::vector<uint8_t> copy(orig, orig + 0x4000);
 	for (int i = 0; i < kSlots; i++)
-		if (!objectKind(gen.s.slot[i].kind).turnsAtEdge())
-			copy[size_t(0x42 + i)] = uint8_t((copy[size_t(0x42 + i)] & ~slotflag::kTouchingEdge) | (gen.s.slot[i].flags & slotflag::kTouchingEdge));
+		if (!objectKind(world.objects.slot[i].kind).turnsAtEdge())
+			copy[size_t(0x42 + i)] = uint8_t((copy[size_t(0x42 + i)] & ~slotflag::kTouchingEdge) | (world.objects.slot[i].flags & slotflag::kTouchingEdge));
 	const uint8_t *ram = copy.data();
-	std::vector<std::string> diffs = gen.diffWithRam(ram, true);
+	std::vector<std::string> diffs = world.diffWithRam(ram, true);
 	char b[96];
 	for (auto &fd : gameFields(*this))
 		if (*fd.second != ram[fd.first.second]) {

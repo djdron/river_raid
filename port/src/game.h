@@ -32,6 +32,7 @@
 #include "sound.h"
 #include "river.h"
 #include "river_gen.h"
+#include "world.h"
 #include "status_bar.h"
 
 namespace rr {
@@ -63,7 +64,7 @@ class Game {
 public:
 	explicit Game(const Rom &rom);
 
-	RiverGen gen;     // river and object slots (gen.s)
+	World world;      // the river and the objects on it
 
 	// The state of the game (field comments give the original's RAM address)
 
@@ -115,7 +116,7 @@ public:
 	// saved state is well under 1 KB. load() needs the same starting points (gen.setRiver).
 	std::vector<uint8_t> save() const;
 	void load(const std::vector<uint8_t> &data);
-	// Called after each new river line (gen.s is the state right after it), if set.
+	// Called after each new river line (world.gen.s is the state right after it), if set.
 	std::function<void(const uint8_t *line)> afterLine;
 
 	// The state of the attract mode right after power-on, at the frame its river starts

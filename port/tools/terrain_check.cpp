@@ -17,7 +17,7 @@
 #include <cstring>
 #include <vector>
 
-#include "../src/river_gen.h"
+#include "../src/world.h"
 
 int main(int argc, char **argv) {
 	if (argc < 6) {
@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
 	auto ram = [&](int frame) { return trace.data() + size_t(frame - first) * 0x4000; };
 	if (start - 1 < first || start + count - 1 >= first + nFrames) { std::fprintf(stderr, "range outside trace\n"); return 2; }
 
-	rr::RiverGen gen(rom);
+	rr::World gen(rom);
 	uint8_t line[rr::kLineBytes];
 	if (fresh) {
 		gen.startGame(fresh);

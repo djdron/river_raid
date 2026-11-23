@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "../src/river_draw.h"
-#include "../src/river_gen.h"
+#include "../src/world.h"
 
 int main(int argc, char **argv) {
 	if (argc < 4) {
@@ -76,10 +76,10 @@ int main(int argc, char **argv) {
 	if (to >= 0) last = std::min<long>(last, to);
 
 	const int kFirstFrame = first;
-	rr::RiverGen gen(rom);
+	rr::World gen(rom);
 	gen.startGame(game, pal);
 	std::vector<std::vector<uint8_t>> lines;
-	std::vector<rr::RiverState> states;
+	std::vector<rr::World::State> states;
 	long lineCount = 0, compared = 0, exact = 0, tank = 0, firstBad = -1;
 	std::vector<uint8_t> want(rr::kRowWidth), mem(0x4000);
 	for (long f = kFirstFrame + 1; f <= last; f++) {
@@ -90,20 +90,20 @@ int main(int argc, char **argv) {
 		while (long(states.size()) <= shown) {
 			lines.emplace_back(rr::kLineBytes);
 			gen.nextLine(lines.back().data());
-			states.push_back(gen.s);
+			states.push_back(gen.state());
 		}
-		rr::RiverState s = states[shown];
+		rr::World::State s = states[shown];
 		if (ram) {
 			std::fseek(ram, (f - 1) * 0x4000L, SEEK_SET);
 			if (std::fread(mem.data(), 1, 0x4000, ram) != 0x4000) break;
 			for (int k = 0; k < rr::kSlots; k++) {
-				s.slot[k].x = mem[0x0516 + k];
-				s.slot[k].flags = mem[0x42 + k];
-				s.slot[k].kind = mem[0x0500 + k];
+				s.objects.slot[k].x = mem[0x0516 + k];
+				s.objects.slot[k].flags = mem[0x42 + k];
+				s.objects.slot[k].kind = mem[0x0500 + k];
 			}
 		}
 		uint8_t got[rr::kRowWidth];
-		rr::drawScreenLine(rom, s, lines[shown].data(), got);
+		rr::drawScreenLine(rom, s.river, s.objects, lines[shown].data(), got);
 		std::fseek(strip, f * long(rr::kRowWidth), SEEK_SET);
 		if (std::fread(want.data(), 1, rr::kRowWidth, strip) != size_t(rr::kRowWidth)) break;
 		compared++;

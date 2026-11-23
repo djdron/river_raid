@@ -17,6 +17,7 @@
 #include <cstdint>
 
 #include "palette.h"
+#include "objects.h"
 #include "river_gen.h"
 
 namespace rr {
@@ -28,11 +29,11 @@ constexpr int kVisibleFirst = 24;
 constexpr int kVisibleLast = 359;
 
 // Bank colour (COLPF0) of a line when it enters the screen (sub $AFD0).
-uint8_t bankColour(const RiverState &s);
+uint8_t bankColour(const RiverState &s, const Objects &objects);
 
 // Draws generated line `line` (state `s` right after generating it) into out[kRowWidth]
 // as Atari colour codes (hue << 4 | luminance).
-void drawScreenLine(const Rom &rom, const RiverState &s, const uint8_t line[kLineBytes], uint8_t out[kRowWidth]);
+void drawScreenLine(const Rom &rom, const RiverState &s, const Objects &objects, const uint8_t line[kLineBytes], uint8_t out[kRowWidth]);
 
 
 }  // namespace rr

@@ -17,25 +17,25 @@ constexpr int kSpriteLeft = 32;
 
 }  // namespace
 
-uint8_t bankColour(const RiverState &s) {
+uint8_t bankColour(const RiverState &s, const Objects &o) {
 	uint8_t c = uint8_t((s.blockFlags & kBankShade) ^ 0xD6);
 	// While a bridge object is still being drawn in near the top, the shade is switched.
-	if (s.enteringSlot < kSlots) {
-		const Slot &sl = s.slot[s.enteringSlot];
+	if (o.enteringSlot < kSlots) {
+		const Slot &sl = o.slot[o.enteringSlot];
 		if ((sl.flags & slotflag::kBridge) && sl.y < 0x5C) c ^= kBankShade;
 	}
 	return c;
 }
 
-void drawScreenLine(const Rom &rom, const RiverState &s, const uint8_t line[kLineBytes], uint8_t out[kRowWidth]) {
-	uint8_t bank = bankColour(s);
+void drawScreenLine(const Rom &rom, const RiverState &s, const Objects &o, const uint8_t line[kLineBytes], uint8_t out[kRowWidth]) {
+	uint8_t bank = bankColour(s, o);
 
 	// The first slot (from firstSlot up) whose sprite covers this scanline is drawn;
 	// row = how far up from the object's bottom row the scanline is.
 	bool haveSprite = false;
 	uint8_t shape = 0, spriteColour = 0, spriteX = 0, spriteSize = 0;
-	for (int k = s.firstSlot; k < kSlots; k++) {
-		const Slot &sl = s.slot[k];
+	for (int k = o.firstSlot; k < kSlots; k++) {
+		const Slot &sl = o.slot[k];
 		const uint8_t height = rom.objectHeight(sl.type);
 		const uint8_t row = uint8_t(sl.y + height - kEntryScanline);
 		if (row > height || row >= 0x80) continue;

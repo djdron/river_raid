@@ -85,7 +85,15 @@ replace.
     their runs, the top line's address in the original's screen memory and the generator's
     states for small saved states; `push()` adds the generator's next line, `rebuild()` makes
     them again when a state is loaded.
+12. No `GameState`: its fields are the `Game`'s own members (`eachState()` lists them for saving,
+    loading and the reset).
+13. The river apart from the objects (`world.h`, `world.cpp`): `RiverGen` makes only the river
+    (`RiverState`: banks, islands, sections, the LFSR); the slots, the tank, its shell and the
+    missile are `Objects`, which places the new objects after each line (`afterLine`, $ABE1-
+    $AE93) and tells the generator where the object being drawn in is (`BankObstacle`), so the
+    bank keeps clear of it. `World` holds both and runs them line by line; its `State` is what
+    the saved states and the river's line states keep.
 
 ## Next
 
-12. `GameState` and `RiverState` gone, the RAM export written from the classes; the documents.
+14. The RAM export written from the classes; the documents.

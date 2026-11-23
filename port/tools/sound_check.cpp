@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
 	while (std::fread(&frame, 4, 1, vbi) == 1 && std::fread(mem.data(), 1, mem.size(), vbi) == mem.size()) {
 		for (auto &w : writes[frame]) regs[w.first] = uint8_t(w.second);
 		rr::Game &g = game;
-		game.gen.loadFromRam(mem.data());
+		game.world.loadFromRam(mem.data());
 		g.sound.startBeep = mem[0xC6]; g.pauseState = mem[0x24]; g.sound.event = mem[0x7A]; g.sound.eventTime = mem[0x7B];
 		g.plane.state = mem[0x76]; g.plane.fuel = mem[0x5B]; g.plane.fuelFrac = mem[0x5C]; g.plane.speed = mem[0x59];
 		g.sound.crashPitch = mem[0x052C]; g.plane.stick = mem[0x19]; g.sound.explosion = mem[0x7C];

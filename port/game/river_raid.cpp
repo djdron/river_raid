@@ -154,7 +154,7 @@ public:
 	void setSoundRate(double rate) { pokey_.setSampleRate(rate); }
 	const rr::Game &state() const { return game_; }
 
-	void setRiver(uint32_t seed, int bridge) { game_.gen.setRiver(seed, bridge); }
+	void setRiver(uint32_t seed, int bridge) { game_.world.setRiver(seed, bridge); }
 
 	// Saved state (F7 / F8): the whole machine, in memory: the game's own (Game::save, only what
 	// it cannot make again), POKEY's random counter and sound, the power-on screen's scrolling

@@ -8,7 +8,7 @@
 namespace rr {
 
 // The data of one player ($60-$6A; the other player's copy is at $6B-$75). The active player's
-// level and checkpoint are the river generator's (gen.s); this copy holds the other's.
+// level and checkpoint are the river generator's (world.gen.s); this copy holds the other's.
 struct PlayerData {
 	uint8_t level = 0;          // $60
 	Bcd<2> bridges;             // $61-$62 bridges destroyed

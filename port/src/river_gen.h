@@ -6,7 +6,7 @@
 // produces one new line at the top of the screen:
 //   - 48 bytes of 2-bit-per-pixel bitmap (ANTIC mode E, 192 pixels),
 //   - updated river geometry (bank, water, island),
-//   - objects placed into the slot table every 16 lines.
+//   - where its objects go (Objects, objects.h, places them as the lines come: World, world.h).
 //
 // Field comments give the original RAM address, so the state can be compared byte for
 // byte with traces of the original (see tools/terrain_check.cpp).
@@ -17,12 +17,9 @@
 #include <vector>
 
 #include "rom.h"
-#include "tank.h"
 
 namespace rr {
 
-constexpr int kSlots = 11;         // object slots, one horizontal band each
-constexpr uint8_t kNoSlot = 11;    // "no slot" in slot numbers
 constexpr int kLineBytes = 48;     // one screen line: 192 pixels, 4 per byte
 
 // RiverState::blockFlags (bits also copied into the flags of a new slot)
@@ -30,14 +27,6 @@ constexpr uint8_t kBridgeBlock = 0x80;   // the straight run-up to a bridge (the
 constexpr uint8_t kNewBlock = 0x10;      // set at each block start
 constexpr uint8_t kBankShade = 0x04;     // which of the two bank greens ($D6/$D2) this level has
 
-// Slot::flags
-namespace slotflag {
-constexpr uint8_t kBridge = 0x80;        // the slot holds a bridge (road colours next to it)
-constexpr uint8_t kAwake = 0x40;         // the object may move
-constexpr uint8_t kTurned = 0x10;        // turned round at the bank edge, until it leaves it
-constexpr uint8_t kFacingLeft = 0x08;    // moves left (and its shape is mirrored)
-constexpr uint8_t kTouchingEdge = 0x01;  // set by the display: the sprite touched the bank edge
-}  // namespace slotflag
 
 // RiverState::islandFlags: 0 no island; $40 the island opens in the next section (this one has
 // width 0); $C0 island; $80 the island closes (width 0 again).
@@ -46,13 +35,12 @@ constexpr uint8_t kIslandOpening = 0x40;
 // RiverState::decoFlags
 constexpr uint8_t kDecoLeft = 0x80;
 
-struct Slot {
-	uint8_t y = 0;        // $0C+i  vertical position, +1 per generated line
-	uint8_t x = 0;        // $0516+i horizontal position
-	uint8_t flags = 0;    // $42+i
-	uint8_t kind = 0;     // $0500+i current kind / animation (game logic changes it)
-	uint8_t type = 0;     // $050B+i type as placed (index into the points table)
-	uint8_t size = 0;     // $0521+i sprite width (SIZEP3): 0 normal, 1 double (ship), 3 quad (bridge)
+
+// The object still being drawn in at the top, which the bank keeps clear of (Objects::obstacle)
+struct BankObstacle {
+	bool present = false;          // an enemy, bridge or depot (type 8 and up) is entering
+	uint8_t x = 0, size = 0;
+	uint8_t islandSide = 0;        // bit 7: it is right of the island
 };
 
 struct RiverState {
@@ -84,25 +72,11 @@ struct RiverState {
 	uint8_t bankMargin = 0;         // $B5  6 below level 9: objects keep away from the banks
 	// bank decoration (house, mountain) being drawn
 	uint8_t decoFlags = 0;          // $36  0: none; bit 7: on the left bank
-	uint8_t islandObjectSide = 0;   // $37  bit 7: the newest object is right of the island
 	uint16_t decoBitmap = 0;        // $BA/$BB ROM address of the next bitmap row
 	uint8_t decoWidth = 0;          // $BC  bytes per row
 	uint8_t decoOffset = 0;         // $BD  bytes from the line edge
 	uint8_t decoRows = 0;           // $BE  rows
-	// objects
-	std::array<Slot, kSlots> slot{};
-	uint8_t firstSlot = 0;          // $4D  first slot in use (slots fill from 10 down)
-	uint8_t enteringSlot = 0;       // $4E  slot of the object still being drawn in, kNoSlot = none
-	uint8_t shooterSlot = 0;        // $51  slot of the helicopter that fires missiles, kNoSlot = none
-	uint8_t enteringLines = 0;      // $32  lines left until the newest object is fully drawn in
-	uint8_t slotParity = 0;         // $33  flips when the slots shift (objects move on alternate frames)
 	uint8_t sectionBankColour = 0;  // $0B  bank colour of the section ($D2/$D6)
-	uint8_t wideObject = 0;         // $B8  non-zero while placing a bridge (7) or a ship (5)
-	uint8_t placeWidth = 0;         // $B3  river width code used to place the object
-	// the tank on the bank road, its shell, and the helicopter's missile
-	Tank tank;
-	Shell shell;
-	Missile missile;
 	uint8_t flashLines = 0;         // $4F  a hit bridge: the bank flashes on this many new lines
 	uint8_t depotLevelLimit = 0x2E; // $CB  levels past it don't make fuel depots rarer ($2E NTSC, $2F PAL)
 };
@@ -126,9 +100,9 @@ public:
 	// Generate one line; writes the bitmap into line[0..47].
 	// `bank`, if given, gets the line without its decoration (houses, roads): the bank fill
 	// where the decoration is drawn (for the collisions with the bank, display.cpp)
-	void nextLine(uint8_t line[kLineBytes], uint8_t *bank = nullptr);
+	// `obstacle`: the object entering at the top, which the bank keeps clear of
+	void nextLine(uint8_t line[kLineBytes], uint8_t *bank, const BankObstacle &obstacle);
 
-	// Load / compare with a 16 KB RAM image of the original ($0000-$3FFF).
 	// Where the games start. Games 1-8 have 4 starting points, 2 games each (one and two
 	// players): bridges 1, 5, 20 and 50 of the same river. The cartridge stores, for each, the
 	// generator's checkpoint there, the level and the bridge counter, so that the game does not
@@ -138,37 +112,23 @@ public:
 		uint8_t level;
 		int bridge;              // the bridge, 1..99999 (the counter shows its last 4 digits)
 	};
-	// Another river and/or another starting bridge, worked out by running the generator.
-	// seed: game 1's river starts from this state of the LFSR (1..$FFFFFF: A low byte, B, C
-	// high byte) instead of the cartridge's; the other games at its bridges 5, 20 and 50.
-	// bridge: every game starts at this bridge (1..99999) instead.
-	// 0 for both: the cartridge's table.
-	void setRiver(uint32_t seed, int bridge);
+	// The cartridge's starts (World::setRiver works out others)
+	void startsFromRom();
 	const Start &start(int n) const { return starts_[n]; }
-	void loadFromRam(const uint8_t *ram);
-	void saveToRam(uint8_t *ram) const;
-	// Load only the fields the rest of the game also changes (enemy movement, animation).
-	void loadGameOwned(const uint8_t *ram);
-	// Returns the list of fields that differ ("name $addr: port=.. orig=..").
-	std::vector<std::string> diffWithRam(const uint8_t *ram, bool includeGameOwned) const;
+	void setStart(int n, const Start &start) { starts_[n] = start; }
 
 private:
 	const Rom &rom_;
 	Start starts_[4];
-	void startsFromRom();
+	const BankObstacle *obstacle_ = nullptr;   // this line's (nextLine)
 	void stepLfsr();                          // sub $B183
 	void countLines();                        // $A711-$A7FA
 	uint8_t chooseSectionWidth();             // $A781-$A7DB (even levels)
 	void changeIsland();                      // $A7FB-$A825
 	void moveBank();                          // $A826-$A96B
-	bool bankWouldHitObject(bool movingLeft) const;
+	bool bankWouldHitObject(bool movingLeft) const;   // $A8D2-$A95E
 	void startDecoration();                   // $A96C-$A9D6
 	void drawLine(uint8_t line[kLineBytes], uint8_t *bank);  // $AA8C-$AB75
-	void scrollObjects();                     // $AB76-$ABF2
-	void placeObject();                       // $ABF3-$AD8D
-	uint8_t chooseEnemy();                    // $AC62-$AC8B
-	void positionObject(uint8_t &type, uint8_t &x, bool &facingLeft);   // $AC8C-$AD28
-	void placeTank();                         // $AD8E-$AE93
 };
 
 }  // namespace rr

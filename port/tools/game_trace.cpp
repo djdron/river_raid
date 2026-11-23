@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
 	static uint8_t screen[kScreenHeight][kScreenWidth];
 
 	Game g(rom);
-	if (bridge) g.gen.setRiver(0, bridge);
+	if (bridge) g.world.setRiver(0, bridge);
 	g.startAttract(pal);
 	g.afterDisplay = [&] {
 		if (ghost) {
@@ -116,7 +116,8 @@ int main(int argc, char **argv) {
 		g.frame(in, [&] { return reads++ ? random.read(249, 13) : pal ? random.read(191, 24) : random.read(192, 13); });
 		random.nextFrame();
 		const Game &s = g;
-		const RiverState &r = g.gen.s;
+		const RiverState &r = g.world.gen.s;
+		const Objects &o = g.world.objects;
 		if (s.idleTime & 0x80) std::memset(screen, 0, sizeof screen);
 		else drawStatusBar(rom, cs, s.panel.chars, s.plane.fuel, s.scroller, s.logoShown, screen, pal);
 
@@ -125,16 +126,16 @@ int main(int argc, char **argv) {
 		std::printf(" | plane %02X.%02X a%02X f%u sp%02X.%02X fuel%02X.%02X bul%02X", s.plane.x, s.plane.xFrac,
 			s.plane.accel, s.plane.frame, s.plane.speed, s.scrollFrac, s.plane.fuel, s.plane.fuelFrac, s.bullet.y);
 		std::printf(" | tank %02X %02X,%02X fire%02X shell t%02X f%u %02X.%02X,%02X v%02X.%02X | missile %02X,%02X st%02X",
-			r.tank.kind, r.tank.x, r.tank.y, r.tank.fires, r.shell.timer, r.shell.frame, r.shell.x, r.shell.xFrac, r.shell.y,
-			r.shell.speed, r.shell.speedFrac, r.missile.x, r.missile.y, r.missile.step);
+			o.tank.kind, o.tank.x, o.tank.y, o.tank.fires, o.shell.timer, o.shell.frame, o.shell.x, o.shell.xFrac, o.shell.y,
+			o.shell.speed, o.shell.speedFrac, o.missile.x, o.missile.y, o.missile.step);
 		std::printf(" | score %s br %s lives %u other %s/%s/%u hi %s", hex(s.score.d, 3).c_str(), hex(s.bridges.d, 2).c_str(),
 			s.lives, hex(s.other.score.d, 3).c_str(), hex(s.other.bridges.d, 2).c_str(), s.other.lives, hex(s.highScores.table, 16).c_str());
-		std::printf(" | slots %u..", r.firstSlot);
-		for (int i = r.firstSlot; i < kSlots; i++) {
-			const Slot &o = r.slot[size_t(i)];
-			std::printf(" %02X/%02X %02X,%02X %02X s%u", o.kind, o.type, o.x, o.y, o.flags, o.size);
+		std::printf(" | slots %u..", o.firstSlot);
+		for (int i = o.firstSlot; i < kSlots; i++) {
+			const Slot &sl = o.slot[size_t(i)];
+			std::printf(" %02X/%02X %02X,%02X %02X s%u", sl.kind, sl.type, sl.x, sl.y, sl.flags, sl.size);
 		}
-		std::printf(" ent%02X/%u shooter%02X par%u", r.enteringSlot, r.enteringLines, r.shooterSlot, r.slotParity);
+		std::printf(" ent%02X/%u shooter%02X par%u", o.enteringSlot, o.enteringLines, o.shooterSlot, o.slotParity);
 		std::printf(" | river lv%02X lfsr%02X%02X%02X bank%02X w%02X isl%02X cp%s", r.level, r.rndA, r.rndB, r.rndC,
 			r.bank, r.waterWidth, r.islandWidth, hex(r.checkpoint, 4).c_str());
 		std::printf(" | snd %s %s ev%u/%02X | hit %02X%02X%02X%02X%02X%02X%02X%02X%02X",

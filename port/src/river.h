@@ -1,13 +1,13 @@
 // The river on the screen: the lines in screen memory (newest first, the river area shows
 // 0..159), the same lines without their decoration (houses, roads), which the collisions look
 // at, those as runs of one colour, and where the top line is in the original's screen memory.
-// The generator (RiverGen) makes the lines; push() adds the next one at the top.
+// The river and its objects (World) make the lines; push() adds the next one at the top.
 #pragma once
 #include <array>
 #include <cstdint>
 #include <vector>
 
-#include "river_gen.h"
+#include "world.h"
 
 namespace rr {
 
@@ -26,16 +26,16 @@ struct River {
 	// $3F04/$3F05: screen memory address of the top line. Screen memory is a ring of two
 	// 80-line blocks, $2000-$2EFF and $3000-$3EFF; the address moves up a line with each line.
 	uint16_t top = 0x2000;
-	// If set: the generator's state before each line, newest first, so the lines can be made
-	// again from the oldest one (small saved states, Game::save)
+	// If set: the river's and the objects' state before each line, newest first, so the lines
+	// can be made again from the oldest one (small saved states, Game::save)
 	bool keepLineStates = false;
-	std::vector<RiverState> lineStates;
+	std::vector<World::State> lineStates;
 
 	void clear();
-	// The generator's next line goes above the others.
-	void push(RiverGen &gen);
-	// The lines again: `count` of them from the generator's state before the oldest.
-	void rebuild(RiverGen gen, const RiverState &oldest, int count);
+	// The next line goes above the others.
+	void push(World &world);
+	// The lines again: `count` of them from the state before the oldest.
+	void rebuild(World world, const World::State &oldest, int count);
 	// The runs of the river's row r (0: its top line), nullptr past the lines made
 	const Runs *runsAt(int r) const { return r >= 0 && size_t(r) < runs.size() ? &runs[size_t(r)] : nullptr; }
 

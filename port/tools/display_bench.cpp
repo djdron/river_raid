@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
 	const TvSystem tv = tvSystem(pal);
 	PokeyRandom random(seed, tv);
 	Game g(rom);
-	if (bridge) g.gen.setRiver(0, bridge);
+	if (bridge) g.world.setRiver(0, bridge);
 	g.startAttract(pal);
 	// the plane does not crash and never runs out of fuel (as rr_oracle -ghost): the collision
 	// results that would end it are dropped after the display, so the game goes on for long
