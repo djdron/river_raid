@@ -1,10 +1,10 @@
-# name frames arguments (game_trace; see compare.sh)
-attract_ntsc     20000 -attract -seed 7
+# name frames arguments (game_trace; see compare.sh); quick: in compare.sh -quick
+attract_ntsc     20000 -attract -seed 7 quick
 attract_pal      20000 -attract -pal -seed 8
 g1_ntsc          40000 -game 1 -seed 1
 g1_pal           40000 -game 1 -pal -seed 2
-g2_two_ntsc      40000 -game 2 -seed 3
-g4_two_pal       40000 -game 4 -pal -seed 4
+g2_two_ntsc      40000 -game 2 -seed 3 quick
+g4_two_pal       40000 -game 4 -pal -seed 4 quick
 g3_ntsc          30000 -game 3 -seed 5
 g5_pal           30000 -game 5 -pal -seed 6
 g6_ntsc          30000 -game 6 -seed 9
@@ -12,7 +12,7 @@ g7_ntsc          40000 -game 7 -seed 10
 g7_pal           40000 -game 7 -pal -seed 11
 g8_pal           30000 -game 8 -pal -seed 12
 wild_ntsc        40000 -game 1 -wild -seed 13
-wild_pal         40000 -game 7 -wild -pal -seed 14
+wild_pal         40000 -game 7 -wild -pal -seed 14 quick
 ghost_ntsc      100000 -game 1 -ghost -seed 15
 ghost_pal_b100  100000 -game 2 -ghost -pal -bridge 100 -seed 16
-ghost_wild_b60   60000 -game 7 -ghost -wild -bridge 60 -seed 17
+ghost_wild_b60   60000 -game 7 -ghost -wild -bridge 60 -seed 17 quick
