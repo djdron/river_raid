@@ -77,9 +77,12 @@ replace.
    `Bcd<3>` score, the same types for the active player, `HighScores` (the table and its check
    bytes); the panel (`panel.h`): its 60 characters with `print` (BCD digits), `showLives`,
    `markPlayers`, `showGameNumber`.
+10. The sound (`sound.h`, `sound.cpp`): `Sounds` keeps what the game asks for (the start beep,
+    the event sound and its time, explosion, fire, bonus, missile, the crash's falling pitch)
+    and its `drive()` is the driver (B2A5-B3D8), given the plane, the pause, the attract mode
+    and the shell by a `SoundContext`; `PokeyRegs` moved there too.
 
 ## Next
 
-10. The sound driver.
 11. The river: the generator, screen lines, runs.
 12. `GameState` and `RiverState` gone, the RAM export written from the classes; the documents.

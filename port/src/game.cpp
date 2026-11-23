@@ -21,8 +21,8 @@ constexpr uint8_t kCrashed = Plane::kCrashed, kNoPlane = Plane::kNoPlane;
 // GameState::pauseState: a key press pauses, the next press resumes
 constexpr uint8_t kPlaying = 0, kResuming = 1, kPaused = 2, kPausing = 3;
 
-// GameState::eventSound
-constexpr uint8_t kCrashSound = 1, kOutOfFuelSound = 2, kTankFullSound = 3, kRefuelSound = 4;
+// channel 1's event sounds
+constexpr uint8_t kCrashSound = Sounds::kCrash, kOutOfFuelSound = Sounds::kOutOfFuel, kTankFullSound = Sounds::kTankFull, kRefuelSound = Sounds::kRefuel;
 
 inline bool attract(const GameState &g) { return (g.attractFlags & 0x80) != 0; }
 
@@ -332,7 +332,7 @@ void Game::mainLoop(const Input &input, const std::function<uint8_t()> &random) 
 		flyPlane(input);
 	} else if (state >= kLifeLost) {              // A348: the river refilling
 		if (state == kLifeLost) {
-			g.crashPitch = 0x80;
+			g.sound.crashPitch = 0x80;
 			g.lives--;
 		}
 		g.plane.state--;
@@ -347,13 +347,13 @@ void Game::mainLoopEnd(const Input &input) {
 		RiverState &s = gen.s;
 		const int n = s.shooterSlot;
 		const Slot *shooter = n < kSlots && (s.slot[n].kind == kShooter || s.slot[n].kind == kShooter + 1) ? &s.slot[n] : nullptr;
-		if (s.missile.move(shooter, attract(g) || g.plane.flying(), !(g.hit.missileHitBank & 0x80))) g.soundMissile = 9;   // A5B7
+		if (s.missile.move(shooter, attract(g) || g.plane.flying(), !(g.hit.missileHitBank & 0x80))) g.sound.missile = 9;   // A5B7
 		s.shell.move(s.tank, g.plane.state != 0, rom_);   // A607
 	}
 
 	// A673: console keys
 	if (input.start) {
-		g.startBeep = 2;
+		g.sound.startBeep = 2;
 		g.attractFlags = 0;
 		g.attractTimer = 0;
 		newGame();
@@ -381,7 +381,7 @@ void Game::newGame() {
 	g.player = g.gameNumber & 1;
 	// A15D with X = $79: $79-$7F cleared
 	g.respawned = 0;
-	g.eventSound = g.eventSoundTime = g.soundExplosion = g.soundFire = g.soundBonus = g.soundMissile = 0;
+	g.sound.event = g.sound.eventTime = g.sound.explosion = g.sound.fire = g.sound.bonus = g.sound.missile = 0;
 	reset(true);   // the rest (AF80, A17E) when the reset ends: finishReset()
 	resume_ = Resume::NewGame;
 }
@@ -418,7 +418,7 @@ void Game::reset(bool full) {
 	g.scrollFrac = 0;
 	g.bridgeFlash = 0;
 	gen.s.shell.frame = gen.s.shell.x = gen.s.shell.xFrac = 0;
-	g.crashPitch = 0;   // $052C ($0500-$05FF cleared)
+	g.sound.crashPitch = 0;   // $052C ($0500-$05FF cleared)
 	// player-missile memory rows 1-$BB cleared (the sprites gone until prepare()), screen memory cleared
 	g.spritesShown = false;
 	screen.clear();
@@ -455,9 +455,9 @@ void Game::selectGame() {
 	g.lives = 0;
 	g.other.lives = 0;
 	g.player = 0;
-	g.startBeep = 2;
+	g.sound.startBeep = 2;
 	g.score = g.other.score = Bcd<3>();
-	g.soundMissile = 0;
+	g.sound.missile = 0;
 	gen.s.shell.timer = 0xFF;
 	setUpGame();
 	showLives();
@@ -599,125 +599,16 @@ void Game::vbi(const std::function<uint8_t()> &random) {
 	}
 }
 
-// B2A5-B3D8: the sound driver. Once per frame it sets the four POKEY channels from the game
-// state (AUDCTL stays 0: 64 kHz clock, 17-bit noise). AUDF sets the pitch (higher = lower
-// note), AUDC the distortion (high 3 bits) and the volume (low 4 bits).
-//   channel 1: the engine (pitch from the speed, tone from the stick), or the low-fuel
-//              warning, or an event sound (crash, refuelling...), or the start beep;
-//   channel 2: explosion noise or the helicopter's missile;
-//   channel 3: firing or the bonus life sound;
-//   channel 4: the tank shell in flight, then its explosion.
+// B2A5-B3D8: the sound driver (sound.cpp), with what it needs of the game.
 void Game::soundDriver(const std::function<uint8_t()> &random) {
-	RiverState &s = gen.s;
-	PokeyRegs &p = g.pokey;
-	auto silenceChannels234 = [&]() { p.audc[1] = p.audc[2] = p.audc[3] = 0; };
-	if (g.startBeep) {                            // B2A6
-		g.startBeep--;
-		p.audf[0] = 0x40;
-		p.audc[0] = 0xAF;
-		silenceChannels234();
-		return;
-	}
-	if (g.pauseState >= kPaused) {                // B2BA
-		p.audc[0] = 0;
-		silenceChannels234();
-		return;
-	}
-	// channel 1. `last` is the last value the original computed here (its A register): channel
-	// 2 takes it as its pitch when it has nothing to play (at volume 0).
-	uint8_t pitch = 0x39, control = 0, last = 0;
-	bool setPitch = true;                         // B34C sets the pitch, B34F only the control
-	if (g.eventSound) {                           // B2D2: an event sound, eventSoundTime frames long
-		uint8_t volume = g.eventSoundTime;
-		if (g.eventSound <= kOutOfFuelSound) {
-			if (g.eventSound == kOutOfFuelSound) pitch = 0x11;
-			volume = uint8_t((volume >> 1) | 0x80);
-		} else {
-			pitch = g.eventSound == kTankFullSound ? 0x1F : 0x3F;
-			volume = lo(volume + 0xA0);
-		}
-		control = last = volume;
-		if (--g.eventSoundTime == 0) {
-			g.eventSound = 0;
-			last = 0;
-		}
-	} else if (g.plane.state != kFlying && !(attractSound && attract(g))) {   // B2F9: no plane: channel 1 off
-		last = g.plane.state;
-		setPitch = false;
-	} else {
-		bool engine = true;
-		if (g.plane.fuel < 0x40) {                      // B2FD: low fuel: a beep every 63 frames
-			uint8_t time = g.eventSoundTime ? g.eventSoundTime : 0x3F;
-			g.eventSoundTime = --time;
-			uint8_t beep = 0;
-			if (g.plane.fuel < 0x04) {                  // almost empty: a tone falling with the fuel
-				beep = uint8_t((g.plane.fuel << 2) | (g.plane.fuelFrac >> 6));
-				beep = uint8_t(lo((beep ^ 0xFF) + 0x20) << 1);
-			}
-			if (beep == 0 && time >= 0x1C) beep = time;   // the first frames of each 63
-			if (beep) {                           // B326
-				pitch = last = uint8_t(beep << 1);
-				control = 0xAF;
-				engine = false;
-			}
-		}
-		if (engine) {                             // B32C: the engine, pitch from the speed
-			pitch = lo(0x1F - (g.plane.speed >> 4));
-			if (g.crashPitch >= 0x1B) pitch = g.crashPitch--;   // falling pitch after a crash
-			control = last = rom_.engineTone(g.plane.stick);       // tone from up/down
-			if (attractSound && attract(g)) {     // (not in the original: the viewer's plane)
-				if (attractEnginePitch) pitch = attractEnginePitch;
-				control = last = rom_.engineTone(attractEngineStick);
-			}
-		}
-	}
-	if (setPitch) p.audf[0] = pitch;
-	p.audc[0] = control;
-	// channel 2
-	pitch = last;
-	control = g.soundExplosion;
-	if (control) {                                // B352: explosion noise, fading
-		g.soundExplosion--;
-		control = uint8_t((((control >> 1) + 4) & 0x0F) + 0x80);
-		pitch = uint8_t(random() | 0x18);
-	}
-	if (const uint8_t t = g.soundMissile) {       // B367: the helicopter's missile
-		g.soundMissile--;
-		if (!attract(g) || attractSound) {
-			control = lo(t + 0x46);
-			pitch = uint8_t(((lo((control ^ 0x0E) + 4)) & 0x0F) << 2);
-		}
-	}
-	p.audf[1] = pitch;
-	p.audc[1] = control;
-	// channel 3
-	control = 0;
-	pitch = 0;
-	if (const uint8_t t = g.soundFire) {          // B386: firing, rising
-		g.soundFire--;
-		const uint8_t twice = uint8_t(lo(0x1C - t) << 1);
-		pitch = lo(uint8_t(twice << 1) + twice + (twice >> 7));   // 6 times, with the carry of the shift
-		control = 0xA8;
-	}
-	if (g.soundBonus) {                           // B399: a bonus life
-		const uint8_t t = --g.soundBonus;
-		control = uint8_t((t & 0x0F) + 0xA0);
-		pitch = rom_.scorePitch(t >> 4);
-	}
-	p.audf[2] = pitch;
-	p.audc[2] = control;
-	// channel 4
-	control = 0;
-	if ((!attract(g) || attractSound) && !(s.shell.timer & 0x80) && s.shell.timer != 0) {   // B3B6: the tank shell
-		if (s.shell.timer < 0x11) {
-			p.audf[3] = rom_.shellPitch(s.shell.timer);   // whistling down
-			control = 0xAC;
-		} else {
-			control = 0x8C;                       // exploding: noise
-			p.audf[3] = uint8_t(random() | 0x20);
-		}
-	}
-	p.audc[3] = control;
+	SoundContext c{g.plane};
+	c.paused = g.pauseState >= kPaused;
+	c.attract = attract(g);
+	c.attractSound = attractSound;
+	c.attractEnginePitch = attractEnginePitch;
+	c.attractEngineStick = attractEngineStick;
+	c.shellTimer = gen.s.shell.timer;
+	g.sound.drive(g.pokey, c, random, rom_);
 }
 
 // A3E9-A5B4: the plane is flying.
@@ -737,9 +628,9 @@ void Game::flyPlane(const Input &input) {
 			}
 			// A40A: a fuel depot
 			const uint8_t sound = g.plane.refuel() ? kTankFullSound : kRefuelSound;
-			if (sound != g.eventSound) {
-				g.eventSound = sound;
-				g.eventSoundTime = 8;
+			if (sound != g.sound.event) {
+				g.sound.event = sound;
+				g.sound.eventTime = 8;
 			}
 		}
 	}
@@ -766,7 +657,7 @@ void Game::flyPlane(const Input &input) {
 	const uint8_t shelled = g.hit.shellHitObject;
 	if (!(shelled & 0x80) && shellExploding && s.slot[shelled].kind >= kHelicopter) {
 		s.slot[shelled].kind = kShot;
-		g.soundExplosion = 0x17;
+		g.sound.explosion = 0x17;
 	}
 	// A58D: the bullet stops at the bank, flies up 6 lines per frame, or is fired
 	if (!(g.hit.bulletHitBank & 0x80)) {
@@ -774,7 +665,7 @@ void Game::flyPlane(const Input &input) {
 	} else if (g.bullet.y >= 0x1C) {
 		moveBullet(g.bullet.y - 6);
 	} else if (input.trigger[g.player & 1]) {
-		g.soundFire = 0x0F;
+		g.sound.fire = 0x0F;
 		moveBullet(0xA9);
 	} else {
 		moveBullet(1);
@@ -788,7 +679,7 @@ void Game::explode(int n, uint8_t kind) {
 	Slot &obj = s.slot[size_t(n)];
 	obj.kind = kind;
 	uint8_t type = obj.type;
-	g.soundExplosion = 0x17;
+	g.sound.explosion = 0x17;
 	if (type == kBridge) {
 		g.bridgeFlash = 0x17;
 		g.bridges.add(0, 1);                      // bridge counter +1
@@ -796,7 +687,7 @@ void Game::explode(int n, uint8_t kind) {
 		// A500: a tank on the bridge goes with it
 		if (lo(obj.x - 8) < s.tank.x && lo(obj.x + 0x1F) >= s.tank.x) {
 			s.tank.kind |= 0x80;
-			g.soundExplosion = 0x37;
+			g.sound.explosion = 0x37;
 			type = kBridgeWithTank;
 		} else if (g.bridges.d[0] != 0 || g.bridges.d[1] >= 5) {
 			// A52B: from bridge 5 on, a tank close to the bridge fires
@@ -814,7 +705,7 @@ void Game::explode(int n, uint8_t kind) {
 	}
 	if ((g.score.d[1] & 0xF0) != tenThousands && g.lives != 9) {
 		g.lives++;
-		g.soundBonus = 0x40;
+		g.sound.bonus = 0x40;
 	}
 	moveBullet(1);                                // A589: the bullet is used up
 }
@@ -822,8 +713,8 @@ void Game::explode(int n, uint8_t kind) {
 // sub $B1C0: the plane crashes, with an event sound of this length.
 void Game::crash(uint8_t sound, uint8_t length) {
 	RiverState &s = gen.s;
-	g.eventSoundTime = length;
-	g.eventSound = sound;
+	g.sound.eventTime = length;
+	g.sound.event = sound;
 	// where the next plane starts: past a destroyed bridge, from the next section; on the run-up
 	// to a bridge not hit, one checkpoint back
 	if ((s.slot[kSlots - 1].flags ^ s.blockFlags) & kBankShade) {
@@ -886,7 +777,7 @@ void Game::updateHighScore(bool otherPlayer) { g.highScores.update(otherPlayer ?
 // sub $AF5B: the lives as plane symbols in the panel (the newest blinks while the bonus sounds).
 void Game::showLives() {
 	int shown = g.lives;
-	if (shown && (g.soundBonus & 0x08)) shown--;
+	if (shown && (g.sound.bonus & 0x08)) shown--;
 	g.panel.showLives(shown);
 }
 

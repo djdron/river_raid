@@ -138,7 +138,7 @@ int main(int argc, char **argv) {
 		std::printf(" | river lv%02X lfsr%02X%02X%02X bank%02X w%02X isl%02X cp%s", r.level, r.rndA, r.rndB, r.rndC,
 			r.bank, r.waterWidth, r.islandWidth, hex(r.checkpoint, 4).c_str());
 		std::printf(" | snd %s %s ev%u/%02X | hit %02X%02X%02X%02X%02X%02X%02X%02X%02X",
-			hex(s.pokey.audf, 4).c_str(), hex(s.pokey.audc, 4).c_str(), s.eventSound, s.eventSoundTime, s.hit.bulletHitBank,
+			hex(s.pokey.audf, 4).c_str(), hex(s.pokey.audc, 4).c_str(), s.sound.event, s.sound.eventTime, s.hit.bulletHitBank,
 			s.hit.planeHitBank, s.hit.bulletHitObject, s.hit.planeHitObject, s.hit.planeHitShell, s.hit.shellHitObject,
 			s.hit.tankAtEdge, s.hit.missileHitPlane, s.hit.missileHitBank);
 		std::printf(" | pic %08X\n", fnv(screen, sizeof screen));

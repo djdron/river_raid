@@ -220,9 +220,9 @@ public:
 	void soundTest(int which) {
 		if (!head_.running) return;
 		switch (which) {
-		case 0: head_.game.g.soundExplosion = 0x17; break;   // explosion, as A4E6 sets it
-		case 1: head_.game.g.soundFire = 0x0F; break;        // firing (A5A6)
-		case 2: head_.game.g.soundBonus = 0x40; break;       // score (A587)
+		case 0: head_.game.g.sound.explosion = 0x17; break;   // explosion, as A4E6 sets it
+		case 1: head_.game.g.sound.fire = 0x0F; break;        // firing (A5A6)
+		case 2: head_.game.g.sound.bonus = 0x40; break;       // score (A587)
 		default: break;
 		}
 	}

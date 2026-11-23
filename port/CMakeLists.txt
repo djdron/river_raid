@@ -46,6 +46,8 @@ add_library(rrcore
 	src/river_state_io.cpp
 	src/rom.h
 	src/status_bar.cpp
+	src/sound.cpp
+	src/sound.h
 	src/status_bar.h
 	src/tank.cpp
 	src/tank.h

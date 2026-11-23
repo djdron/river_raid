@@ -29,16 +29,11 @@
 #include "plane.h"
 #include "panel.h"
 #include "players.h"
+#include "sound.h"
 #include "river_gen.h"
 #include "status_bar.h"
 
 namespace rr {
-
-// POKEY sound registers ($D200-$D207): frequency divider and control (distortion, volume)
-// of the four channels. AUDCTL ($D208) stays 0 in River Raid.
-struct PokeyRegs {
-	uint8_t audf[4] = {}, audc[4] = {};
-};
 
 // Collision results of one frame, set by the DLI to the slot whose band saw the collision
 // ($FF = none). Addresses $1A-$22.
@@ -71,7 +66,6 @@ struct GameState {
 	uint8_t idleTime = 0;       // $78 +1 every 2048 frames without input; bit 7: screen off
 	uint8_t pauseState = 0;     // $24 3 key pressed, 2 paused, 1 key pressed again, 0 playing
 	uint8_t selectDelay = 0;    // $25 frames until SELECT/OPTION changes the game again
-	uint8_t startBeep = 0;      // $C6 frames of the beep after START or SELECT
 	uint8_t powerOnDone = 0;    // $28
 	uint8_t screenOn = 0;       // $C7 0 while the screen is being cleared (colours off)
 	// the game and the players
@@ -87,14 +81,7 @@ struct GameState {
 	Bullet bullet;              // $56 the plane's bullet
 	uint8_t scrollFrac = 0;     // $30 the river's scrolling: the plane's speed added to it twice a frame
 	uint8_t bridgeFlash = 0;    // $31 frames of the red water flash after a bridge is hit
-	// sounds the game asks for (the VBI's sound driver plays them, counting down)
-	uint8_t eventSound = 0;     // $7A channel 1: 1 crash, 2 out of fuel, 3 tank full, 4 refuelling
-	uint8_t eventSoundTime = 0; // $7B its length; also the low-fuel beep counter
-	uint8_t soundExplosion = 0; // $7C
-	uint8_t soundMissile = 0;   // $7F
-	uint8_t soundFire = 0;      // $7D
-	uint8_t soundBonus = 0;     // $7E a new plane at 10 000 points
-	uint8_t crashPitch = 0;     // $052C engine pitch falling after a crash
+	Sounds sound;               // the sounds the game asks for ($7A-$7F, $C6, $052C)
 	// the screen below the river
 	Panel panel;                // $1000-$103B the status panel's characters
 	Scroller scroller;          // $3FB3/$26/$27 the scrolling line below the panel (VBI B44B)
