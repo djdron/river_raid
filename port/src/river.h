@@ -12,6 +12,31 @@
 
 namespace rr {
 
+// The newest N items, newest first ([0]), in a ring: a new one goes in without moving the
+// others, and past N the oldest goes. The storage (N items) is made by the first push and kept
+// by clear().
+template <class T, size_t N> class Recent {
+	static_assert((N & (N - 1)) == 0, "a power of two");
+
+public:
+	size_t size() const { return size_; }
+	bool empty() const { return size_ == 0; }
+	const T &operator[](size_t i) const { return items_[(head_ + i) & (N - 1)]; }
+	const T &front() const { return (*this)[0]; }
+	const T &back() const { return (*this)[size_ - 1]; }
+	void clear() { head_ = size_ = 0; }
+	void push(const T &item) {
+		if (items_.empty()) items_.resize(N);
+		head_ = (head_ + N - 1) & (N - 1);
+		items_[head_] = item;
+		if (size_ < N) size_++;
+	}
+
+private:
+	std::vector<T> items_;
+	size_t head_ = 0, size_ = 0;
+};
+
 struct River {
 	using Line = std::array<uint8_t, kLineBytes>;
 	// A line as runs of one colour: pixels a..b-1 (0-191) of colour 1 bank, 2 edge, 3 water
@@ -21,16 +46,17 @@ struct River {
 	};
 	static Runs makeRuns(const uint8_t *line);
 
-	std::vector<Line> lines;       // newest first
-	std::vector<Line> bankLines;   // the same without decoration
-	std::vector<Runs> runs;        // bankLines as runs
+	static constexpr size_t kKept = 256;   // lines kept: screen memory (2 x 80 lines) and more
+	Recent<Line, kKept> lines;       // newest first
+	Recent<Line, kKept> bankLines;   // the same without decoration
+	Recent<Runs, kKept> runs;        // bankLines as runs
 	// $3F04/$3F05: screen memory address of the top line. Screen memory is a ring of two
 	// 80-line blocks, $2000-$2EFF and $3000-$3EFF; the address moves up a line with each line.
 	uint16_t top = 0x2000;
 	// If set: the river's and the objects' state before each line, newest first, so the lines
 	// can be made again from the oldest one (small saved states, Game::save)
 	bool keepLineStates = false;
-	std::vector<World::State> lineStates;
+	Recent<World::State, kKept> lineStates;
 
 	void clear();
 	// The next line goes above the others.

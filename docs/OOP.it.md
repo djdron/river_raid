@@ -166,6 +166,11 @@ sostituiscono.
     vettori di byte rifatti per ogni oggetto a ogni fotogramma. Un fotogramma ora non alloca
     nulla: il 44% di istruzioni in meno, e `display_bench` (1 000 000 di fotogrammi) è più
     veloce di `dli_removed` dell'8–17%, mentre prima era più lento del 25%.
+24. Le righe del fiume in buffer circolari (`Recent`, river.h): le righe, le stesse senza
+    decorazioni, i loro tratti e gli stati prima di esse (256 ciascuno) accolgono una nuova riga
+    senza spostare le altre, mentre un vettore le spostava tutte a ogni riga. Niente più copie
+    per riga: 0,54 miliardi di istruzioni per 20 000 fotogrammi (1,17 miliardi prima del passo
+    23), e `display_bench` (1 000 000 di fotogrammi) è più veloce di `dli_removed` del 25–40%.
 
 ## Prossimi passi
 

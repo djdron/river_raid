@@ -27,24 +27,16 @@ void River::clear() {
 }
 
 void River::add(const Line &line, const Line &bank) {
-	lines.insert(lines.begin(), line);
-	bankLines.insert(bankLines.begin(), bank);
-	runs.insert(runs.begin(), makeRuns(bank.data()));
+	lines.push(line);
+	bankLines.push(bank);
+	runs.push(makeRuns(bank.data()));
 }
 
 void River::push(World &world) {
 	Line line, bank;
-	if (keepLineStates) {
-		lineStates.insert(lineStates.begin(), world.state());
-		if (lineStates.size() > 256) lineStates.pop_back();
-	}
+	if (keepLineStates) lineStates.push(world.state());
 	world.nextLine(line.data(), bank.data());
 	add(line, bank);
-	if (lines.size() > 256) {
-		lines.pop_back();
-		bankLines.pop_back();
-		runs.pop_back();
-	}
 	uint8_t topLo = uint8_t(top), topHi = uint8_t(top >> 8);
 	if (topLo < kLineBytes) topHi--;
 	topLo = uint8_t(topLo - kLineBytes);
@@ -58,7 +50,7 @@ void River::rebuild(World world, const World::State &oldest, int count) {
 	clear();
 	Line line, bank;
 	for (int i = 0; i < count; i++) {
-		if (keepLineStates) lineStates.insert(lineStates.begin(), world.state());
+		if (keepLineStates) lineStates.push(world.state());
 		world.nextLine(line.data(), bank.data());
 		add(line, bank);
 	}
@@ -87,7 +79,11 @@ std::vector<River::Line> screenFromRam(const uint8_t *ram) {
 
 }  // namespace
 
-void River::linesFromRam(const uint8_t *ram) { lines = screenFromRam(ram); }
+void River::linesFromRam(const uint8_t *ram) {
+	const auto shown = screenFromRam(ram);   // top first
+	lines.clear();
+	for (size_t i = shown.size(); i-- > 0;) lines.push(shown[i]);
+}
 
 int River::lineDifferingFromRam(const uint8_t *ram) const {
 	const auto shown = screenFromRam(ram);

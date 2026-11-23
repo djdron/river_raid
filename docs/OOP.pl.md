@@ -154,6 +154,11 @@ zastępują.
     od nowa dla każdego obiektu w każdej klatce. Klatka niczego teraz nie przydziela: o 44%
     mniej instrukcji, a `display_bench` (1 000 000 klatek) jest o 8–17% szybszy niż
     `dli_removed`, choć wcześniej był o 25% wolniejszy.
+24. Linie rzeki w buforach pierścieniowych (`Recent`, river.h): linie, te same bez ozdób, ich
+    odcinki i stany przed nimi (po 256) przyjmują nową linię bez przesuwania pozostałych,
+    podczas gdy wektor przesuwał je wszystkie przy każdej linii. Nie ma już kopiowania przy
+    każdej linii: 0,54 mld instrukcji na 20 000 klatek (1,17 mld przed krokiem 23), a
+    `display_bench` (1 000 000 klatek) jest o 25–40% szybszy niż `dli_removed`.
 
 ## Dalej
 

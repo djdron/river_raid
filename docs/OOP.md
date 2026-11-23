@@ -154,6 +154,11 @@ replace.
     a vector that keeps its capacity, instead of two byte vectors made again for every object
     every frame. A frame allocates nothing now: 44% fewer instructions, and `display_bench` (1
     000 000 frames) is 8-17% faster than `dli_removed`, where it had been 25% slower.
+24. The river's lines in rings (`Recent`, river.h): the lines, the same without decoration,
+    their runs and the states before them (256 each) take a new line without moving the others,
+    where a vector shifted all of them for every line. No more copying per line: 0.54 G
+    instructions for 20 000 frames (1.17 G before step 23), and `display_bench` (1 000 000
+    frames) is 25-40% faster than `dli_removed`.
 
 ## Next
 

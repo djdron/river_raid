@@ -48,6 +48,7 @@ port/tools/trace/compare.sh <rom> [build dir] [runs...]
 21. メインループを、オリジナルの順序のまま何も動かさずに名前付きの手順にしました：`mainLoop` は `console_.keys`（A19E-A1F5）、`wakeObject`（A1FF）、`driveTank`（A21B）、`moveObjects`（A26C）、`attractTimerRunsOut`（A2F5）、`readStick`（A312）、`updatePlane`（A33F）。復活がそこから続く `mainLoopEnd` は `moveMissile`（A5B7）、`moveShell`（A607）、`consoleKeys`（A673）、`scroll`（A6DE）。リセットを始める手順は true を返し、ループはそこで止まります（以前と同じ）。最後に 17 本すべてが同じで、サニタイザー付きのビルドでも同じです。
 22. 小さな片付け。`game.h` で川ビューアーとツールだけが使うもの（`frame()` の各部分、`skipFrame` と `SkipState`、`attractSound`、`playSound`、`stayAwake`、`ghost`、RAM のイメージ、`setPokey`）を、ゲーム自身のインターフェースの後の一つのブロックにまとめ、`resetState` と `eachState` は private にしました。ビューアー用のデモモードの音の設定は一つの `AttractSound`（sound.h）。`game_internal.h` はヘッダー内の無名名前空間をやめて `namespace rr::game_detail` と `inline constexpr` に。パネルに出す対戦の数字は `Scoreboard`（match.h）で、対戦、パネル、デモモードは一度だけ渡します。`showOtherScore` は `player2Score` に改名し、なぜ番のプレイヤーの得点（$63-$65）を表示するのかを書きました（sub $B068 がそうしています）。
 23. 速度：画面上の物体の行（`DrawnObject`）を固定長の配列（最大 $80 行）にし、容量を保つ vector に入れました。以前は毎フレーム物体ごとに 2 つのバイトの vector を作り直していました。今はフレームごとのメモリー確保がありません：命令数は 44% 減り、`display_bench`（1 000 000 フレーム）は `dli_removed` より 8〜17% 速くなりました（以前は 25% 遅かった）。
+24. 川のラインをリングバッファに（`Recent`、river.h）：ライン、装飾を除いた同じライン、その区間、各ラインの前の状態（それぞれ 256）は、新しいラインを他を動かさずに受け取ります。以前の vector はラインごとに全部をずらしていました。ラインごとのコピーはなくなり、20 000 フレームで 0.54 G 命令（段階 23 の前は 1.17 G）、`display_bench`（1 000 000 フレーム）は `dli_removed` より 25〜40% 速くなりました。
 
 ## 次に
 

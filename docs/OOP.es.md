@@ -168,6 +168,11 @@ código que sustituyen.
     bytes rehechos para cada objeto en cada fotograma. Un fotograma ya no reserva memoria: un 44
     % menos de instrucciones, y `display_bench` (1 000 000 de fotogramas) es un 8–17 % más
     rápido que `dli_removed`, cuando antes era un 25 % más lento.
+24. Las líneas del río en búferes circulares (`Recent`, river.h): las líneas, las mismas sin
+    decoración, sus tramos y los estados anteriores (256 de cada) reciben una línea nueva sin
+    mover las demás, mientras que un vector las desplazaba todas en cada línea. Ya no hay copia
+    por línea: 0,54 G instrucciones para 20 000 fotogramas (1,17 G antes del paso 23), y
+    `display_bench` (1 000 000 de fotogramas) es un 25–40 % más rápido que `dli_removed`.
 
 ## Lo siguiente
 

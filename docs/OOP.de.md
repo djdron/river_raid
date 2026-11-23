@@ -170,6 +170,11 @@ den sie ersetzen.
     Byte-Vektoren, die jedes Bild für jedes Objekt neu angelegt wurden. Ein Bild reserviert
     jetzt keinen Speicher: 44 % weniger Befehle, und `display_bench` (1 000 000 Bilder) ist 8–17
     % schneller als `dli_removed`, wo es vorher 25 % langsamer war.
+24. Die Zeilen des Flusses in Ringpuffern (`Recent`, river.h): die Zeilen, dieselben ohne
+    Verzierung, ihre Abschnitte und die Zustände davor (je 256) nehmen eine neue Zeile auf, ohne
+    die anderen zu verschieben, wo ein Vektor bei jeder Zeile alle verschob. Kein Kopieren mehr
+    pro Zeile: 0,54 Mrd. Befehle für 20 000 Bilder (1,17 Mrd. vor Schritt 23), und
+    `display_bench` (1 000 000 Bilder) ist 25–40 % schneller als `dli_removed`.
 
 ## Als Nächstes
 
