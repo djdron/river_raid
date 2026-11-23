@@ -91,8 +91,8 @@ int main(int argc, char **argv) {
 			const int px = g.g.plane.x - 32 + 4;
 			const int row = 0xAA - 28 - 30;
 			int target = px;
-			if (row >= 0 && size_t(row) < g.runLines.size()) {
-				const Game::Runs &r = g.runLines[size_t(row)];
+			if (row >= 0 && size_t(row) < g.river.runs.size()) {
+				const River::Runs &r = g.river.runs[size_t(row)];
 				int best = 1 << 30;
 				for (int i = 0; i < r.n; i++) {
 					if (r.colour[i] != 3) continue;

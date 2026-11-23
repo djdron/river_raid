@@ -28,20 +28,6 @@ inline bool attract(const GameState &g) { return (g.attractFlags & 0x80) != 0; }
 
 }  // namespace
 
-Game::Runs Game::makeRuns(const uint8_t *line) {
-	Runs r;
-	int prev = 0;
-	for (int p = 0; p < kLineBytes * 4; p++) {
-		const int v = (line[p >> 2] >> (6 - 2 * (p & 3))) & 3;
-		if (v == prev) continue;
-		if (prev) r.b[r.n++] = uint8_t(p);
-		if (v) { r.a[r.n] = uint8_t(p); r.colour[r.n] = uint8_t(v); }
-		prev = v;
-	}
-	if (prev) r.b[r.n++] = uint8_t(kLineBytes * 4);
-	return r;
-}
-
 Game::Game(const Rom &rom) : gen(rom), rom_(rom) {}
 
 void Game::startAttract(bool pal) {
@@ -49,10 +35,7 @@ void Game::startAttract(bool pal) {
 	gen.s = RiverState();
 	gen.startGame(1, pal);
 	g = GameState();
-	screen.clear();
-	bankLines.clear();
-	runLines.clear();
-	lineStates.clear();
+	river.clear();
 	for (int i = 0; i < kPanelBytes; i++) g.panel.chars[i] = rom_.panelText(i);   // A0F0
 	// the attract mode's new game: B0F1 with X = $29, AF80, then the respawn (A36E-A3E3) which
 	// in the attract mode ends with sub $B21A; then frame 38
@@ -124,8 +107,9 @@ std::vector<uint8_t> Game::save() const {
 	std::vector<uint8_t> raw;
 	put(raw, g);
 	put(raw, gen.s);
-	put(raw, screen.empty() ? RiverState() : lineStates.back());   // the generator before the oldest line
-	put(raw, uint16_t(screen.size()));
+	put(raw, river.lines.empty() ? RiverState() : river.lineStates.back());   // the generator before the oldest line
+	put(raw, uint16_t(river.lines.size()));
+	put(raw, river.top);
 	put(raw, resume_);
 	put(raw, busy_);
 	put(raw, gameOverText_);
@@ -144,50 +128,19 @@ void Game::load(const std::vector<uint8_t> &data) {
 	get(raw, at, gen.s);
 	get(raw, at, oldest);
 	get(raw, at, lines);
+	get(raw, at, river.top);
 	get(raw, at, resume_);
 	get(raw, at, busy_);
 	get(raw, at, gameOverText_);
 	get(raw, at, pal_);
-	// screen memory again, from the generator's state before its oldest line
-	RiverGen run = gen;
-	run.s = oldest;
-	screen.clear();
-	bankLines.clear();
-	runLines.clear();
-	lineStates.clear();
-	std::array<uint8_t, kLineBytes> line, bank;
-	for (int i = 0; i < lines; i++) {
-		if (keepLineStates) lineStates.insert(lineStates.begin(), run.s);
-		run.nextLine(line.data(), bank.data());
-		screen.insert(screen.begin(), line);
-		bankLines.insert(bankLines.begin(), bank);
-		runLines.insert(runLines.begin(), makeRuns(bank.data()));
-	}
+	river.rebuild(gen, oldest, lines);   // screen memory again, from the generator's state before its oldest line
 	scan = {};
 }
 
-// A new river line goes above the others. Screen memory is a ring of two 80-line blocks,
-// $2000-$2EFF and $3000-$3EFF; the address of the top line moves up by one line.
+// A new river line goes above the others.
 void Game::pushLine() {
-	std::array<uint8_t, kLineBytes> line, bank;
-	if (keepLineStates) {
-		lineStates.insert(lineStates.begin(), gen.s);
-		if (lineStates.size() > 256) lineStates.pop_back();
-	}
-	gen.nextLine(line.data(), bank.data());
-	screen.insert(screen.begin(), line);
-	if (screen.size() > 256) screen.pop_back();
-	bankLines.insert(bankLines.begin(), bank);
-	if (bankLines.size() > 256) bankLines.pop_back();
-	runLines.insert(runLines.begin(), makeRuns(bank.data()));
-	if (runLines.size() > 256) runLines.pop_back();
-	uint8_t topLo = uint8_t(g.screenTop), topHi = uint8_t(g.screenTop >> 8);
-	if (topLo < kLineBytes) topHi--;
-	topLo = uint8_t(topLo - kLineBytes);
-	if (topHi < 0x20) topHi = 0x3E;
-	if (topHi == 0x2F) topHi = 0x2E;
-	g.screenTop = uint16_t(topLo | (topHi << 8));
-	if (afterLine) afterLine(line.data());
+	river.push(gen);
+	if (afterLine) afterLine(river.lines.front().data());
 }
 
 void Game::frame(const Input &input, const std::function<uint8_t()> &random) {
@@ -421,10 +374,7 @@ void Game::reset(bool full) {
 	g.sound.crashPitch = 0;   // $052C ($0500-$05FF cleared)
 	// player-missile memory rows 1-$BB cleared (the sprites gone until prepare()), screen memory cleared
 	g.spritesShown = false;
-	screen.clear();
-	bankLines.clear();
-	runLines.clear();
-	lineStates.clear();
+	river.clear();
 	g.screenOn = 0;                               // B101: colours off while clearing
 	busy_ = resetFrames();
 }
@@ -796,10 +746,7 @@ void Game::powerOn(bool pal) {
 	gen.s = RiverState();
 	gen.s.depotLevelLimit = pal ? 0x2F : 0x2E;
 	g = GameState();
-	screen.clear();
-	bankLines.clear();
-	runLines.clear();
-	lineStates.clear();
+	river.clear();
 	for (int i = 0; i < kPanelBytes; i++) g.panel.chars[i] = rom_.panelText(i);
 	// A15D (X = $09): zero page cleared, then a new game's reset
 	reset(true);

@@ -386,7 +386,7 @@ private:
 		explicit Anchor(const Machine &m)
 			: river(m.game.gen.s), frameCount(m.game.g.frameCount), attractFlags(m.game.g.attractFlags),
 			  attractTimer(m.game.g.attractTimer), scrollFrac(m.game.g.scrollFrac), gameLogo(m.game.g.logoShown),
-			  gameScroller(m.game.g.scroller), screenTop(m.game.g.screenTop), random(m.random), scroller(m.scroller),
+			  gameScroller(m.game.g.scroller), screenTop(m.game.river.top), random(m.random), scroller(m.scroller),
 			  logoShown(m.logoShown), frame(m.frame), lines(m.lines) {}
 		void setUp(Machine &m) const {
 			m.game.gen.s = river;
@@ -396,7 +396,7 @@ private:
 			m.game.g.scrollFrac = scrollFrac;
 			m.game.g.logoShown = gameLogo;
 			m.game.g.scroller = gameScroller;
-			m.game.g.screenTop = screenTop;
+			m.game.river.top = screenTop;
 			m.random = random;
 			m.scroller = scroller;
 			m.logoShown = logoShown;

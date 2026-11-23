@@ -74,8 +74,8 @@ void Game::loadFromRam(const uint8_t *ram) {
 	for (auto &f : gameFields(*this)) *f.second = ram[f.first.second];
 	for (auto &a : gameArrays(*this)) std::memcpy(std::get<2>(a), ram + std::get<1>(a), size_t(std::get<3>(a)));
 	pal_ = ram[0xBF] == 0;   // A06F: GTIA's PAL bits, 0 on a PAL machine
-	screen = screenFromRam(ram);
-	g.screenTop = uint16_t(ram[0x3F04] | (ram[0x3F05] << 8));
+	river.lines = screenFromRam(ram);
+	river.top = uint16_t(ram[0x3F04] | (ram[0x3F05] << 8));
 	// colours the VBI set (not in RAM): as it computes them
 	g.colourWater = (g.pauseState < 2 && g.bridgeFlash && !((g.bridgeFlash + 1) & 1)) ? 0x42 : 0x84;
 	g.colourEdge = 0x20;
@@ -101,8 +101,8 @@ void Game::saveToRam(uint8_t *ram) const {
 	for (int i = 0; i < 7; i++) ram[0x0E00 + logo + i] = 0xFF, ram[0x0F00 + logo + i] = 0xFC;
 	for (int i = 0; i < 10; i++) ram[0x0B00 + needle + i] |= 0x0C;
 	ram[0xBF] = pal_ ? 0 : 0x0E;
-	ram[0x3F04] = uint8_t(g.screenTop);
-	ram[0x3F05] = uint8_t(g.screenTop >> 8);
+	ram[0x3F04] = uint8_t(river.top);
+	ram[0x3F05] = uint8_t(river.top >> 8);
 }
 
 std::vector<std::string> Game::diffWithRam(const uint8_t *orig) const {
@@ -129,13 +129,13 @@ std::vector<std::string> Game::diffWithRam(const uint8_t *orig) const {
 				diffs.push_back(b);
 			}
 	const uint16_t top = uint16_t(ram[0x3F04] | (ram[0x3F05] << 8));
-	if (g.screenTop != top) {
-		std::snprintf(b, sizeof b, "screenTop: port=%04X orig=%04X", g.screenTop, top);
+	if (river.top != top) {
+		std::snprintf(b, sizeof b, "screenTop: port=%04X orig=%04X", river.top, top);
 		diffs.push_back(b);
 	}
 	const auto lines = screenFromRam(ram);
-	for (size_t i = 0; i < lines.size() && i < screen.size(); i++)
-		if (lines[i] != screen[i]) {
+	for (size_t i = 0; i < lines.size() && i < river.lines.size(); i++)
+		if (lines[i] != river.lines[i]) {
 			std::snprintf(b, sizeof b, "screen line %zu", i);
 			diffs.push_back(b);
 			break;

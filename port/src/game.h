@@ -30,6 +30,7 @@
 #include "panel.h"
 #include "players.h"
 #include "sound.h"
+#include "river.h"
 #include "river_gen.h"
 #include "status_bar.h"
 
@@ -86,7 +87,6 @@ struct GameState {
 	Panel panel;                // $1000-$103B the status panel's characters
 	Scroller scroller;          // $3FB3/$26/$27 the scrolling line below the panel (VBI B44B)
 	uint8_t logoShown = 0;      // the logo position the display uses this frame
-	uint16_t screenTop = 0x2000; // $3F04/$3F05 screen memory address of the top river line
 	// playfield colours the VBI sets for the next frame (COLPF0 bank, COLPF1 edge, COLPF2 water)
 	uint8_t colourBank = 0xD6, colourEdge = 0x20, colourWater = 0x84;
 	PokeyRegs pokey;            // what the sound driver last wrote
@@ -103,23 +103,8 @@ public:
 	RiverGen gen;     // river and object slots (gen.s)
 	GameState g;
 
-	// Lines currently in screen memory, newest first: the river area shows lines 0..159.
-	std::vector<std::array<uint8_t, kLineBytes>> screen;
-	// The same lines without their decoration (houses, roads): what the collisions with the
-	// playfield look at (display.cpp).
-	std::vector<std::array<uint8_t, kLineBytes>> bankLines;
-	// Those lines as runs of one colour (made once, as each line enters)
-	struct Runs {
-		int n = 0;
-		uint8_t a[48], b[48], colour[48];   // pixels a..b-1 (0-191) of colour 1-3
-	};
-	std::vector<Runs> runLines;
-	static Runs makeRuns(const uint8_t *line);
-	// If set: the generator's state before each line in `screen`, newest first, so screen
-	// memory can be made again from the oldest one (a small saved state, see compact()).
-	bool keepLineStates = false;
-	std::vector<RiverState> lineStates;
-	// A saved state (needs keepLineStates): only what the game cannot make again. The variables
+	River river;      // the lines on the screen
+	// A saved state (needs river.keepLineStates): only what the game cannot make again. The variables
 	// (GameState, with player-missile memory) and the generator's state are kept; screen memory
 	// is kept as the generator's state before its oldest line and the number of lines, and made
 	// again on loading (the river's lines depend only on the generator); the per-scanline data

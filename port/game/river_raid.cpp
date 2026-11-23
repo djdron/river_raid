@@ -103,7 +103,7 @@ public:
 	Atari(const rr::Rom &rom, const uint8_t osFont[rr::kOsFontBytes], bool pal, uint32_t seed)
 		: rom_(rom), game_(rom), pal_(pal), tv_(rr::tvSystem(pal)), random_(seed, tv_), pokey_(kSampleRate, tv_.clock),
 		charsets_(rr::buildCharsets(rom, osFont)) {
-		game_.keepLineStates = true;   // for small saved states
+		game_.river.keepLineStates = true;   // for small saved states
 		rr::initialPanel(rom, powerOnPanel_);
 		std::memset(screen_, 0, sizeof screen_);
 		game_.afterDisplay = [this] {

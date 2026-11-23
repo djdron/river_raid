@@ -70,7 +70,7 @@ Mask spriteMask(const Span &sp) {
 // A sprite's or an object's row against a scanline's playfield: the row's first and last dots
 // (its span) against each run of the colours wanted (bit 0 bank, 1 edge), no bit by bit (a run
 // between them counts even when it falls into a hole of the row). The colours touched.
-uint8_t spanTouches(uint8_t bits, int count, uint8_t hpos, uint8_t size, const Game::Runs *runs, uint8_t wanted) {
+uint8_t spanTouches(uint8_t bits, int count, uint8_t hpos, uint8_t size, const River::Runs *runs, uint8_t wanted) {
 	if (!bits || !runs) return 0;
 	const Span sp = spriteSpan(bits, count, hpos, size);
 	uint8_t hits = 0;
@@ -80,7 +80,7 @@ uint8_t spanTouches(uint8_t bits, int count, uint8_t hpos, uint8_t size, const G
 	}
 	return hits;
 }
-bool edgeTouches(uint8_t bits, int count, uint8_t hpos, uint8_t size, const Game::Runs *runs) {
+bool edgeTouches(uint8_t bits, int count, uint8_t hpos, uint8_t size, const River::Runs *runs) {
 	return spanTouches(bits, count, hpos, size, runs, 2) != 0;
 }
 // Two sprites' rows on a scanline: their spans, then bit by bit where they meet (on the line).
@@ -121,9 +121,9 @@ void Game::display() {
 		default: bits = spriteRow(5, l); hpos = uint8_t(g.plane.x + 4); break;
 		}
 	};
-	auto pfAt = [&](int l) -> const Runs * {
+	auto pfAt = [&](int l) -> const River::Runs * {
 		const int r = l - kRiverFirstLine;
-		return r >= 0 && r < kRiverLines && size_t(r) < runLines.size() ? &runLines[size_t(r)] : nullptr;
+		return r < kRiverLines ? river.runsAt(r) : nullptr;
 	};
 	struct Rows { int y0 = 0, y1 = -1; };
 	auto box = [&](int y0, int y1) { Rows b; b.y0 = std::max(y0, kFirstLine); b.y1 = std::min(y1, kLines - 1); return b; };
@@ -257,8 +257,8 @@ void Game::drawRiver(uint8_t out[240][kRowWidth]) const {
 		uint8_t *row = out[line - 8];
 		const Scanline &sc = scan[size_t(line)];
 		const uint8_t colours[4] = {0x00, sc.bankColour, g.colourEdge, g.colourWater};
-		if (size_t(k) < screen.size()) {
-			const uint8_t *src = screen[size_t(k)].data();
+		if (size_t(k) < river.lines.size()) {
+			const uint8_t *src = river.lines[size_t(k)].data();
 			for (int i = 0; i < kLineBytes; i++) {   // 4 pixels per byte, 2 columns per pixel
 				const uint8_t v = src[i];
 				uint8_t *d = row + 8 * i;

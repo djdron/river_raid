@@ -81,8 +81,11 @@ replace.
     the event sound and its time, explosion, fire, bonus, missile, the crash's falling pitch)
     and its `drive()` is the driver (B2A5-B3D8), given the plane, the pause, the attract mode
     and the shell by a `SoundContext`; `PokeyRegs` moved there too.
+11. The river on the screen (`river.h`, `river.cpp`): its lines, the same without decoration,
+    their runs, the top line's address in the original's screen memory and the generator's
+    states for small saved states; `push()` adds the generator's next line, `rebuild()` makes
+    them again when a state is loaded.
 
 ## Next
 
-11. The river: the generator, screen lines, runs.
 12. `GameState` and `RiverState` gone, the RAM export written from the classes; the documents.

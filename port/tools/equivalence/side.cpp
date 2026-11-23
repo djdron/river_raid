@@ -38,8 +38,8 @@ int F(Frame)(const SideInput &in, uint32_t &rng) {
 void F(Snapshot)(Snapshot &out) {
 	std::memset(out.ram, 0, sizeof out.ram);
 	game->saveToRam(out.ram);
-	out.lines = int(game->screen.size());
-	for (int k = 0; k < out.lines && k < 256; k++) std::memcpy(out.screen[k], game->screen[size_t(k)].data(), 48);
+	out.lines = int(game->river.lines.size());
+	for (int k = 0; k < out.lines && k < 256; k++) std::memcpy(out.screen[k], game->river.lines[size_t(k)].data(), 48);
 	game->drawRiver(out.picture);
 	for (int k = 0; k < 4; k++) { out.audf[k] = game->g.pokey.audf[k]; out.audc[k] = game->g.pokey.audc[k]; }
 	out.busy = game->busy();
