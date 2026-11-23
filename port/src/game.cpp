@@ -24,17 +24,6 @@ constexpr uint8_t kPlaying = 0, kResuming = 1, kPaused = 2, kPausing = 3;
 // GameState::eventSound
 constexpr uint8_t kCrashSound = 1, kOutOfFuelSound = 2, kTankFullSound = 3, kRefuelSound = 4;
 
-// panel character positions (40 per row, the second row from $28)
-constexpr int kPanelScore = 0x02;
-constexpr int kPanelPlayer1Mark = 0x0B, kPanelPlayer2Mark = 0x12;
-constexpr int kPanelHighScore = 0x0C;          // or the other player's score
-constexpr int kPanelGameNumber = 0x2A;
-constexpr int kPanelLives = 0x33;              // 9 plane symbols; "GAME OVER" text of player 2 there
-constexpr int kPanelOtherBridges = 0x37;
-constexpr uint8_t kLifeSymbol = 0x9C;
-// digit characters for printBcd: '0' in each of the panel's colours
-constexpr uint8_t kDigitsScore = 0x10, kDigitsOther = 0x50, kDigitsHighScore = 0xD0;
-
 inline bool attract(const GameState &g) { return (g.attractFlags & 0x80) != 0; }
 
 }  // namespace
@@ -64,7 +53,7 @@ void Game::startAttract(bool pal) {
 	bankLines.clear();
 	runLines.clear();
 	lineStates.clear();
-	for (int i = 0; i < kPanelBytes; i++) g.panel[i] = rom_.panelText(i);   // A0F0
+	for (int i = 0; i < kPanelBytes; i++) g.panel.chars[i] = rom_.panelText(i);   // A0F0
 	// the attract mode's new game: B0F1 with X = $29, AF80, then the respawn (A36E-A3E3) which
 	// in the attract mode ends with sub $B21A; then frame 38
 	g.attractFlags = 0x80;
@@ -444,13 +433,10 @@ void Game::reset(bool full) {
 void Game::setUpGame() {
 	if (g.gameNumber & 1) {
 		showOtherScore();
-		g.panel[kPanelPlayer1Mark] = 0x4F;
-		g.panel[kPanelPlayer2Mark] = 0x50;
 	} else {
 		showHighScore();
-		g.panel[kPanelPlayer1Mark] = 0xDB;
-		g.panel[kPanelPlayer2Mark] = 0xD0;
 	}
+	g.panel.markPlayers(g.gameNumber & 1);
 	const RiverGen::Start &start = gen.start(g.gameNumber >> 1);
 	for (int i = 0; i < 4; i++) g.other.checkpoint[i] = gen.s.checkpoint[i] = start.checkpoint[i];
 	gen.s.level = g.other.level = start.level;
@@ -463,8 +449,7 @@ void Game::setUpGame() {
 // A699-A6DC: SELECT or OPTION: the next game number, everything back to the start.
 void Game::selectGame() {
 	g.gameNumber = (g.gameNumber + 1) & 7;
-	g.panel[kPanelGameNumber] = 0;
-	g.panel[kPanelGameNumber + 1] = lo(g.gameNumber + 0xD1);   // digit 1-8
+	g.panel.showGameNumber(g.gameNumber);
 	g.idleTime = 0;
 	g.attractFlags = 0;
 	g.lives = 0;
@@ -496,8 +481,8 @@ bool Game::respawnOrGameOver() {
 	updateHighScore(true);
 	if (g.gameNumber & 1) {
 		if (g.player) swapPlayers();
-		for (int i = 0; i < 4; i++) g.panel[kPanelLives + i] = rom_.playerTwoText(i) ^ 0xC0;
-		printBcd(g.other.bridges, kPanelOtherBridges, kDigitsOther);
+		for (int i = 0; i < 4; i++) g.panel.chars[Panel::kLives + i] = rom_.playerTwoText(i) ^ 0xC0;
+		printBcd(g.other.bridges, Panel::kOtherBridges, Panel::kDigitsOther);
 	} else {
 		showHighScore();
 	}
@@ -902,27 +887,17 @@ void Game::updateHighScore(bool otherPlayer) { g.highScores.update(otherPlayer ?
 void Game::showLives() {
 	int shown = g.lives;
 	if (shown && (g.soundBonus & 0x08)) shown--;
-	for (int i = 0; i < 9; i++) g.panel[kPanelLives + i] = i < shown ? kLifeSymbol : 0;
+	g.panel.showLives(shown);
 }
 
 // B086-B0C6: BCD bytes as digits in the panel, leading zeros blank; nothing in the attract mode.
 template <int N> void Game::printBcd(const Bcd<N> &bcd, int at, uint8_t digitZero) {
-	if (attract(g)) return;
-	bool leading = true;
-	for (int k = 0; k < 2 * N; k++) {
-		const uint8_t digit = uint8_t(bcd.digit(k));
-		if (leading && digit == 0) {
-			g.panel[at++] = 0;
-		} else {
-			leading = false;
-			g.panel[at++] = lo(digit + digitZero);
-		}
-	}
+	if (!attract(g)) g.panel.print(bcd, at, digitZero);
 }
-void Game::showBridges() { printBcd(g.bridges, kPanelBridges, kDigitsBridges); }
-void Game::showScore() { printBcd(g.score, kPanelScore, kDigitsScore); }
-void Game::showOtherScore() { printBcd(g.score, kPanelHighScore, kDigitsOther); }
-void Game::showHighScore() { printBcd(g.highScores.of(g.gameNumber), kPanelHighScore, kDigitsHighScore); }
+void Game::showBridges() { printBcd(g.bridges, Panel::kBridges, Panel::kDigitsBridges); }
+void Game::showScore() { printBcd(g.score, Panel::kScore, Panel::kDigitsScore); }
+void Game::showOtherScore() { printBcd(g.score, Panel::kHighScore, Panel::kDigitsOther); }
+void Game::showHighScore() { printBcd(g.highScores.of(g.gameNumber), Panel::kHighScore, Panel::kDigitsHighScore); }
 
 // A000-A17C: power-on.
 void Game::powerOn(bool pal) {
@@ -934,7 +909,7 @@ void Game::powerOn(bool pal) {
 	bankLines.clear();
 	runLines.clear();
 	lineStates.clear();
-	for (int i = 0; i < kPanelBytes; i++) g.panel[i] = rom_.panelText(i);
+	for (int i = 0; i < kPanelBytes; i++) g.panel.chars[i] = rom_.panelText(i);
 	// A15D (X = $09): zero page cleared, then a new game's reset
 	reset(true);
 	setUpGame();

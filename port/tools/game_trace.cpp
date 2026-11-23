@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
 		const GameState &s = g.g;
 		const RiverState &r = g.gen.s;
 		if (s.idleTime & 0x80) std::memset(screen, 0, sizeof screen);
-		else drawStatusBar(rom, cs, s.panel, s.plane.fuel, s.scroller, s.logoShown, screen, pal);
+		else drawStatusBar(rom, cs, s.panel.chars, s.plane.fuel, s.scroller, s.logoShown, screen, pal);
 
 		std::printf("%ld fc%02X at%02X/%02X ps%02X pz%02X game%u pl%u busy%d", f, s.frameCount, s.attractFlags,
 			s.attractTimer, s.pauseState, s.plane.state, s.gameNumber, s.player, g.busy() ? 1 : 0);

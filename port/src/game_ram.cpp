@@ -47,7 +47,7 @@ std::vector<std::pair<std::pair<const char *, uint16_t>, uint8_t *>> gameFields(
 // Arrays compared with RAM: high scores and their check bytes, the panel.
 std::vector<std::tuple<const char *, uint16_t, uint8_t *, int>> gameArrays(const Game &game) {
 	GameState &g = const_cast<GameState &>(game.g);
-	return {{"highScore", 0x80, g.highScores.table, 16}, {"highScoreCheck", 0x90, g.highScores.check, 16}, {"panel", 0x1000, g.panel, 60}};
+	return {{"highScore", 0x80, g.highScores.table, 16}, {"highScoreCheck", 0x90, g.highScores.check, 16}, {"panel", 0x1000, g.panel.chars, 60}};
 }
 
 // River lines in screen memory as the display list at $3F00 shows them (160 lines).

@@ -27,6 +27,7 @@
 #include "river_draw.h"
 #include "bullet.h"
 #include "plane.h"
+#include "panel.h"
 #include "players.h"
 #include "river_gen.h"
 #include "status_bar.h"
@@ -95,7 +96,7 @@ struct GameState {
 	uint8_t soundBonus = 0;     // $7E a new plane at 10 000 points
 	uint8_t crashPitch = 0;     // $052C engine pitch falling after a crash
 	// the screen below the river
-	uint8_t panel[60] = {};     // $1000-$103B status panel characters
+	Panel panel;                // $1000-$103B the status panel's characters
 	Scroller scroller;          // $3FB3/$26/$27 the scrolling line below the panel (VBI B44B)
 	uint8_t logoShown = 0;      // the logo position the display uses this frame
 	uint16_t screenTop = 0x2000; // $3F04/$3F05 screen memory address of the top river line

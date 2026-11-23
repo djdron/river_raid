@@ -73,10 +73,13 @@ replace.
    `objectKind(kind)` gives each frame the object of the class that knows what that kind does:
    its animation, its move (the jet across the screen; helicopters, balloons and ships to and
    fro once woken, turning round at the edge), whether the display tests it against the edge.
+9. The players (`players.h`): `PlayerData` (the other player) with `Bcd<2>` bridges and
+   `Bcd<3>` score, the same types for the active player, `HighScores` (the table and its check
+   bytes); the panel (`panel.h`): its 60 characters with `print` (BCD digits), `showLives`,
+   `markPlayers`, `showGameNumber`.
 
 ## Next
 
-9. The players: score, bridges, lives, the other player, high scores; the panel.
 10. The sound driver.
 11. The river: the generator, screen lines, runs.
 12. `GameState` and `RiverState` gone, the RAM export written from the classes; the documents.
