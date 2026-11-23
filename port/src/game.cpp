@@ -17,7 +17,6 @@ constexpr uint16_t kShellMemory = 0x0C00;      // player 0: the tank shell
 constexpr uint16_t kTankMemory = 0x0D00;       // player 1: the tank on the road
 constexpr uint16_t kPlaneMemory = 0x0EAA;      // player 2 from row $AA: the plane
 constexpr uint8_t kMissile0 = 0x03;            // the helicopter's missile
-constexpr uint8_t kBulletBits = 0x20;          // the plane's bullet (missile 2, one bit wide)
 
 // GameState::planeState
 constexpr uint8_t kFlying = 0;
@@ -100,7 +99,7 @@ void Game::startAttract(bool pal) {
 	// in the attract mode ends with sub $B21A; then frame 38
 	g.attractFlags = 0x80;
 	setUpGame();
-	g.bulletY = 1;
+	g.bullet.y = 1;
 	g.lives = g.other.lives = 4;
 	g.respawned = 1;
 	g.powerOnDone = 1;
@@ -444,7 +443,7 @@ void Game::reset(bool full) {
 	if (full) s.level = table(0x60);              // loaded before B16B reads it for the bank colour
 	gen.restoreCheckpoint();   // the river's part: $4D-$5F, $2B-$4C and $0500-$05FF, the bridge in slot 10
 	// (restoreCheckpoint also continues from the checkpoint, A3C8; finishRespawn() does it again)
-	g.bulletY = table(0x56);
+	g.bullet.y = table(0x56);
 	g.planeX = table(0x57);
 	g.planeXFrac = table(0x58);
 	g.speed = table(0x59);
@@ -994,8 +993,8 @@ void Game::flyPlane(const Input &input) {
 	// A58D: the bullet stops at the bank, flies up 6 lines per frame, or is fired
 	if (!(g.hit.bulletHitBank & 0x80)) {
 		moveBullet(1);
-	} else if (g.bulletY >= 0x1C) {
-		moveBullet(g.bulletY - 6);
+	} else if (g.bullet.y >= 0x1C) {
+		moveBullet(g.bullet.y - 6);
 	} else if (input.trigger[g.player & 1]) {
 		g.soundFire = 0x0F;
 		moveBullet(0xA9);
@@ -1138,27 +1137,13 @@ void Game::gameOverScreen() {
 
 // B204-B220: the bullet and the helicopter's missile go.
 void Game::removePlaneThings() {
-	clearBullet();
+	g.bullet.remove(g.pm);
 	gen.s.shooterSlot = kNoSlot;
 	g.pm.at(uint16_t(kMissileMemory + gen.s.missileY)) &= ~kMissile0;
-	g.bulletY = 1;
 }
-
-// sub $B221 / $B223: the bullet is 8 rows of missile 2 below row bulletY (at least row $1C).
-void Game::drawBullet(uint8_t bits) {
-	int row = g.bulletY - 1;
-	if (row == 0) return;
-	if (row < 0x1B) row = 0x1B;
-	for (int i = 1; i <= 8; i++) g.pm.at(uint16_t(kMissileMemory + row + i)) = bits;
-}
-void Game::clearBullet() { drawBullet(0); }
 
 // A5AA-A5B4: the bullet to row y.
-void Game::moveBullet(int y) {
-	clearBullet();
-	g.bulletY = lo(y);
-	drawBullet(kBulletBits);
-}
+void Game::moveBullet(int y) { g.bullet.moveTo(g.pm, y); }
 
 // sub $B247: two-player game: the other player's turn.
 void Game::swapPlayers() {

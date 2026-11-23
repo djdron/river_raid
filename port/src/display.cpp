@@ -129,10 +129,7 @@ void Game::display() {
 	const Rows shellBox = box(s.shellY, s.shellY + 15), tankBox = box(s.tankY, s.tankY + 10), planeBox = box(0xAA, 0xAA + 13);
 	Rows missileBox, bulletBox;
 	if (s.missileY >= 0x1C) missileBox = box(s.missileY, s.missileY);
-	if (g.bulletY > 1) {
-		const int row = std::max(g.bulletY - 1, 0x1B);
-		bulletBox = box(row + 1, row + 8);
-	}
+	if (g.bullet.shown()) bulletBox = box(g.bullet.top(), g.bullet.top() + 7);
 	auto pfAny = [&](int sprite, const Rows &b, uint8_t want) {
 		for (int l = b.y0; l <= b.y1; l++) {
 			uint8_t bits, hpos, size;

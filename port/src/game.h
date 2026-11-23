@@ -25,22 +25,11 @@
 #include <vector>
 
 #include "river_draw.h"
+#include "bullet.h"
 #include "river_gen.h"
 #include "status_bar.h"
 
 namespace rr {
-
-// Player-missile memory $0B00-$0FFF (PMBASE $08, single-line resolution: one byte per
-// scanline). $0B00 missiles (bits 1-0 missile 0, 3-2 missile 1, 5-4 missile 2), then players
-// 0-3 at $0C00, $0D00, $0E00, $0F00. Kept as one block: the original's copy loops can run
-// past the end of one page into the next.
-struct PmMemory {
-	static constexpr uint16_t kBase = 0x0B00;
-	std::array<uint8_t, 0x500> bytes{};
-	uint8_t &at(uint16_t addr) { return bytes[size_t(addr - kBase) % bytes.size()]; }
-	uint8_t missiles(int line) const { return bytes[size_t(line & 0xFF)]; }
-	uint8_t player(int n, int line) const { return bytes[size_t(0x100 * (n + 1) + (line & 0xFF))]; }
-};
 
 // POKEY sound registers ($D200-$D207): frequency divider and control (distortion, volume)
 // of the four channels. AUDCTL ($D208) stays 0 in River Raid.
@@ -113,7 +102,7 @@ struct GameState {
 	uint8_t scrollFrac = 0;     // $30
 	uint8_t fuel = 0;           // $5B $FF full
 	uint8_t fuelFrac = 0;       // $5C
-	uint8_t bulletY = 0;        // $56 the bullet (missile 2); < $1C: no bullet
+	Bullet bullet;              // $56 the plane's bullet
 	uint8_t joystick = 0x0F;    // $19 stick bits of this frame (0 = pressed)
 	uint8_t joystickPrev = 0;   // $B9 those of the previous frame, << 4
 	// the tank's shell and the helicopter's missile (more in RiverState)
@@ -278,8 +267,6 @@ private:
 	void explode(int n, uint8_t kind);            // A4E0-A589
 	void removePlaneThings();                     // B204-B220
 	void moveBullet(int y);                       // A5AA-A5B4
-	void drawBullet(uint8_t bits);                // sub $B223
-	void clearBullet();                           // sub $B221
 	void swapPlayers();                           // sub $B247
 	void updateHighScore(bool otherPlayer);       // sub $B261
 	void showLives();                             // sub $AF5B

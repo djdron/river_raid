@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
 		std::printf("%ld fc%02X at%02X/%02X ps%02X pz%02X game%u pl%u busy%d", f, s.frameCount, s.attractFlags,
 			s.attractTimer, s.pauseState, s.planeState, s.gameNumber, s.player, g.busy() ? 1 : 0);
 		std::printf(" | plane %02X.%02X a%02X f%u sp%02X.%02X fuel%02X.%02X bul%02X", s.planeX, s.planeXFrac,
-			s.planeAccel, s.planeFrame, s.speed, s.scrollFrac, s.fuel, s.fuelFrac, s.bulletY);
+			s.planeAccel, s.planeFrame, s.speed, s.scrollFrac, s.fuel, s.fuelFrac, s.bullet.y);
 		std::printf(" | tank %02X %02X,%02X fire%02X shell t%02X f%u %02X.%02X,%02X v%02X.%02X | missile %02X,%02X st%02X",
 			r.tankKind, r.tankX, r.tankY, r.tankFires, r.shellTimer, s.shellFrame, s.shellX, s.shellXFrac, r.shellY,
 			r.shellSpeed, r.shellSpeedFrac, r.missileX, r.missileY, s.missileStep);

@@ -27,7 +27,7 @@ std::vector<std::pair<std::pair<const char *, uint16_t>, uint8_t *>> gameFields(
 		{{"hit.bulletHitBank", 0x1A}, &g.hit.bulletHitBank}, {{"hit.planeHitBank", 0x1B}, &g.hit.planeHitBank}, {{"hit.bulletHitObject", 0x1C}, &g.hit.bulletHitObject},
 		{{"hit.planeHitObject", 0x1D}, &g.hit.planeHitObject}, {{"hit.planeHitShell", 0x1E}, &g.hit.planeHitShell}, {{"hit.shellHitObject", 0x1F}, &g.hit.shellHitObject},
 		{{"hit.tankAtEdge", 0x20}, &g.hit.tankAtEdge}, {{"hit.missileHitPlane", 0x21}, &g.hit.missileHitPlane}, {{"hit.missileHitBank", 0x22}, &g.hit.missileHitBank},
-		{{"planeXFrac", 0x58}, &g.planeXFrac}, {{"planeAccel", 0x2B}, &g.planeAccel}, {{"bulletY", 0x56}, &g.bulletY},
+		{{"planeXFrac", 0x58}, &g.planeXFrac}, {{"planeAccel", 0x2B}, &g.planeAccel}, {{"bulletY", 0x56}, &g.bullet.y},
 		{{"bridges0", 0x61}, &g.bridges[0]}, {{"bridges1", 0x62}, &g.bridges[1]},
 		{{"score0", 0x63}, &g.score[0]}, {{"score1", 0x64}, &g.score[1]}, {{"score2", 0x65}, &g.score[2]},
 		{{"lives", 0x6A}, &g.lives}, {{"other.level", 0x6B}, &g.other.level},
