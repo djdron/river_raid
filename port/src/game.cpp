@@ -37,16 +37,6 @@ constexpr uint8_t kDigitsScore = 0x10, kDigitsOther = 0x50, kDigitsHighScore = 0
 
 inline bool attract(const GameState &g) { return (g.attractFlags & 0x80) != 0; }
 
-// One byte of BCD addition with carry in and out.
-uint8_t addBcd(uint8_t a, uint8_t b, int &carry) {
-	int low = (a & 0x0F) + (b & 0x0F) + carry;
-	int high = (a >> 4) + (b >> 4);
-	if (low > 9) { low -= 10; high++; }
-	carry = 0;
-	if (high > 9) { high -= 10; carry = 1; }
-	return uint8_t((high << 4) | low);
-}
-
 }  // namespace
 
 Game::Runs Game::makeRuns(const uint8_t *line) {
@@ -423,15 +413,13 @@ void Game::reset(bool full) {
 	g.plane.fuelFrac = table(0x5C);
 	g.plane.frame = table(0x5E);
 	if (full) {
-		g.bridges[0] = table(0x61);
-		g.bridges[1] = table(0x62);
-		for (int i = 0; i < 3; i++) g.score[i] = table(uint16_t(0x63 + i));
+		g.bridges = {{table(0x61), table(0x62)}};
+		g.score = {{table(0x63), table(0x64), table(0x65)}};
 		for (int i = 0; i < 4; i++) s.checkpoint[i] = table(uint16_t(0x66 + i));
 		g.lives = table(0x6A);
 		g.other.level = table(0x6B);
-		g.other.bridges[0] = table(0x6C);
-		g.other.bridges[1] = table(0x6D);
-		for (int i = 0; i < 3; i++) g.other.score[i] = table(uint16_t(0x6E + i));
+		g.other.bridges = {{table(0x6C), table(0x6D)}};
+		g.other.score = {{table(0x6E), table(0x6F), table(0x70)}};
 		for (int i = 0; i < 4; i++) g.other.checkpoint[i] = table(uint16_t(0x71 + i));
 		g.other.lives = table(0x75);
 		g.plane.state = table(0x76);
@@ -469,8 +457,7 @@ void Game::setUpGame() {
 	// the bridge counter, 4 BCD digits: past 9999 its last 4, as the counter of a game flown that
 	// far would show (it goes round; and like it, the tanks fire only from 5 on again)
 	const int b = start.bridge % 10000;
-	g.bridges[1] = g.other.bridges[1] = uint8_t((b / 10 % 10) << 4 | b % 10);
-	g.bridges[0] = g.other.bridges[0] = uint8_t((b / 1000) << 4 | b / 100 % 10);
+	g.bridges = g.other.bridges = {{uint8_t((b / 1000) << 4 | b / 100 % 10), uint8_t((b / 10 % 10) << 4 | b % 10)}};
 }
 
 // A699-A6DC: SELECT or OPTION: the next game number, everything back to the start.
@@ -484,7 +471,7 @@ void Game::selectGame() {
 	g.other.lives = 0;
 	g.player = 0;
 	g.startBeep = 2;
-	for (int i = 0; i < 3; i++) g.score[i] = g.other.score[i] = 0;
+	g.score = g.other.score = Bcd<3>();
 	g.soundMissile = 0;
 	gen.s.shell.timer = 0xFF;
 	setUpGame();
@@ -510,7 +497,7 @@ bool Game::respawnOrGameOver() {
 	if (g.gameNumber & 1) {
 		if (g.player) swapPlayers();
 		for (int i = 0; i < 4; i++) g.panel[kPanelLives + i] = rom_.playerTwoText(i) ^ 0xC0;
-		printBcd(g.other.bridges, 2, kPanelOtherBridges, kDigitsOther);
+		printBcd(g.other.bridges, kPanelOtherBridges, kDigitsOther);
 	} else {
 		showHighScore();
 	}
@@ -819,34 +806,28 @@ void Game::explode(int n, uint8_t kind) {
 	g.soundExplosion = 0x17;
 	if (type == kBridge) {
 		g.bridgeFlash = 0x17;
-		int carry = 1;                            // bridge counter +1 (BCD)
-		g.bridges[1] = addBcd(g.bridges[1], 0, carry);
-		g.bridges[0] = addBcd(g.bridges[0], 0, carry);
+		g.bridges.add(0, 1);                      // bridge counter +1
 		s.bridgeHit++;
 		// A500: a tank on the bridge goes with it
 		if (lo(obj.x - 8) < s.tank.x && lo(obj.x + 0x1F) >= s.tank.x) {
 			s.tank.kind |= 0x80;
 			g.soundExplosion = 0x37;
 			type = kBridgeWithTank;
-		} else if (g.bridges[0] != 0 || g.bridges[1] >= 5) {
+		} else if (g.bridges.d[0] != 0 || g.bridges.d[1] >= 5) {
 			// A52B: from bridge 5 on, a tank close to the bridge fires
 			const bool near = s.tank.kind < 6 ? lo(obj.x - s.tank.x) < 0x29 : lo(s.tank.x - obj.x) < 0x41;
 			if (near) s.shell.timer++;
 		}
 	}
 	// A547: points (BCD); every 10 000 points a new plane, up to 9
-	const uint8_t tenThousands = g.score[1] & 0xF0;
-	int carry = 0;
-	g.score[2] = addBcd(g.score[2], rom_.points(type), carry);
-	g.score[1] = addBcd(g.score[1], 0, carry);
-	g.score[0] = addBcd(g.score[0], 0, carry);
-	if (carry) {                                  // past 999 999: the game ends
-		g.score[0] = g.score[1] = g.score[2] = 0x99;
+	const uint8_t tenThousands = g.score.d[1] & 0xF0;
+	if (g.score.add(rom_.points(type))) {         // past 999 999: the game ends
+		g.score = {{0x99, 0x99, 0x99}};
 		g.lives = 0;
 		crash(kCrashSound, 0x1F);
 		return;
 	}
-	if ((g.score[1] & 0xF0) != tenThousands && g.lives != 9) {
+	if ((g.score.d[1] & 0xF0) != tenThousands && g.lives != 9) {
 		g.lives++;
 		g.soundBonus = 0x40;
 	}
@@ -901,38 +882,21 @@ void Game::swapPlayers() {
 	RiverState &s = gen.s;
 	PlayerData current;
 	current.level = s.level;
-	std::memcpy(current.bridges, g.bridges, 2);
-	std::memcpy(current.score, g.score, 3);
+	current.bridges = g.bridges;
+	current.score = g.score;
 	std::memcpy(current.checkpoint, s.checkpoint, 4);
 	current.lives = g.lives;
 	s.level = g.other.level;
-	std::memcpy(g.bridges, g.other.bridges, 2);
-	std::memcpy(g.score, g.other.score, 3);
+	g.bridges = g.other.bridges;
+	g.score = g.other.score;
 	std::memcpy(s.checkpoint, g.other.checkpoint, 4);
 	g.lives = g.other.lives;
 	g.other = current;
 }
 
 // sub $B261: the score (this or the other player's) becomes the high score of this pair of
-// games if higher; then the check bytes are recomputed (sub $B298).
-void Game::updateHighScore(bool otherPlayer) {
-	const uint8_t *score = otherPlayer ? g.other.score : g.score;
-	uint8_t *high = &g.highScore[(g.gameNumber & 0x0E) * 2];
-	for (int i = 0; i < 3; i++) {
-		if (score[i] < high[i]) return;
-		if (score[i] > high[i]) break;
-	}
-	std::memcpy(high, score, 3);
-	for (int check = 15; check >= 0; check--) {
-		int sum = 0, carry = 0;
-		for (int i = 14; i >= 0; i--) {
-			const int r = sum + g.highScore[i] + carry;
-			carry = r > 0xFF;
-			sum = (r & 0xFF) ^ check;
-		}
-		g.highScoreCheck[check] = uint8_t(sum);
-	}
-}
+// games if not lower.
+void Game::updateHighScore(bool otherPlayer) { g.highScores.update(otherPlayer ? g.other.score : g.score, g.gameNumber); }
 
 // sub $AF5B: the lives as plane symbols in the panel (the newest blinks while the bonus sounds).
 void Game::showLives() {
@@ -942,24 +906,23 @@ void Game::showLives() {
 }
 
 // B086-B0C6: BCD bytes as digits in the panel, leading zeros blank; nothing in the attract mode.
-void Game::printBcd(const uint8_t *bcd, int bytes, int at, uint8_t digitZero) {
+template <int N> void Game::printBcd(const Bcd<N> &bcd, int at, uint8_t digitZero) {
 	if (attract(g)) return;
 	bool leading = true;
-	for (int i = 0; i < bytes; i++) {
-		for (const uint8_t digit : {uint8_t(bcd[i] >> 4), uint8_t(bcd[i] & 0x0F)}) {
-			if (leading && digit == 0) {
-				g.panel[at++] = 0;
-			} else {
-				leading = false;
-				g.panel[at++] = lo(digit + digitZero);
-			}
+	for (int k = 0; k < 2 * N; k++) {
+		const uint8_t digit = uint8_t(bcd.digit(k));
+		if (leading && digit == 0) {
+			g.panel[at++] = 0;
+		} else {
+			leading = false;
+			g.panel[at++] = lo(digit + digitZero);
 		}
 	}
 }
-void Game::showBridges() { printBcd(g.bridges, 2, kPanelBridges, kDigitsBridges); }
-void Game::showScore() { printBcd(g.score, 3, kPanelScore, kDigitsScore); }
-void Game::showOtherScore() { printBcd(g.score, 3, kPanelHighScore, kDigitsOther); }
-void Game::showHighScore() { printBcd(&g.highScore[(g.gameNumber & 0x0E) * 2], 3, kPanelHighScore, kDigitsHighScore); }
+void Game::showBridges() { printBcd(g.bridges, kPanelBridges, kDigitsBridges); }
+void Game::showScore() { printBcd(g.score, kPanelScore, kDigitsScore); }
+void Game::showOtherScore() { printBcd(g.score, kPanelHighScore, kDigitsOther); }
+void Game::showHighScore() { printBcd(g.highScores.of(g.gameNumber), kPanelHighScore, kDigitsHighScore); }
 
 // A000-A17C: power-on.
 void Game::powerOn(bool pal) {

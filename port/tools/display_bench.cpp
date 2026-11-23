@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
 			in.stick[0] = stick;
 			in.trigger[0] = (f & 1) != 0;
 		}
-		if (!menu) maxBridge = std::max(maxBridge, (g.g.bridges[0] >> 4) * 1000 + (g.g.bridges[0] & 15) * 100 + (g.g.bridges[1] >> 4) * 10 + (g.g.bridges[1] & 15));
+		if (!menu) maxBridge = std::max(maxBridge, (g.g.bridges.d[0] >> 4) * 1000 + (g.g.bridges.d[0] & 15) * 100 + (g.g.bridges.d[1] >> 4) * 10 + (g.g.bridges.d[1] & 15));
 		int reads = 0;
 		g.frame(in, [&] { return reads++ ? random.read(249, 13) : pal ? random.read(191, 24) : random.read(192, 13); });
 		random.nextFrame();

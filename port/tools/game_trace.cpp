@@ -127,8 +127,8 @@ int main(int argc, char **argv) {
 		std::printf(" | tank %02X %02X,%02X fire%02X shell t%02X f%u %02X.%02X,%02X v%02X.%02X | missile %02X,%02X st%02X",
 			r.tank.kind, r.tank.x, r.tank.y, r.tank.fires, r.shell.timer, r.shell.frame, r.shell.x, r.shell.xFrac, r.shell.y,
 			r.shell.speed, r.shell.speedFrac, r.missile.x, r.missile.y, r.missile.step);
-		std::printf(" | score %s br %s lives %u other %s/%s/%u hi %s", hex(s.score, 3).c_str(), hex(s.bridges, 2).c_str(),
-			s.lives, hex(s.other.score, 3).c_str(), hex(s.other.bridges, 2).c_str(), s.other.lives, hex(s.highScore, 16).c_str());
+		std::printf(" | score %s br %s lives %u other %s/%s/%u hi %s", hex(s.score.d, 3).c_str(), hex(s.bridges.d, 2).c_str(),
+			s.lives, hex(s.other.score.d, 3).c_str(), hex(s.other.bridges.d, 2).c_str(), s.other.lives, hex(s.highScores.table, 16).c_str());
 		std::printf(" | slots %u..", r.firstSlot);
 		for (int i = r.firstSlot; i < kSlots; i++) {
 			const Slot &o = r.slot[size_t(i)];

@@ -30,12 +30,12 @@ std::vector<std::pair<std::pair<const char *, uint16_t>, uint8_t *>> gameFields(
 		{{"hit.planeHitObject", 0x1D}, &g.hit.planeHitObject}, {{"hit.planeHitShell", 0x1E}, &g.hit.planeHitShell}, {{"hit.shellHitObject", 0x1F}, &g.hit.shellHitObject},
 		{{"hit.tankAtEdge", 0x20}, &g.hit.tankAtEdge}, {{"hit.missileHitPlane", 0x21}, &g.hit.missileHitPlane}, {{"hit.missileHitBank", 0x22}, &g.hit.missileHitBank},
 		{{"planeXFrac", 0x58}, &g.plane.xFrac}, {{"planeAccel", 0x2B}, &g.plane.accel}, {{"bulletY", 0x56}, &g.bullet.y},
-		{{"bridges0", 0x61}, &g.bridges[0]}, {{"bridges1", 0x62}, &g.bridges[1]},
-		{{"score0", 0x63}, &g.score[0]}, {{"score1", 0x64}, &g.score[1]}, {{"score2", 0x65}, &g.score[2]},
+		{{"bridges0", 0x61}, &g.bridges.d[0]}, {{"bridges1", 0x62}, &g.bridges.d[1]},
+		{{"score0", 0x63}, &g.score.d[0]}, {{"score1", 0x64}, &g.score.d[1]}, {{"score2", 0x65}, &g.score.d[2]},
 		{{"lives", 0x6A}, &g.lives}, {{"other.level", 0x6B}, &g.other.level},
-		{{"other.bridges0", 0x6C}, &g.other.bridges[0]}, {{"other.bridges1", 0x6D}, &g.other.bridges[1]},
-		{{"other.score0", 0x6E}, &g.other.score[0]}, {{"other.score1", 0x6F}, &g.other.score[1]},
-		{{"other.score2", 0x70}, &g.other.score[2]}, {{"other.checkpoint0", 0x71}, &g.other.checkpoint[0]},
+		{{"other.bridges0", 0x6C}, &g.other.bridges.d[0]}, {{"other.bridges1", 0x6D}, &g.other.bridges.d[1]},
+		{{"other.score0", 0x6E}, &g.other.score.d[0]}, {{"other.score1", 0x6F}, &g.other.score.d[1]},
+		{{"other.score2", 0x70}, &g.other.score.d[2]}, {{"other.checkpoint0", 0x71}, &g.other.checkpoint[0]},
 		{{"other.checkpoint1", 0x72}, &g.other.checkpoint[1]}, {{"other.checkpoint2", 0x73}, &g.other.checkpoint[2]},
 		{{"other.checkpoint3", 0x74}, &g.other.checkpoint[3]}, {{"other.lives", 0x75}, &g.other.lives},
 		{{"scroller.textLo", 0x3FB3}, &g.scroller.textLo}, {{"scroller.fineScroll", 0x26}, &g.scroller.fineScroll},
@@ -47,7 +47,7 @@ std::vector<std::pair<std::pair<const char *, uint16_t>, uint8_t *>> gameFields(
 // Arrays compared with RAM: high scores and their check bytes, the panel.
 std::vector<std::tuple<const char *, uint16_t, uint8_t *, int>> gameArrays(const Game &game) {
 	GameState &g = const_cast<GameState &>(game.g);
-	return {{"highScore", 0x80, g.highScore, 16}, {"highScoreCheck", 0x90, g.highScoreCheck, 16}, {"panel", 0x1000, g.panel, 60}};
+	return {{"highScore", 0x80, g.highScores.table, 16}, {"highScoreCheck", 0x90, g.highScores.check, 16}, {"panel", 0x1000, g.panel, 60}};
 }
 
 // River lines in screen memory as the display list at $3F00 shows them (160 lines).

@@ -27,6 +27,7 @@
 #include "river_draw.h"
 #include "bullet.h"
 #include "plane.h"
+#include "players.h"
 #include "river_gen.h"
 #include "status_bar.h"
 
@@ -61,15 +62,6 @@ struct Input {
 	bool key = false;                  // any key of the keyboard (pause)
 };
 
-// The data of one player ($60-$6A; the other player's copy is at $6B-$75).
-struct PlayerData {
-	uint8_t level = 0;          // $60 (gen.s.level for the active player)
-	uint8_t bridges[2] = {};    // $61-$62 bridges destroyed, BCD
-	uint8_t score[3] = {};      // $63-$65 score, BCD, high byte first
-	uint8_t checkpoint[4] = {}; // $66-$69 restart point (gen.s.checkpoint for the active player)
-	uint8_t lives = 0;          // $6A
-};
-
 struct GameState {
 	// frame, modes, timers
 	uint8_t frameCount = 0;     // $18 +1 per frame (VBI)
@@ -84,13 +76,12 @@ struct GameState {
 	// the game and the players
 	uint8_t gameNumber = 0;     // $09 0..7 (shown as 1..8); odd: two players
 	uint8_t player = 0;         // $77 whose turn it is (0 or 1)
-	uint8_t bridges[2] = {};    // $61-$62 bridges passed, BCD
-	uint8_t score[3] = {};      // $63-$65 BCD, high byte first
+	Bcd<2> bridges;             // $61-$62 bridges passed
+	Bcd<3> score;               // $63-$65
 	uint8_t lives = 0;          // $6A planes left
 	PlayerData other;           // $6B-$75 the other player in a two-player game
 	uint8_t respawned = 0;      // $79 1 once a plane of this game has been lost (the panel marks the player)
-	uint8_t highScore[16] = {}; // $80-$8F 3 BCD bytes for each pair of games, at 4-byte steps
-	uint8_t highScoreCheck[16] = {};  // $90-$9F check bytes of the high scores (kept over a reset)
+	HighScores highScores;      // $80-$9F
 	Plane plane;                // $76, $57-$59, $5B-$5C, $5E, $2B, $19, $B9
 	Bullet bullet;              // $56 the plane's bullet
 	uint8_t scrollFrac = 0;     // $30 the river's scrolling: the plane's speed added to it twice a frame
@@ -256,7 +247,7 @@ private:
 	void updateHighScore(bool otherPlayer);       // sub $B261
 	void showLives();                             // sub $AF5B
 	void setUpGame();                             // sub $AF80
-	void printBcd(const uint8_t *bcd, int bytes, int at, uint8_t digitZero);   // B086-B0C6
+	template <int N> void printBcd(const Bcd<N> &bcd, int at, uint8_t digitZero);   // B086-B0C6
 	void showBridges();                           // sub $B05C
 	void showScore();                             // sub $B07C
 	void showOtherScore();                        // sub $B068
