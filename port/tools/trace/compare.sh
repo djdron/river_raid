@@ -37,7 +37,7 @@ grep -v '^#' "$here/runs.txt" | while read -r name frames args; do
 	if [ -z "$refbuilt" ]; then
 		ref=$(cat "$here/REFERENCE")
 		git -C "$port" worktree add -q --detach "$out/ref" "$ref"
-		cmake -S "$out/ref/port" -B "$out/refbuild" -DCMAKE_BUILD_TYPE=Release > /dev/null
+		cmake -S "$out/ref/port" -B "$out/refbuild" -DCMAKE_BUILD_TYPE=Release -DRR_VIEWER=OFF > /dev/null
 		cmake --build "$out/refbuild" --target game_trace -j4 > /dev/null
 		refbuilt=1
 	fi
