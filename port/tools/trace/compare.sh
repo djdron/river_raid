@@ -1,0 +1,50 @@
+#!/bin/sh
+# Plays the runs in runs.txt with this tree's game_trace and compares each with the reference
+# (golden.txt: a hash of each run's lines, made at the commit in REFERENCE). On a difference it
+# builds the reference commit in a temporary worktree, plays the run there too and prints the
+# first frame that differs, both lines.
+#
+# usage: tools/trace/compare.sh <rom> [build dir, default build] [run names...]
+#        tools/trace/compare.sh -golden <rom> [build dir]   (writes golden.txt from this tree)
+set -e
+here=$(cd "$(dirname "$0")" && pwd)
+port=$(cd "$here/../.." && pwd)
+golden=0
+if [ "$1" = "-golden" ]; then golden=1; shift; fi
+rom=$1; shift || true
+[ -n "$rom" ] || { echo "usage: $0 [-golden] <rom> [build dir] [runs...]"; exit 2; }
+build=${1:-$port/build}; [ $# -gt 0 ] && shift
+only="$*"
+trace=$build/game_trace
+[ -x "$trace" ] || { echo "no $trace (build it first)"; exit 2; }
+out=$(mktemp -d)
+fail=0
+refbuilt=""
+[ $golden = 1 ] && : > "$here/golden.txt"
+grep -v '^#' "$here/runs.txt" | while read -r name frames args; do
+	[ -n "$name" ] || continue
+	if [ -n "$only" ] && ! echo " $only " | grep -q " $name "; then continue; fi
+	"$trace" "$rom" "$frames" $args > "$out/$name.txt"
+	sum=$(sha256sum < "$out/$name.txt" | cut -c1-64)
+	if [ $golden = 1 ]; then
+		echo "$name $sum" >> "$here/golden.txt"
+		echo "$name: $frames frames"
+		continue
+	fi
+	want=$(awk -v n="$name" '$1 == n { print $2 }' "$here/golden.txt")
+	if [ "$sum" = "$want" ]; then echo "$name: same ($frames frames)"; continue; fi
+	echo "$name: DIFFERENT"
+	if [ -z "$refbuilt" ]; then
+		ref=$(cat "$here/REFERENCE")
+		git -C "$port" worktree add -q --detach "$out/ref" "$ref"
+		cmake -S "$out/ref/port" -B "$out/refbuild" -DCMAKE_BUILD_TYPE=Release > /dev/null
+		cmake --build "$out/refbuild" --target game_trace -j4 > /dev/null
+		refbuilt=1
+	fi
+	"$out/refbuild/game_trace" "$rom" "$frames" $args > "$out/$name.ref.txt"
+	diff "$out/$name.ref.txt" "$out/$name.txt" | head -4 | cut -c1-2000
+	echo "$name" >> "$out/failed"
+done
+if [ -d "$out/ref" ]; then git -C "$port" worktree remove --force "$out/ref"; fi
+if [ -f "$out/failed" ]; then echo "differs: $(tr '\n' ' ' < "$out/failed")"; rm -rf "$out"; exit 1; fi
+rm -rf "$out"

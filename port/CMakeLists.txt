@@ -78,6 +78,12 @@ add_executable(display_bench tools/display_bench.cpp)
 target_link_libraries(display_bench rrcore)
 target_compile_options(display_bench PRIVATE ${RR_WARNINGS})
 
+# One line per frame of what the game does, for comparing two versions of the port
+# (tools/trace/compare.sh, docs/OOP.md).
+add_executable(game_trace tools/game_trace.cpp)
+target_link_libraries(game_trace rrcore)
+target_compile_options(game_trace PRIVATE ${RR_WARNINGS})
+
 # Compare the sound driver with the POKEY writes of the original (rr_oracle -vbi).
 add_executable(sound_check tools/sound_check.cpp)
 target_link_libraries(sound_check rrcore)
