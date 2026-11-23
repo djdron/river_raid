@@ -262,7 +262,6 @@ private:
 	void showOtherScore();                        // sub $B068
 	void showHighScore();                         // sub $B06E
 	void gameOverScreen();                        // sub $B21A
-	void moveObjects();                           // A26C-A2ED
 	void scrollRiver();                           // A6FD-A70F and the generator
 	void pushLine();             // the generator's next line goes to the top of the screen
 };

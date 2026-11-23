@@ -1,6 +1,8 @@
 // River Raid game frame. See game.h. Addresses refer to the original cartridge code.
 #include "game.h"
 
+#include "objects.h"
+
 #include <cstdlib>
 
 #include <cstring>
@@ -314,7 +316,7 @@ void Game::mainLoop(const Input &input, const std::function<uint8_t()> &random) 
 		RiverState &s = gen.s;
 		s.tank.drive(g.frameCount, s.shell, attract(g) || g.plane.flying(), !(g.hit.tankAtEdge & 0x80), s.bridgeHit != 0, rom_);
 	}
-	moveObjects();
+	moveObjects(gen.s, g.frameCount, attract(g) || g.plane.flying(), rom_);   // A26C
 
 	// A2F5: the attract timer, -1 every 8 frames; when it runs out after a game, the attract
 	// mode starts (with a new game 1 river)
@@ -538,47 +540,6 @@ void Game::finishRespawn() {
 	s.bank = s.checkpoint[3];
 	g.plane.x = lo(s.bank + 0x26 + s.islandWidth);
 	if (attract(g)) gameOverScreen();
-}
-
-// A26C-A2ED: animation and movement of the objects in the slots.
-void Game::moveObjects() {
-	using namespace object;
-	RiverState &s = gen.s;
-	for (int n = s.firstSlot; n < kSlots; n++) {
-		Slot &obj = s.slot[n];
-		uint8_t kind = obj.kind;
-		if (kind >= kBridge) continue;                    // bridges and depots stay put
-		if (kind < kBalloon) {                            // animation: every 8 frames, or 2 for kinds 7+
-			const uint8_t every = kind >= kJet ? 0x01 : 0x07;
-			if (!(every & g.frameCount)) {
-				obj.kind = rom_.nextKind(kind);
-				kind = obj.kind;
-			}
-		}
-		if (!attract(g) && g.plane.state != kFlying) continue;   // nothing moves until the plane flies
-		if ((s.level >> 1) == 0) continue;               // nothing moves before bridge 2
-		if (kind != kJet) {                               // jets always fly; others:
-			if (kind < kJet) continue;                    // not explosions
-			if (kind == kBalloon && (g.frameCount & 2)) continue;   // balloons at half speed
-			if ((n ^ g.frameCount ^ s.slotParity) & 1) continue;    // A1F9: odd and even slots in turn
-			const uint8_t flags = obj.flags;
-			if (!(flags & slotflag::kAwake)) continue;
-			if (flags & slotflag::kTouchingEdge) {
-				// turn round once, at the first contact with the bank edge
-				if (!(flags & slotflag::kTurned)) obj.flags = flags ^ (slotflag::kTurned | slotflag::kFacingLeft);
-			} else {
-				obj.flags = flags & ~slotflag::kTurned;
-			}
-		}
-		// A2CA: one step left or right, wrapping round the screen
-		if (obj.flags & slotflag::kFacingLeft) {
-			obj.x = lo(obj.x - 1);
-			if (obj.x < 0x2C) obj.x = 0xD4;
-		} else {
-			obj.x = lo(obj.x + 1);
-			if (obj.x >= 0xD5) obj.x = 0x2C;
-		}
-	}
 }
 
 void Game::skipFrame() {

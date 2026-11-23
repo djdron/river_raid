@@ -5,6 +5,7 @@
 #include <tuple>
 
 #include "game.h"
+#include "objects.h"
 
 namespace rr {
 namespace {
@@ -110,7 +111,7 @@ std::vector<std::string> Game::diffWithRam(const uint8_t *orig) const {
 	// the display tests only theirs, and the others' is not compared
 	std::vector<uint8_t> copy(orig, orig + 0x4000);
 	for (int i = 0; i < kSlots; i++)
-		if (gen.s.slot[i].kind < object::kHelicopter || gen.s.slot[i].kind > object::kShip)
+		if (!objectKind(gen.s.slot[i].kind).turnsAtEdge())
 			copy[size_t(0x42 + i)] = uint8_t((copy[size_t(0x42 + i)] & ~slotflag::kTouchingEdge) | (gen.s.slot[i].flags & slotflag::kTouchingEdge));
 	const uint8_t *ram = copy.data();
 	std::vector<std::string> diffs = gen.diffWithRam(ram, true);

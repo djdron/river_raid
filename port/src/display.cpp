@@ -17,6 +17,7 @@
 #include <algorithm>
 
 #include "game.h"
+#include "objects.h"
 #include "river_draw.h"
 
 namespace rr {
@@ -194,7 +195,7 @@ void Game::display() {
 			const uint16_t shapes = rom_.shapeAddress(sl.kind + (facingLeft ? 0x10 : 0));
 			const uint16_t colours = rom_.coloursAddress(sl.type);
 			const int count = std::min(row + 1, 0x100 - x0);
-			out.push_back({n, x0 - 0x44, sl.x, sl.size, sl.kind >= object::kHelicopter && sl.kind <= object::kShip, bridge, {}, {}});
+			out.push_back({n, x0 - 0x44, sl.x, sl.size, objectKind(sl.kind).turnsAtEdge(), bridge, {}, {}});
 			for (int k = 0; k < count; k++) {
 				out.back().rows.push_back(rom_.at(uint16_t(shapes + row - k)));
 				out.back().colours.push_back(rom_.at(uint16_t(colours + row - k)));

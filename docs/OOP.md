@@ -67,12 +67,15 @@ replace.
 7. The tank, its shell and the helicopter's missile (`tank.h`, `tank.cpp`): one struct each,
    kept by the river (they scroll with it), with their moves (`Tank::drive`, `Shell::move`,
    `Missile::move`).
+8. The objects in the slots (`objects.h`, `objects.cpp`): a class per kind of behaviour
+   (`Explosion`, `Jet`, `Helicopter`, `Balloon`, `Ship`, `Bridge`, `FuelDepot`). A slot keeps
+   the original's bytes; its kind is also its animation frame and changes when it is hit, so
+   `objectKind(kind)` gives each frame the object of the class that knows what that kind does:
+   its animation, its move (the jet across the screen; helicopters, balloons and ships to and
+   fro once woken, turning round at the edge), whether the display tests it against the edge.
 
 ## Next
 
-8. The objects in the slots: one class per kind of behaviour (ship, helicopter, jet, balloon,
-   fuel depot, bridge, explosion), with their animation, movement and turning at the edge, an
-   object turning into another when hit.
 9. The players: score, bridges, lives, the other player, high scores; the panel.
 10. The sound driver.
 11. The river: the generator, screen lines, runs.

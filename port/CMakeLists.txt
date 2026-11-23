@@ -30,6 +30,8 @@ add_library(rrcore
 	src/game.cpp
 	src/game.h
 	src/game_ram.cpp
+	src/objects.cpp
+	src/objects.h
 	src/os_font.cpp
 	src/os_font.h
 	src/palette.cpp
