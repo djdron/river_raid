@@ -45,6 +45,8 @@ add_library(rrcore
 	src/rom.h
 	src/status_bar.cpp
 	src/status_bar.h
+	src/tank.cpp
+	src/tank.h
 )
 target_include_directories(rrcore PUBLIC src)
 target_compile_options(rrcore PRIVATE ${RR_WARNINGS})

@@ -64,10 +64,12 @@ replace.
    top until a reset clears them. The original's sharing of that memory (the bullet's rows
    clearing the missile's) is undone by the next frame's copy before anything reads it, so the
    game is the same. `saveToRam` still writes the memory as the original has it.
+7. The tank, its shell and the helicopter's missile (`tank.h`, `tank.cpp`): one struct each,
+   kept by the river (they scroll with it), with their moves (`Tank::drive`, `Shell::move`,
+   `Missile::move`).
 
 ## Next
 
-7. The tank and its shell; the helicopter's missile.
 8. The objects in the slots: one class per kind of behaviour (ship, helicopter, jet, balloon,
    fuel depot, bridge, explosion), with their animation, movement and turning at the edge, an
    object turning into another when hit.

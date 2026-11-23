@@ -263,9 +263,6 @@ private:
 	void showHighScore();                         // sub $B06E
 	void gameOverScreen();                        // sub $B21A
 	void moveObjects();                           // A26C-A2ED
-	void driveTank();                             // A21B-A26A
-	void moveMissile();                           // A5B7-A605
-	void moveShell();                             // A607-A671
 	void scrollRiver();                           // A6FD-A70F and the generator
 	void pushLine();             // the generator's next line goes to the top of the screen
 };
