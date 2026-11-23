@@ -148,9 +148,16 @@ den sie ersetzen.
     weiter selbst. Dieselben Bytes in derselben Reihenfolge, also bleiben Spielstände gleich;
     Pause, SELECT, OPTION, START und das Ausgehen des Bildschirms wurden auf 390 000 Bildern mit
     solchen Tasten gegen den Commit davor geprüft.
+21. Die Hauptschleife als benannte Schritte, in der Reihenfolge des Originals und ohne
+    Umstellung: `mainLoop` ist `console_.keys` (A19E-A1F5), `wakeObject` (A1FF), `driveTank`
+    (A21B), `moveObjects` (A26C), `attractTimerRunsOut` (A2F5), `readStick` (A312),
+    `updatePlane` (A33F); `mainLoopEnd`, wo ein Wiedereinstieg weitergeht, ist `moveMissile`
+    (A5B7), `moveShell` (A607), `consoleKeys` (A673), `scroll` (A6DE). Ein Schritt, der einen
+    Reset beginnt, gibt true zurück, und die Schleife endet dort wie zuvor. Am Ende alle 17
+    Läufe gleich, auch auf dem Sanitizer-Build.
 
 ## Als Nächstes
 
-`Game` bleibt, was es ist, der Dirigent des Bilds; übrig ist die Hauptschleife als benannte
-Schritte in derselben Reihenfolge. Jeder Schritt geprüft mit `compare.sh -quick`, alle 17 Läufe
-am Ende.
+Nichts geplant. `Game` ist der Dirigent des Bilds; was es hält, hat eigene Klassen (`World`,
+`Match`, `Console`, `Plane`, `Sounds`...). Eine Änderung von hier an wird genauso geprüft:
+`compare.sh -quick` nach jedem Schritt, alle 17 Läufe am Ende.

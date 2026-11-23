@@ -82,37 +82,60 @@ void Game::finishReset(const Input &input, const std::function<uint8_t()> &rando
 	}
 }
 
-// A197-A6EA. Returns early when a reset (new game, respawn) starts: the rest runs when it ends.
+// A197-A6EA, step by step in the original's order. Returns early when a reset (new game,
+// respawn) starts: the rest runs when it ends (finishReset).
 void Game::mainLoop(const Input &input, const std::function<uint8_t()> &random) {
-	Objects &objs = world_.objects;
-	// A19E: any joystick, fire or console key: not idle, and no pause
-	const bool active = input.stick[0] != 0x0F || input.stick[1] != 0x0F || input.trigger[0] || input.trigger[1] ||
-		input.start || input.select || input.option;
-	// A1C5-A1F5: the pause (any key of the keyboard), and the screen off after a long time
-	// without input
-	if (!console_.keys(active, input.key)) return;
-
-	// A1FF: every 16 frames a random slot wakes up (it may move); 11-15 count as 6-10
-	if ((console_.frameCount & 0x0F) == 0) {
-		uint8_t n = random() & 0x0F;
-		if (n >= kSlots) n = lo(n - 5);
-		if (n != objs.enteringSlot) objs.slot[n].flags |= slotflag::kAwake;
-	}
-	{
-		RiverState &s = world_.gen.s;
-		Objects &objs = world_.objects;
-		objs.tank.drive(console_.frameCount, objs.shell, attract() || plane_.flying(), !(hit_.tankAtEdge & 0x80), s.bridgeHit != 0, rom_);
-	}
+	if (!console_.keys(active(input), input.key)) return;   // A19E-A1F5
+	wakeObject(random);                                     // A1FF
+	driveTank();                                            // A21B
 	moveObjects(world_.objects, world_.gen.s.level, console_.frameCount, attract() || plane_.flying(), rom_);   // A26C
+	if (attractTimerRunsOut()) return;                      // A2F5
+	readStick(input);                                       // A312
+	if (updatePlane(input)) return;                         // A33F
+	mainLoopEnd(input);
+}
 
-	// A2F5: the attract timer, -1 every 8 frames; when it runs out after a game, the attract
-	// mode starts (with a new game 1 river)
-	if (console_.attractTimerTick() && !attract()) {
-		console_.attractFlags |= 0x80;
-		newGame();
-		return;
-	}
-	// A312: the joystick of the player whose turn it is
+// A5B7-A6EA: the rest of the main loop (after a respawn's reset it goes on from here).
+void Game::mainLoopEnd(const Input &input) {
+	moveMissile();                                          // A5B7
+	moveShell();                                            // A607
+	if (consoleKeys(input)) return;                         // A673-A6DC
+	scroll();                                               // A6DE-A70F
+}
+
+// A19E: any joystick, fire or console key: not idle, and no pause.
+bool Game::active(const Input &input) {
+	return input.stick[0] != 0x0F || input.stick[1] != 0x0F || input.trigger[0] || input.trigger[1] || input.start ||
+		input.select || input.option;
+}
+
+// A1FF-A21A: every 16 frames a random slot wakes up (it may move); 11-15 count as 6-10.
+void Game::wakeObject(const std::function<uint8_t()> &random) {
+	if ((console_.frameCount & 0x0F) != 0) return;
+	Objects &objs = world_.objects;
+	uint8_t n = random() & 0x0F;
+	if (n >= kSlots) n = lo(n - 5);
+	if (n != objs.enteringSlot) objs.slot[n].flags |= slotflag::kAwake;
+}
+
+// A21B-A26B: the tank on the bank road.
+void Game::driveTank() {
+	Objects &objs = world_.objects;
+	objs.tank.drive(console_.frameCount, objs.shell, attract() || plane_.flying(), !(hit_.tankAtEdge & 0x80),
+		world_.gen.s.bridgeHit != 0, rom_);
+}
+
+// A2F5: the attract timer, -1 every 8 frames; when it runs out after a game, the attract mode
+// starts (with a new game 1 river). True then.
+bool Game::attractTimerRunsOut() {
+	if (!console_.attractTimerTick() || attract()) return false;
+	console_.attractFlags |= 0x80;
+	newGame();
+	return true;
+}
+
+// A312-A33E: the joystick of the player whose turn it is; it starts a waiting plane.
+void Game::readStick(const Input &input) {
 	const int stick = match_.player & 1;
 	plane_.stickPrev = lo(plane_.stick << 4);
 	plane_.stick = input.stick[stick] & 0x0F;
@@ -120,13 +143,17 @@ void Game::mainLoop(const Input &input, const std::function<uint8_t()> &random) 
 		plane_.state = kFlying;                   // A332: the waiting plane goes
 		plane_.speed = 0x40;
 	}
-	// A33F: the plane
+}
+
+// A33F-A36D: the plane: flying, exploding, or the river refilling after a life is lost. True
+// when its explosion ends in a reset (the next plane).
+bool Game::updatePlane(const Input &input) {
 	const uint8_t state = plane_.state;
 	if (state & 0x80) {                           // A35C: exploding (or no plane)
 		if (state != kNoPlane) {
 			if (!(lo(state + 1) & 7) && plane_.frame) plane_.frame--;   // explosion frames
 			plane_.state--;
-			if (!(plane_.state & 0x80) && respawnOrGameOver()) return;
+			if (!(plane_.state & 0x80) && respawnOrGameOver()) return true;
 		}
 	} else if (state == kFlying) {
 		flyPlane(input);
@@ -137,31 +164,41 @@ void Game::mainLoop(const Input &input, const std::function<uint8_t()> &random) 
 		}
 		plane_.state--;
 	}
-	mainLoopEnd(input);
+	return false;
 }
 
-// A5B7-A6EA: the rest of the main loop.
-void Game::mainLoopEnd(const Input &input) {
-	{
-		using namespace object;
-		Objects &objs = world_.objects;
-		const int n = objs.shooterSlot;
-		const Slot *shooter = n < kSlots && (objs.slot[n].kind == kShooter || objs.slot[n].kind == kShooter + 1) ? &objs.slot[n] : nullptr;
-		if (objs.missile.move(shooter, attract() || plane_.flying(), !(hit_.missileHitBank & 0x80))) sound_.missile = 9;   // A5B7
-		objs.shell.move(objs.tank, plane_.state != 0, rom_);   // A607
-	}
+// A5B7-A606: the helicopter's missile (fired by the shooter slot).
+void Game::moveMissile() {
+	using namespace object;
+	Objects &objs = world_.objects;
+	const int n = objs.shooterSlot;
+	const Slot *shooter = n < kSlots && (objs.slot[n].kind == kShooter || objs.slot[n].kind == kShooter + 1) ? &objs.slot[n] : nullptr;
+	if (objs.missile.move(shooter, attract() || plane_.flying(), !(hit_.missileHitBank & 0x80))) sound_.missile = 9;
+}
 
-	// A673: console keys
+// A607-A672: the tank's shell.
+void Game::moveShell() {
+	Objects &objs = world_.objects;
+	objs.shell.move(objs.tank, plane_.state != 0, rom_);
+}
+
+// A673-A6DC: START (a new game: true) and SELECT / OPTION (the next game every 30 frames while
+// held).
+bool Game::consoleKeys(const Input &input) {
 	if (input.start) {
 		sound_.startBeep = 2;
 		console_.attractFlags = 0;
 		console_.attractTimer = 0;
 		newGame();
-		return;
+		return true;
 	}
-	if (console_.selectRepeat(input.select || input.option)) selectGame();   // A699: every 30 frames while held
+	if (console_.selectRepeat(input.select || input.option)) selectGame();
+	return false;
+}
 
-	// A6DE: scrolling
+// A6DE-A70F: the river scrolls with the plane's speed; not while it explodes in a game, nor
+// while it waits (level); in the attract mode at a fixed speed.
+void Game::scroll() {
 	if (plane_.state & 0x80) {
 		if (!attract()) return;                  // exploding: the river stops
 		plane_.speed = match_.gameNumber < 4 ? 0x80 : 0xFE; // A6F1: attract mode

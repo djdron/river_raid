@@ -133,9 +133,16 @@ zastępują.
     końcem gry), `Game` nadal sam ustawia pola. Te same bajty w tej samej kolejności, więc
     zapisy stanu się nie zmieniły; pauzę, SELECT, OPTION, START i gaśnięcie ekranu sprawdzono
     wobec poprzedniego commitu na 390 000 klatkach z takimi klawiszami.
+21. Pętla główna jako nazwane kroki, w kolejności oryginału i bez przestawiania: `mainLoop` to
+    `console_.keys` (A19E-A1F5), `wakeObject` (A1FF), `driveTank` (A21B), `moveObjects` (A26C),
+    `attractTimerRunsOut` (A2F5), `readStick` (A312), `updatePlane` (A33F); `mainLoopEnd`, od
+    którego toczy się dalej powrót, to `moveMissile` (A5B7), `moveShell` (A607), `consoleKeys`
+    (A673), `scroll` (A6DE). Krok, który zaczyna reset, zwraca true i pętla się na nim
+    zatrzymuje, jak wcześniej. Na koniec wszystkie 17 przebiegów takie same, także na buildzie z
+    sanitizerami.
 
 ## Dalej
 
-`Game` zostaje tym, czym jest — dyrygentem klatki; zostało podzielić pętlę główną na nazwane
-kroki w tej samej kolejności. Każdy krok sprawdzany `compare.sh -quick`, wszystkie 17 przebiegów
-na końcu.
+Nic nie jest zaplanowane. `Game` jest dyrygentem klatki; to, co trzyma, ma własne klasy
+(`World`, `Match`, `Console`, `Plane`, `Sounds`...). Kolejne zmiany sprawdza się tak samo:
+`compare.sh -quick` po każdym kroku, wszystkie 17 przebiegów na końcu.

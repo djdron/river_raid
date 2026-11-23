@@ -135,8 +135,15 @@ replace.
     VBI before game over), `Game` still sets the fields itself. Same bytes in the same order, so
     saved states stay the same; pausing, SELECT, OPTION, START and the screen going off were
     checked against the commit before on 390 000 frames with such keys.
+21. The main loop as named steps, in the original's order and nothing moved: `mainLoop` is
+    `console_.keys` (A19E-A1F5), `wakeObject` (A1FF), `driveTank` (A21B), `moveObjects` (A26C),
+    `attractTimerRunsOut` (A2F5), `readStick` (A312), `updatePlane` (A33F); `mainLoopEnd`, where
+    a respawn goes on, is `moveMissile` (A5B7), `moveShell` (A607), `consoleKeys` (A673),
+    `scroll` (A6DE). A step that starts a reset returns true and the loop stops there, as
+    before. At the end, all 17 runs the same, also on the sanitizer build.
 
 ## Next
 
-`Game` stays what it is, the conductor of the frame; what is left is the main loop as named
-steps in the same order. Each step checked with `compare.sh -quick`, all 17 runs at the end.
+Nothing planned. `Game` is the conductor of the frame; what it holds has its own classes
+(`World`, `Match`, `Console`, `Plane`, `Sounds`...). A change from here on is checked the same
+way: `compare.sh -quick` after each step, all 17 runs at the end.

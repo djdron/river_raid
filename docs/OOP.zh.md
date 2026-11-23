@@ -45,7 +45,8 @@ port/tools/trace/compare.sh <rom> [build dir] [runs...]
 18. 一局游戏（`match.h`、`match.cpp`）：`Match` 保存游戏编号、轮到谁、两位玩家的桥数、分数和生命、`respawned` 和最高分，带有 `setUp`（sub $AF80）、`selectNext`、`swapPlayers`（接收河道状态：关卡和重生点也随之交换）、`updateHighScore`、`addPoints`（A547：加分、奖励飞机、超过 999 999 时结束）以及面板上的数字（演示模式下不显示，由 `Game` 告诉它）。它的字节顺序与原来的字段相同，所以存档不变。顺带发现：`World::State` 有两个填充字节，存档时写入的是内存里碰巧有的内容；现在它们是明确的零字节，同一状态总是存成同样的字节。
 19. `Game` 的字段改为私有（`name_`）。对外提供常量 getter（`world()`、`plane()`、`match()`、`pokey()`……）、`output()`（一帧要显示和播放的内容：面板、燃料、滚动字幕、标志、关屏、声音寄存器），以及几个有名字的操作来代替直接写字段：`setRiver`、`keepLineStates`、`skipState` / `setSkipState`（河道查看器的锚点）、`playSound` 和 `stayAwake`（查看器）、`ghost`（工具的幽灵模式）、`setPokey`（`sound_check`）。`sound_check` 通过 `mapRam` 加载驱动读取的字节，与以前完全相同。
 20. 主机（`console.h`、`console.cpp`）：`Console` 保存帧计数、演示模式的标志和计时器、空闲时间、暂停、SELECT 的延迟、`powerOnDone` 和 `screenOn`，带有 `keys`（A19E-A1F5：有无操作、暂停、关屏）、`attractTimerTick`（A2F5）、`countFrame`（VBI 的计数，`skipFrame` 也用）和 `selectRepeat`（A699）。在一帧的顺序把它们和其他事情交织在一起的地方（新游戏、选择游戏、游戏结束、PAL 上游戏结束前的 VBI），仍由 `Game` 自己设置字段。字节相同、顺序相同，所以存档不变；暂停、SELECT、OPTION、START 和关屏已在 390 000 帧带这些按键的运行中与前一个提交对照。
+21. 主循环按原版顺序分成有名字的步骤，不移动任何东西：`mainLoop` 依次是 `console_.keys`（A19E-A1F5）、`wakeObject`（A1FF）、`driveTank`（A21B）、`moveObjects`（A26C）、`attractTimerRunsOut`（A2F5）、`readStick`（A312）、`updatePlane`（A33F）；重生后从这里继续的 `mainLoopEnd` 依次是 `moveMissile`（A5B7）、`moveShell`（A607）、`consoleKeys`（A673）、`scroll`（A6DE）。开始重置的步骤返回 true，循环在那里停下，与以前相同。最后全部 17 段录制相同，在启用 sanitizer 的构建上也一样。
 
 ## 接下来
 
-`Game` 保持它本来的角色——一帧的指挥；剩下的是把主循环按同样顺序分成有名字的步骤。每一步用 `compare.sh -quick` 检查，最后运行全部 17 段。
+没有计划。`Game` 是一帧的指挥；它持有的东西都有自己的类（`World`、`Match`、`Console`、`Plane`、`Sounds`……）。今后的修改照样检查：每一步之后运行 `compare.sh -quick`，最后运行全部 17 段。

@@ -273,6 +273,17 @@ private:
 	bool pal_ = false;
 	void mainLoop(const Input &input, const std::function<uint8_t()> &random);   // A197-A6EA
 	void mainLoopEnd(const Input &input);         // A5B7-A6EA
+	// the main loop's steps, in order
+	static bool active(const Input &input);       // A19E
+	void wakeObject(const std::function<uint8_t()> &random);   // A1FF
+	void driveTank();                             // A21B
+	bool attractTimerRunsOut();                   // A2F5
+	void readStick(const Input &input);           // A312
+	bool updatePlane(const Input &input);         // A33F
+	void moveMissile();                           // A5B7
+	void moveShell();                             // A607
+	bool consoleKeys(const Input &input);         // A673
+	void scroll();                                // A6DE
 	void finishReset(const Input &input, const std::function<uint8_t()> &random);
 	void finishRespawn();                         // A3C1-A3E3
 	// sub $B0F1 clears memory for this many frames; the main loop continues in the last one.

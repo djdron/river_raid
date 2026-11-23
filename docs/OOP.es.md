@@ -146,9 +146,16 @@ código que sustituyen.
     del fin), `Game` sigue poniendo los campos él mismo. Los mismos bytes en el mismo orden, así
     que las partidas guardadas no cambian; la pausa, SELECT, OPTION, START y el apagado de la
     pantalla se comprobaron frente al commit anterior en 390 000 fotogramas con esas teclas.
+21. El bucle principal como pasos con nombre, en el orden del original y sin mover nada:
+    `mainLoop` es `console_.keys` (A19E-A1F5), `wakeObject` (A1FF), `driveTank` (A21B),
+    `moveObjects` (A26C), `attractTimerRunsOut` (A2F5), `readStick` (A312), `updatePlane`
+    (A33F); `mainLoopEnd`, donde sigue una reaparición, es `moveMissile` (A5B7), `moveShell`
+    (A607), `consoleKeys` (A673), `scroll` (A6DE). Un paso que inicia un reinicio devuelve true
+    y el bucle se detiene ahí, como antes. Al final, los 17 recorridos iguales, también en la
+    compilación con sanitizers.
 
 ## Lo siguiente
 
-`Game` sigue siendo lo que es, el director del fotograma; queda el bucle principal como pasos
-con nombre en el mismo orden. Cada paso comprobado con `compare.sh -quick`, los 17 recorridos al
-final.
+Nada previsto. `Game` es el director del fotograma; lo que contiene tiene sus propias clases
+(`World`, `Match`, `Console`, `Plane`, `Sounds`...). Un cambio a partir de aquí se comprueba
+igual: `compare.sh -quick` después de cada paso, los 17 recorridos al final.

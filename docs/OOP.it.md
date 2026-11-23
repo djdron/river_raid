@@ -144,9 +144,16 @@ sostituiscono.
     ancora i campi da sé. Gli stessi byte nello stesso ordine, quindi i salvataggi restano
     uguali; pausa, SELECT, OPTION, START e lo spegnersi dello schermo sono stati verificati
     contro il commit precedente su 390 000 fotogrammi con questi tasti.
+21. Il ciclo principale come passi con un nome, nell'ordine dell'originale e senza spostare
+    nulla: `mainLoop` è `console_.keys` (A19E-A1F5), `wakeObject` (A1FF), `driveTank` (A21B),
+    `moveObjects` (A26C), `attractTimerRunsOut` (A2F5), `readStick` (A312), `updatePlane`
+    (A33F); `mainLoopEnd`, da cui riparte una ripartenza, è `moveMissile` (A5B7), `moveShell`
+    (A607), `consoleKeys` (A673), `scroll` (A6DE). Un passo che avvia un reset restituisce true
+    e il ciclo si ferma lì, come prima. Alla fine tutte le 17 partite uguali, anche sulla build
+    con i sanitizer.
 
 ## Prossimi passi
 
-`Game` resta ciò che è, il direttore d'orchestra del fotogramma; resta da fare il ciclo
-principale come passi con un nome nello stesso ordine. Ogni passo verificato con `compare.sh
--quick`, tutte le 17 partite alla fine.
+Niente in programma. `Game` è il direttore d'orchestra del fotogramma; ciò che tiene ha le sue
+classi (`World`, `Match`, `Console`, `Plane`, `Sounds`...). Una modifica da qui in poi si
+verifica allo stesso modo: `compare.sh -quick` dopo ogni passo, tutte le 17 partite alla fine.

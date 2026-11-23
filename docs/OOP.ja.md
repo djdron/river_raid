@@ -45,7 +45,8 @@ port/tools/trace/compare.sh <rom> [build dir] [runs...]
 18. 対戦（`match.h`、`match.cpp`）：`Match` はゲーム番号、誰の番か、両プレイヤーの橋・得点・残機、`respawned`、ハイスコアを持ち、`setUp`（sub $AF80）、`selectNext`、`swapPlayers`（川の状態を受け取る：レベルと再開地点も相手に移る）、`updateHighScore`、`addPoints`（A547：得点、ボーナスの飛行機、999 999 を超えたときの終了）、パネルの数字（デモモードでは表示しない。それは `Game` が伝える）を備えます。バイトは以前のフィールドと同じ順序なので、セーブは変わりません。途中で見つけたこと：`World::State` に 2 バイトの詰め物があり、メモリーにたまたまあった値で保存されていました。今は明示的なゼロのバイトで、同じ状態はいつも同じバイトで保存されます。
 19. `Game` のフィールドを private に（`name_`）。外からは const のゲッター（`world()`、`plane()`、`match()`、`pokey()`…）、`output()`（フレームが見せて鳴らすもの：パネル、燃料、スクロールする行、ロゴ、画面オフ、音のレジスター）、そしてフィールドへの書き込みの代わりにいくつかの名前付きの操作：`setRiver`、`keepLineStates`、`skipState` / `setSkipState`（川ビューアーのアンカー）、`playSound` と `stayAwake`（ビューアー）、`ghost`（ツールのゴーストモード）、`setPokey`（`sound_check`）。`sound_check` はドライバーが読むバイトを `mapRam` 経由で読み込みます。以前と同じバイトです。
 20. 本体（`console.h`、`console.cpp`）：`Console` はフレームカウンター、デモモードのフラグとタイマー、無操作の時間、ポーズ、SELECT の遅延、`powerOnDone`、`screenOn` を持ち、`keys`（A19E-A1F5：操作の有無、ポーズ、画面オフ）、`attractTimerTick`（A2F5）、`countFrame`（VBI のカウンター。`skipFrame` でも使う）、`selectRepeat`（A699）を備えます。フレームの順序がそれらを他の処理と混ぜるところ（新しいゲーム、ゲームの選択、ゲームオーバー、ゲームオーバー前の PAL の VBI）では、今も `Game` がフィールドを直接設定します。同じバイトが同じ順序なので、セーブは変わりません。ポーズ、SELECT、OPTION、START、画面オフは、こうしたキー入力のある 390 000 フレームで前のコミットと照合しました。
+21. メインループを、オリジナルの順序のまま何も動かさずに名前付きの手順にしました：`mainLoop` は `console_.keys`（A19E-A1F5）、`wakeObject`（A1FF）、`driveTank`（A21B）、`moveObjects`（A26C）、`attractTimerRunsOut`（A2F5）、`readStick`（A312）、`updatePlane`（A33F）。復活がそこから続く `mainLoopEnd` は `moveMissile`（A5B7）、`moveShell`（A607）、`consoleKeys`（A673）、`scroll`（A6DE）。リセットを始める手順は true を返し、ループはそこで止まります（以前と同じ）。最後に 17 本すべてが同じで、サニタイザー付きのビルドでも同じです。
 
 ## 次に
 
-`Game` は本来の役割、フレームの指揮者のままにします。残りは、メインループを同じ順序の名前付きの手順にすること。各段階を `compare.sh -quick` で確認し、最後に 17 本すべて。
+予定はありません。`Game` はフレームの指揮者で、持っているものにはそれぞれのクラスがあります（`World`、`Match`、`Console`、`Plane`、`Sounds`…）。これからの変更も同じように確認します：各段階の後に `compare.sh -quick`、最後に 17 本すべて。
