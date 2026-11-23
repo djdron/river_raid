@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
 	int32_t frame = 0;
 	while (std::fread(&frame, 4, 1, vbi) == 1 && std::fread(mem.data(), 1, mem.size(), vbi) == mem.size()) {
 		for (auto &w : writes[frame]) regs[w.first] = uint8_t(w.second);
-		rr::GameState &g = game.g;
+		rr::Game &g = game;
 		game.gen.loadFromRam(mem.data());
 		g.sound.startBeep = mem[0xC6]; g.pauseState = mem[0x24]; g.sound.event = mem[0x7A]; g.sound.eventTime = mem[0x7B];
 		g.plane.state = mem[0x76]; g.plane.fuel = mem[0x5B]; g.plane.fuelFrac = mem[0x5C]; g.plane.speed = mem[0x59];
@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
 		frames++;
 		bool same = true, sounding = false;
 		for (int c = 0; c < 4; c++) {
-			if (game.g.pokey.audf[c] != regs[2 * c] || game.g.pokey.audc[c] != regs[2 * c + 1]) same = false;
+			if (game.pokey.audf[c] != regs[2 * c] || game.pokey.audc[c] != regs[2 * c + 1]) same = false;
 			if (regs[2 * c + 1] & 0x0F) sounding = true;
 		}
 		if (sounding) active++;
@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
 			if (shown++ < 8) {
 				std::printf("frame %d:", frame);
 				for (int c = 0; c < 4; c++)
-					std::printf("  ch%d port %02X/%02X orig %02X/%02X", c + 1, game.g.pokey.audf[c], game.g.pokey.audc[c],
+					std::printf("  ch%d port %02X/%02X orig %02X/%02X", c + 1, game.pokey.audf[c], game.pokey.audc[c],
 						regs[2 * c], regs[2 * c + 1]);
 				std::printf("\n");
 			}

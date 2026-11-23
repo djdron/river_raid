@@ -41,10 +41,10 @@ void F(Snapshot)(Snapshot &out) {
 	out.lines = int(game->river.lines.size());
 	for (int k = 0; k < out.lines && k < 256; k++) std::memcpy(out.screen[k], game->river.lines[size_t(k)].data(), 48);
 	game->drawRiver(out.picture);
-	for (int k = 0; k < 4; k++) { out.audf[k] = game->g.pokey.audf[k]; out.audc[k] = game->g.pokey.audc[k]; }
+	for (int k = 0; k < 4; k++) { out.audf[k] = game->pokey.audf[k]; out.audc[k] = game->pokey.audc[k]; }
 	out.busy = game->busy();
-	out.colours[0] = game->g.colourBank; out.colours[1] = game->g.colourEdge; out.colours[2] = game->g.colourWater;
-	out.colours[3] = game->g.logoShown; out.colours[4] = game->gen.s.shell.colour;
+	out.colours[0] = game->colourBank; out.colours[1] = game->colourEdge; out.colours[2] = game->colourWater;
+	out.colours[3] = game->logoShown; out.colours[4] = game->gen.s.shell.colour;
 }
 
 void F(GenLine)(uint8_t line[48], uint8_t *ram) {

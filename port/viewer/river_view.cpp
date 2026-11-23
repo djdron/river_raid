@@ -220,9 +220,9 @@ public:
 	void soundTest(int which) {
 		if (!head_.running) return;
 		switch (which) {
-		case 0: head_.game.g.sound.explosion = 0x17; break;   // explosion, as A4E6 sets it
-		case 1: head_.game.g.sound.fire = 0x0F; break;        // firing (A5A6)
-		case 2: head_.game.g.sound.bonus = 0x40; break;       // score (A587)
+		case 0: head_.game.sound.explosion = 0x17; break;   // explosion, as A4E6 sets it
+		case 1: head_.game.sound.fire = 0x0F; break;        // firing (A5A6)
+		case 2: head_.game.sound.bonus = 0x40; break;       // score (A587)
 		default: break;
 		}
 	}
@@ -339,7 +339,7 @@ private:
 				if (live) game.drawRiver(live);
 				// The original turns the screen off and stops after 128 x 2048 frames (about 73 minutes)
 				// without input (A1F5, $78): the viewer keeps flying, as if a key had just been touched.
-				game.g.idleTime = 0;
+				game.idleTime = 0;
 				game.logic(rr::Input(), [this, pal] {   // A205, after scanline 160
 					return pal ? random.read(191, 24) : random.read(192, 13);
 				});
@@ -363,7 +363,7 @@ private:
 				lines++;
 				if (newLine) newLine(game.gen.s);
 			};
-			game.g.idleTime = 0;
+			game.idleTime = 0;
 			game.skipFrame();
 			game.afterLine = nullptr;
 			random.nextFrame();
@@ -384,18 +384,18 @@ private:
 		uint8_t logoShown;
 		long frame, lines;
 		explicit Anchor(const Machine &m)
-			: river(m.game.gen.s), frameCount(m.game.g.frameCount), attractFlags(m.game.g.attractFlags),
-			  attractTimer(m.game.g.attractTimer), scrollFrac(m.game.g.scrollFrac), gameLogo(m.game.g.logoShown),
-			  gameScroller(m.game.g.scroller), screenTop(m.game.river.top), random(m.random), scroller(m.scroller),
+			: river(m.game.gen.s), frameCount(m.game.frameCount), attractFlags(m.game.attractFlags),
+			  attractTimer(m.game.attractTimer), scrollFrac(m.game.scrollFrac), gameLogo(m.game.logoShown),
+			  gameScroller(m.game.scroller), screenTop(m.game.river.top), random(m.random), scroller(m.scroller),
 			  logoShown(m.logoShown), frame(m.frame), lines(m.lines) {}
 		void setUp(Machine &m) const {
 			m.game.gen.s = river;
-			m.game.g.frameCount = frameCount;
-			m.game.g.attractFlags = attractFlags;
-			m.game.g.attractTimer = attractTimer;
-			m.game.g.scrollFrac = scrollFrac;
-			m.game.g.logoShown = gameLogo;
-			m.game.g.scroller = gameScroller;
+			m.game.frameCount = frameCount;
+			m.game.attractFlags = attractFlags;
+			m.game.attractTimer = attractTimer;
+			m.game.scrollFrac = scrollFrac;
+			m.game.logoShown = gameLogo;
+			m.game.scroller = gameScroller;
 			m.game.river.top = screenTop;
 			m.random = random;
 			m.scroller = scroller;
@@ -440,8 +440,8 @@ private:
 	void play(const Machine &m, bool sound) {
 		if (sound) pokey_.run(rr::tvSystem(pal_).cyclesPerFrame(), audio_);
 		for (int c = 0; c < 4; c++) {
-			pokey_.write(2 * c, m.game.g.pokey.audf[c]);
-			pokey_.write(2 * c + 1, m.game.g.pokey.audc[c]);
+			pokey_.write(2 * c, m.game.pokey.audf[c]);
+			pokey_.write(2 * c + 1, m.game.pokey.audc[c]);
 		}
 	}
 

@@ -12,7 +12,7 @@ namespace {
 
 // Game fields compared with RAM (address, reference into the game).
 std::vector<std::pair<std::pair<const char *, uint16_t>, uint8_t *>> gameFields(const Game &game) {
-	GameState &g = const_cast<GameState &>(game.g);
+	Game &g = const_cast<Game &>(game);
 	RiverGen &gen = const_cast<RiverGen &>(game.gen);
 	return {
 		{{"frameCount", 0x18}, &g.frameCount}, {{"attractFlags", 0x29}, &g.attractFlags},
@@ -46,7 +46,7 @@ std::vector<std::pair<std::pair<const char *, uint16_t>, uint8_t *>> gameFields(
 
 // Arrays compared with RAM: high scores and their check bytes, the panel.
 std::vector<std::tuple<const char *, uint16_t, uint8_t *, int>> gameArrays(const Game &game) {
-	GameState &g = const_cast<GameState &>(game.g);
+	Game &g = const_cast<Game &>(game);
 	return {{"highScore", 0x80, g.highScores.table, 16}, {"highScoreCheck", 0x90, g.highScores.check, 16}, {"panel", 0x1000, g.panel.chars, 60}};
 }
 
@@ -77,10 +77,10 @@ void Game::loadFromRam(const uint8_t *ram) {
 	river.lines = screenFromRam(ram);
 	river.top = uint16_t(ram[0x3F04] | (ram[0x3F05] << 8));
 	// colours the VBI set (not in RAM): as it computes them
-	g.colourWater = (g.pauseState < 2 && g.bridgeFlash && !((g.bridgeFlash + 1) & 1)) ? 0x42 : 0x84;
-	g.colourEdge = 0x20;
-	g.colourBank = bankColour(gen.s);
-	if (!g.screenOn) g.colourBank = g.colourEdge = g.colourWater = 0;
+	colourWater = (pauseState < 2 && bridgeFlash && !((bridgeFlash + 1) & 1)) ? 0x42 : 0x84;
+	colourEdge = 0x20;
+	colourBank = bankColour(gen.s);
+	if (!screenOn) colourBank = colourEdge = colourWater = 0;
 }
 
 void Game::saveToRam(uint8_t *ram) const {

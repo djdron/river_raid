@@ -59,7 +59,14 @@ struct Input {
 	bool key = false;                  // any key of the keyboard (pause)
 };
 
-struct GameState {
+class Game {
+public:
+	explicit Game(const Rom &rom);
+
+	RiverGen gen;     // river and object slots (gen.s)
+
+	// The state of the game (field comments give the original's RAM address)
+
 	// frame, modes, timers
 	uint8_t frameCount = 0;     // $18 +1 per frame (VBI)
 	uint8_t attractFlags = 0;   // $29 bit 7: attract mode (no player); bits 2-0 count frameCount wraps
@@ -94,18 +101,14 @@ struct GameState {
 	// The sprites (shell, tank, plane, missile, bullet) are shown from their state; a reset
 	// (sub $B0F1) clears them until the next frame's prepare() (AE99) draws them again.
 	bool spritesShown = false;
-};
 
-class Game {
-public:
-	explicit Game(const Rom &rom);
-
-	RiverGen gen;     // river and object slots (gen.s)
-	GameState g;
+	// The state's members, in order, for saving, loading and resetting them
+	template <class F> void eachState(F f) { eachStateOf(*this, f); }
+	template <class F> void eachState(F f) const { eachStateOf(*this, f); }
 
 	River river;      // the lines on the screen
 	// A saved state (needs river.keepLineStates): only what the game cannot make again. The variables
-	// (GameState, with player-missile memory) and the generator's state are kept; screen memory
+	// (the state's members, eachState) and the generator's state are kept; screen memory
 	// is kept as the generator's state before its oldest line and the number of lines, and made
 	// again on loading (the river's lines depend only on the generator); the per-scanline data
 	// (scan) is made again by the next frame's display(). Runs of zero bytes are packed, so a
@@ -135,6 +138,8 @@ public:
 	// Called in frame() right after display(), e.g. to draw the frame.
 	std::function<void()> afterDisplay;
 	bool busy() const { return busy_ > 0; }
+	// All the state as after construction (power-on, the attract mode's start)
+	void resetState();
 
 	// Parts of frame(), in order (frame() also handles the frames of a reset).
 	void prepare();
@@ -192,6 +197,38 @@ public:
 	std::vector<std::string> diffWithRam(const uint8_t *ram) const;
 
 private:
+	template <class Self, class F> static void eachStateOf(Self &s, F f) {
+		f(s.frameCount);
+		f(s.attractFlags);
+		f(s.attractTimer);
+		f(s.idleTime);
+		f(s.pauseState);
+		f(s.selectDelay);
+		f(s.powerOnDone);
+		f(s.screenOn);
+		f(s.gameNumber);
+		f(s.player);
+		f(s.bridges);
+		f(s.score);
+		f(s.lives);
+		f(s.other);
+		f(s.respawned);
+		f(s.highScores);
+		f(s.plane);
+		f(s.bullet);
+		f(s.scrollFrac);
+		f(s.bridgeFlash);
+		f(s.sound);
+		f(s.panel);
+		f(s.scroller);
+		f(s.logoShown);
+		f(s.colourBank);
+		f(s.colourEdge);
+		f(s.colourWater);
+		f(s.pokey);
+		f(s.hit);
+		f(s.spritesShown);
+	}
 	const Rom &rom_;
 	bool pal_ = false;
 	void mainLoop(const Input &input, const std::function<uint8_t()> &random);   // A197-A6EA
@@ -212,7 +249,7 @@ private:
 	void selectGame();                            // A699-A6DC
 	bool respawnOrGameOver();                     // A36E-A3B6
 	void flyPlane(const Input &input);            // A3E9-A5B4
-	void crash(uint8_t sound, uint8_t length);    // sub $B1C0
+	void crash(uint8_t event, uint8_t length);    // sub $B1C0
 	void explode(int n, uint8_t kind);            // A4E0-A589
 	void removePlaneThings();                     // B204-B220
 	void moveBullet(int y);                       // A5AA-A5B4

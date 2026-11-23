@@ -74,8 +74,8 @@ int main(int argc, char **argv) {
 	g.startAttract(pal);
 	g.afterDisplay = [&] {
 		if (ghost) {
-			g.g.hit.planeHitBank = g.g.hit.planeHitObject = g.g.hit.planeHitShell = g.g.hit.missileHitPlane = 0xFF;
-			g.g.plane.fuel = 0xFF;
+			g.hit.planeHitBank = g.hit.planeHitObject = g.hit.planeHitShell = g.hit.missileHitPlane = 0xFF;
+			g.plane.fuel = 0xFF;
 		}
 		std::memset(screen, 0, sizeof screen);
 		g.drawRiver(screen);
@@ -83,12 +83,12 @@ int main(int argc, char **argv) {
 	bool menu = true;
 	for (long f = 0; f < frames; f++) {
 		Input in;
-		if ((g.g.attractFlags & 0x80) != 0) menu = true;
+		if ((g.attractFlags & 0x80) != 0) menu = true;
 		if (menu) {
-			if (g.g.gameNumber != (game - 1) % 8) in.select = true;
+			if (g.gameNumber != (game - 1) % 8) in.select = true;
 			else if (!attract && !(f & 1)) { in.start = true; menu = false; }
 		} else {
-			const int px = g.g.plane.x - 32 + 4;
+			const int px = g.plane.x - 32 + 4;
 			const int row = 0xAA - 28 - 30;
 			int target = px;
 			if (row >= 0 && size_t(row) < g.river.runs.size()) {
@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
 		int reads = 0;
 		g.frame(in, [&] { return reads++ ? random.read(249, 13) : pal ? random.read(191, 24) : random.read(192, 13); });
 		random.nextFrame();
-		const GameState &s = g.g;
+		const Game &s = g;
 		const RiverState &r = g.gen.s;
 		if (s.idleTime & 0x80) std::memset(screen, 0, sizeof screen);
 		else drawStatusBar(rom, cs, s.panel.chars, s.plane.fuel, s.scroller, s.logoShown, screen, pal);

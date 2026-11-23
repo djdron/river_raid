@@ -133,7 +133,7 @@ public:
 					return reads++ ? random_.read(249, 13) : pal_ ? random_.read(191, 24) : random_.read(192, 13);
 				});
 			}
-			const rr::GameState &g = game_.g;
+			const rr::Game &g = game_;
 			if (g.idleTime & 0x80) {
 				std::memset(screen_, 0, sizeof screen_);   // screen off after a long time unused
 			} else {
@@ -144,15 +144,15 @@ public:
 		// sound: the registers the VBI set at the end of the previous frame play for one frame
 		pokey_.run(tv_.cyclesPerFrame(), audio_);
 		for (int c = 0; c < 4; c++) {
-			pokey_.write(2 * c, game_.g.pokey.audf[c]);
-			pokey_.write(2 * c + 1, game_.g.pokey.audc[c]);
+			pokey_.write(2 * c, game_.pokey.audf[c]);
+			pokey_.write(2 * c + 1, game_.pokey.audc[c]);
 		}
 	}
 
 	const uint8_t (*screen() const)[rr::kScreenWidth] { return screen_; }
 	std::vector<int16_t> &audio() { return audio_; }
 	void setSoundRate(double rate) { pokey_.setSampleRate(rate); }
-	const rr::GameState &state() const { return game_.g; }
+	const rr::Game &state() const { return game_; }
 
 	void setRiver(uint32_t seed, int bridge) { game_.gen.setRiver(seed, bridge); }
 
