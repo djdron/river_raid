@@ -153,6 +153,218 @@ Sutileza de temporización: las ranuras y `$4E` se toman como están al principi
 - Inicio y reaparición: `sub_B0F1` carga $4D–$5F desde `$BAE1`, borra $2B–$4C y $0500–$05FF, coloca el puente inicial en la ranura 10 (tipo $0E, y=$4A, altura $17), modo $23 = $84/$80. Luego A3C8 restaura el LFSR y la orilla desde el punto de control $66–$69. Después el juego genera 160–165 líneas a 2 por fotograma (velocidad $FE) para llenar la pantalla.
 - Una trampa en la verificación: mientras la pantalla se llena a 2 líneas por fotograma, el límite del fotograma del emulador puede caer entre dos líneas, así que la comparación fotograma a fotograma en esos fotogramas es errónea. En el juego normal (una línea por fotograma) la instantánea siempre cae en un límite de línea.
 
+## El generador de niveles para principiantes, con un modelo en Python
+
+Las secciones de arriba están escritas para quien tiene el listado abierto. Esta explica el
+mismo generador desde el principio, con un programa pequeño que se puede ejecutar.
+
+**La idea.** El río no se guarda: un tramo entero no cabría en el cartucho de 8 KB, y el río
+sigue durante cientos de puentes. En cambio el juego guarda unos pocos números, el *estado*, y
+una función que convierte el estado en la siguiente línea de pantalla y el siguiente estado.
+Llámela una vez por fotograma y el río pasa. El mismo comienzo da siempre el mismo río, porque
+no entra nada más: ni el jugador, ni el reloj, ni el registro de números aleatorios de la propia
+consola (ese solo despierta enemigos).
+
+**De dónde sale el «azar».** Un registro de desplazamiento con realimentación lineal (LFSR): 24
+bits, aquí en tres bytes `a`, `b`, `c`. Un paso desplaza los 24 bits a la izquierda en uno y
+pone en el bit libre el XOR de dos bits de `b` (los bits 7 y 2). Los bits parecen aleatorios
+pero se repiten exactamente: el mismo comienzo, la misma secuencia. El generador da un paso por
+línea y luego *lee* algunos de sus bits para decidir: `c & 15` guía la orilla, `a & 15` da el
+ancho de una sección, `b` decide enemigos y combustible. Un río nuevo es solo otro valor inicial
+(`-seed` en el port).
+
+**El estado** (los nombres reales, de `port/src/river_gen.h`): la línea dentro del bloque
+(`lineInBlock`, 0…31), los bloques que quedan en la sección y las secciones hasta el puente, el
+nivel; la orilla izquierda (`bank`) y su dirección (`bankDir`); la tierra entre las orillas o la
+mitad del ancho de la isla (`islandWidth`) y el ancho hacia el que va; si hay isla; la casa que
+se está dibujando; las 11 plazas de objetos.
+
+**Una línea** (`nextLine`), en orden: contar la línea (bloque nuevo, sección nueva, puente), dar
+un paso al LFSR (no en la recta de un puente), mover el ancho un punto hacia su objetivo, mover
+la orilla un punto o no, quizá empezar una casa, dibujar, y cada 16 líneas poner un objeto. Cada
+una de estas cosas es una función pequeña en `river_gen.cpp`, con la dirección del cartucho en
+su comentario.
+
+**Coordenadas.** Una línea tiene 192 puntos. Desde la orilla izquierda hay un cauce de 128
+puntos de ancho; dentro, el juego pone `inner` puntos de tierra a cada lado, así que el agua
+tiene `128 - 2 × inner` de ancho. Con una isla la tierra va en cambio en el centro: agua, isla
+de `2 × inner`, agua. Los niveles impares usan siempre `inner = 28`; los pares eligen para cada
+sección un ancho `w` de 2 a 15 y usan `inner = 4w`; la sección antes de un puente usa 54.
+
+El modelo de abajo sigue esas reglas, simplificadas. Ejecútelo con `python3 tools/river_model.py`:
+imprime un tramo (1 024 líneas, de un puente al siguiente) de un nivel par, la línea más nueva
+arriba, un carácter por cada 4 puntos: `.` tierra, `~` agua, `#` una casa, `=` el puente, letras
+para los objetos.
+
+```python
+"""A small model of how River Raid builds its river: one line at a time, from a
+pseudo-random number generator. Simplified; port/src/river_gen.cpp has every rule."""
+
+class Lfsr:
+    """24 bits in three bytes a, b, c, stirred once per line (the cartridge's sub $B183)."""
+    def __init__(self, a=0xE3, b=0xD4, c=0xF7):   # the start of game 1
+        self.a, self.b, self.c = a, b, c
+
+    def step(self):
+        feedback = ((self.b >> 7) ^ (self.b >> 2)) & 1    # bits 7 and 2 of b
+        out_a, out_c = self.a >> 7, self.c >> 7
+        self.a = ((self.a << 1) | feedback) & 0xFF        # shift the chain a -> c -> b
+        self.c = ((self.c << 1) | out_a) & 0xFF
+        self.b = ((self.b << 1) | out_c) & 0xFF
+
+ENEMIES = ['ship', 'ship', 'ship', 'heli', 'heli', 'heli', 'jet', 'balloon']   # the odds, not the order
+LETTER = {'ship': 'S', 'heli': 'H', 'jet': 'J', 'balloon': 'B', 'fuel': 'F', 'bridge': '='}
+
+class River:
+    def __init__(self, level=1):
+        self.rnd = Lfsr()
+        self.level = level             # the bridge we fly towards
+        self.line_in_block = 0         # 0..31
+        self.blocks_left = 2           # in this section
+        self.sections_left = 16        # to the next bridge
+        self.bank = 32                 # left bank, in dots of the 192-dot line
+        self.direction = 0             # the bank's walk: -1, 0, +1
+        self.inner = 28                # land inside the 128-dot corridor, each side (or half the island)
+        self.target = 28               # what inner moves towards
+        self.island = False
+        self.house_rows = 0            # rows of a house still to draw
+        self.house_left = False
+        self.bridge_rows = 0           # rows of a bridge still to draw
+
+    def new_block(self):
+        self.line_in_block = 0
+        self.blocks_left -= 1
+        if self.blocks_left == 0:                         # a new section: a new width
+            self.blocks_left = 2
+            self.sections_left -= 1
+            if self.sections_left == 0:                   # we passed a bridge
+                self.sections_left = 16
+                self.level = min(self.level + 1, 80)
+            if self.sections_left == 1:                   # the section that ends in a bridge
+                self.island, self.target = False, 54
+            elif self.level % 2 == 1:                     # odd levels: always the same width
+                self.target = 28
+            elif self.rnd.a & 0x30 == 0:                  # even levels, 1 in 4: the island opens or closes
+                self.island, self.target = not self.island, 0
+            else:                                         # even levels: a random width
+                self.target = 4 * min(max(self.rnd.a & 15, 2), 14 if self.island else 15)
+        if self.rnd.c & 0x20 and self.sections_left > 1:  # sometimes a house at a block's start
+            self.house_rows = 12
+            self.house_left = bool(self.rnd.c & 0x80)
+
+    def move_bank(self):
+        low, high = (28, 36) if self.level < 3 else (25, 40) if self.level % 2 == 0 else (13, 52)
+        r = self.rnd.c & 15                               # 4 random bits decide
+        if self.direction == 0:
+            self.direction = 1 if r >= 8 else -1
+        elif r < 8:
+            return                                        # stay this line
+        elif r == 13:
+            self.direction = -self.direction              # turn round
+        if low <= self.bank + self.direction <= high:
+            self.bank += self.direction
+        else:
+            self.direction = -self.direction              # at a limit: turn round instead
+
+    def new_object(self):
+        """Every 16 lines something may enter at the top: an enemy, a fuel depot, a bridge."""
+        if self.blocks_left == 1 and self.sections_left == 1:
+            return ('bridge', None) if self.line_in_block == 0 else None
+        if self.line_in_block == 0:                       # a block's start: depot, enemy or nothing
+            if (0x3F - min(self.level, 46)) * 2 < self.rnd.b:
+                kind = ENEMIES[self.rnd.b & 7]
+            elif self.rnd.a & 0x40 == 0:
+                kind = 'fuel'
+            else:
+                return None
+        elif self.level >= 9 and (self.level - 8) * 8 >= self.rnd.b:
+            kind = ENEMIES[self.rnd.b & 7]                # mid-block: from level 9, more often higher up
+        else:
+            return None
+        if self.level % 2 == 1:                           # odd levels: anywhere on the water
+            room = max(0, 128 - 2 * self.inner - 8)       # the water's width, less the object's
+            x = self.bank + self.inner + (self.rnd.a & 0x3F) * room // 64
+        elif self.rnd.a & 0x80:                           # even levels: by the right bank...
+            x = self.bank + 128 - self.inner - 12
+        else:                                             # ...or by the left one
+            x = self.bank + self.inner + 4
+        return kind, x
+
+    def next_line(self):
+        self.line_in_block += 1
+        if self.line_in_block == 32:
+            self.new_block()
+        run_up = self.blocks_left == 1 and self.sections_left == 1
+        if not run_up:                                    # the run-up to a bridge is straight
+            self.rnd.step()
+        if self.inner != self.target:                     # the width changes a dot a line
+            self.inner += 1 if self.target > self.inner else -1
+        if not run_up:
+            self.move_bank()
+        obj = self.new_object() if self.line_in_block % 16 == 0 else None
+        return self.draw(obj)
+
+    def draw(self, obj):
+        dots = ['.'] * 192                                # land
+        left, right = self.bank, self.bank + 128
+        if self.island:                                   # water, the island, water
+            water = [(left, 64 + left - self.inner), (64 + left + self.inner, right)]
+        else:                                             # land inside the corridor on both sides
+            water = [(left + self.inner, right - self.inner)]
+        for start, end in water:
+            dots[start:end] = '~' * (end - start)
+        if self.house_rows:                               # a house on the wider bank
+            self.house_rows -= 1
+            x = left // 2 - 6 if self.house_left else (right + 192) // 2 - 6
+            dots[x:x + 12] = '#' * 12
+        if obj and obj[0] == 'bridge':
+            self.bridge_rows = 6
+        elif obj:
+            kind, x = obj
+            dots[x:x + 8] = LETTER[kind] * 8
+        if self.bridge_rows:                              # a road across the whole screen
+            self.bridge_rows -= 1
+            dots = ['='] * 192
+        return ''.join(dots[::4])                         # a character for every 4 dots
+
+river = River(level=2)                                    # an even level: islands
+lines = [river.next_line() for _ in range(1024)]          # from one bridge to the next
+for line in reversed(lines):                              # the newest line is at the top of the screen
+    print(line)
+```
+
+Una de cada ocho líneas de un trozo de lo que imprime, donde una isla se cierra y el río se
+estrecha:
+
+```
+.........~~~~~~~~~..............~~~~~~~~~.......
+.........~~~~~~~~~~~~.........~~~~~~~~~~~.......
+........~~~~~~~~~~~~........~~~~~~~~~~~~...###..
+........~~~~~~~~~~~~~~~~.~~~~~~~~~~~~~~~........
+.........~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.......
+.........~~~~~~~~~~~~~~...~~~~~~~~~~~~~~~.......
+.........~~~~~~~~~...............~~~~~~~~.......
+........~~~...........................~~...###..
+......................~~~~......................
+```
+
+**Lo que el modelo deja fuera** (y dónde está lo de verdad): las reglas de más de la orilla (el
+giro con `r = 13` está, pero no «quedarse donde el río es estrecho» con 15, ni apartarse del
+objeto que entra: `moveBank`, `bankWouldHitObject`); el ancho que cambia 2 puntos por línea en
+los cambios grandes (`countLines`); las reglas de la isla (solo se abre a través de una sección
+de ancho 0, no justo antes de un puente, y una isla estrecha se dibuja como agua:
+`chooseSectionWidth`, `drawLine`); la recta del puente, que en el original sigue una tabla fija
+de pasos de la orilla; las decoraciones de verdad (imágenes de varios tamaños sacadas de tablas,
+colocadas según el ancho: `startDecoration`); la tabla exacta de enemigos y las posiciones de
+los objetos (`chooseEnemy`, `positionObject`); los helicópteros que disparan, el tanque, los dos
+colores de la orilla; y el dibujo en bytes con piezas de borde (`drawLine`). El generador en C++
+lo tiene todo y da las líneas del original byte a byte (`terrain_check`);
+`port/build/river_view` muestra su río.
+
+**Cosas que probar.** Cambie el comienzo de `Lfsr` (otro río, como `-seed`), empiece con
+`level=3` (impar: sin islas, un solo ancho, un vagar más amplio) o `level=40` (más enemigos), o
+imprima `river.bank` junto a cada línea para ver el camino aleatorio.
+
 ## Mapa del nivel
 - El generador de la orilla no depende del avión: esquivar objetos mira el tipo `$050B`, que no cambia cuando un objeto es derribado. `$60` (número de tramo) crece cada 1024 líneas cuando se genera el puente, no cuando se destruye (en la partida del bot `$60` cambió en el fotograma 1133, el puente se destruyó en el 1177).
 - Por eso se puede filmar el nivel entero con un avión invulnerable: `rr_oracle -ghost` parchea 5 bytes en la memoria emulada (A3E9/A424/A42E/A432 `LDX bandera` → `LDX #$FF`, A443 consumo de combustible $20 → 0). Ninguna muerte en 120 000 fotogramas.

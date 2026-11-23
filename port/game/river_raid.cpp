@@ -395,10 +395,14 @@ int main(int argc, char **argv) {
 #endif
 		return fullscreenExclusive ? (pal ? 50.0 : 60.0) : 0.0;
 	};
-	window.setRefreshRate(fullscreenRate());
+	const bool rateSet = window.setRefreshRate(fullscreenRate());
 	if (fullscreen && !shotPath) window.setFullscreen(true);
 	auto displayRate = [&]() { return window.refreshRate(); };
 	if (showStats) {
+		std::fprintf(stderr, "%s\n", window.displayModes().c_str());
+		if (fullscreenRate() > 0)
+			std::fprintf(stderr, "full screen at %.0f Hz: %s\n", fullscreenRate(), rateSet
+				? "an exclusive mode at about that rate or a multiple" : "no mode at about that rate or a multiple, the desktop as it is");
 		const Pace pace = paceFor(displayRate(), tv.frameRate());
 		std::fprintf(stderr, "%s, display %.2f Hz, game %.3f frames/s%s\n", window.info().c_str(), displayRate(),
 			pace.rate, pace.refreshesPerFrame ? " (locked to the display)" : "");

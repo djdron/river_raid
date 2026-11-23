@@ -125,6 +125,96 @@ dalla parte opposta alla riva più vicina.
 
 Ogni 10 000 punti si guadagna un aereo in più, fino a 9.
 
+## Una nuova riga, passo per passo
+
+Tutto quanto sopra avviene una riga alla volta. A velocità normale il fiume scende di una riga
+per fotogramma, e in cima allo schermo compare una nuova riga. Il gioco non tiene da nessuna parte
+un'immagine del fiume: ha una manciata di numeri (dov'è la riva sinistra, quanto è larga
+l'acqua, a che riga del blocco si è) e da essi costruisce ogni riga. Per ogni nuova riga fa le
+stesse cose, sempre nello stesso ordine:
+
+1. **Conta.** Il numero della riga nel blocco sale di uno. Dopo 32 righe inizia un nuovo blocco;
+   dopo due blocchi una nuova sezione, che riceve la sua larghezza; dopo 16 sezioni il tratto
+   finisce con un ponte, e il livello sale di uno.
+2. **Rimescola i numeri casuali.** Il registro a 24 bit fa un passo, così le decisioni
+   seguenti usano bit nuovi. Sul rettilineo che porta a un ponte resta fermo: quel pezzo è
+   sempre uguale.
+3. **Cambia la larghezza.** Se la sezione ha chiesto un'altra larghezza, la terra tra le rive
+   (o l'isola) cresce o cala di un punto in questa riga, di due quando il cambiamento è grande.
+   Per questo un restringimento non arriva mai come un gradino ma come un pendio.
+4. **Sposta la riva sinistra.** Di un punto a sinistra, di uno a destra, o ferma (le regole sono
+   in «Le rive»).
+5. **Forse inizia una casa.** Alla prima riga di un blocco, se un bit dei numeri casuali è
+   acceso, comincia una decorazione (tranne sul rettilineo di un ponte).
+6. **Disegna la riga.** I numeri diventano 192 punti di terra, bordo e acqua.
+7. **Ogni 16 righe fa entrare un oggetto** in cima.
+
+### Dov'è l'acqua
+
+Immaginate i 192 punti di una riga come terra, con una striscia larga 128 punti che parte dalla
+riva sinistra: l'alveo del fiume. La riva sinistra vaga, e tutto l'alveo con lei, quindi la riva
+destra segue la sinistra. Dentro l'alveo il gioco mette tanta terra da un lato quanta
+dall'altro (oppure, quando c'è un'isola, la stessa quantità di terra nel suo mezzo):
+
+| cosa | terra nell'alveo, per lato | acqua |
+|---|---|---|
+| livelli dispari, ogni sezione | 28 punti | 72 punti |
+| livelli pari, larghezza 2…15 (al massimo 8 sotto il livello 9) | da 8 a 60 punti | da 112 giù fino a 8 punti |
+| la sezione prima di un ponte | 54 punti | 20 punti |
+| una sezione in cui un'isola si apre o si chiude | niente | tutti i 128 punti; poi l'isola cresce nel mezzo |
+
+I limiti propri della riva sinistra: ai livelli 1 e 2 tra i punti 28 e 36 (il fiume si muove
+appena), ai livelli pari e ai dispari fino al 9 tra 25 e 40, ai dispari da 11 a 19 tra 13 e 52,
+e ai dispari dal 21 quasi ovunque (da 1 a 64).
+
+### Il bordo dell'acqua
+
+L'Atari disegna questo schermo in byte da 4 punti. Gran parte di una riga sono byte interi di
+terra o d'acqua, ma la sponda può cadere su qualsiasi punto. Così la cartuccia ha piccole
+immagini pronte di un bordo, due byte ciascuna, una per ogni posizione della sponda dentro un
+byte, per la riva sinistra, la destra e un'isola. Una riga si compone come una fila di
+piastrelle: byte di terra, un pezzo di bordo, byte d'acqua (un'isola: bordo, terra, bordo), un
+pezzo di bordo, byte di terra fino alla fine. I pezzi di bordo aggiungono una linea sottile di
+un terzo colore dove l'acqua incontra la terra; è il colore a cui navi ed elicotteri fanno
+dietrofront.
+
+### Case, alberi e montagne
+
+All'inizio di un blocco, circa una volta su due (un bit dei numeri casuali), su una riva inizia
+una decorazione. Quale immagine, quanto larga e quanto lontano dal bordo dello schermo viene da
+piccole tabelle nella cartuccia, scelte in base alla larghezza del fiume (ai livelli dispari a
+volte invece da un numero casuale); su un'isola solo quando è abbastanza larga. Il lato lo sceglie
+un altro bit casuale, scambiato se la riva da quel lato è troppo stretta; ai livelli dispari dal
+11 la riva sinistra, mentre la decorazione viene disegnata, si tiene anche lontana da quel lato,
+perché ci stia. L'immagine viene disegnata una fila per riga, copiata byte per byte nella terra,
+così entra dall'alto come il fiume. È solo paesaggio.
+
+### Dove partono gli oggetti
+
+Ogni 16 righe, se l'oggetto precedente è entrato del tutto, uno nuovo va nella fascia libera
+successiva in cima (lo schermo ha 11 fasce, vedi «Nemici, carburante e ponti»). La sua
+posizione attraverso il fiume si misura dalla riva sinistra:
+
+- **livelli dispari:** ovunque sull'acqua, da un numero casuale, rivolto a sinistra o a destra a
+  caso;
+- **livelli pari:** vicino a una riva o all'altra, o accanto all'isola, rivolto verso l'acqua:
+  vicino alla riva sinistra guarda a destra, vicino alla destra a sinistra. Su una riva tiene un
+  po' di distanza dalla sponda, di più per gli oggetti larghi (navi, ponti);
+- se il fiume è troppo stretto non c'è niente da mettere (arrivano solo i jet, che volano sulla
+  terra), e dove è stretto una nave diventa un elicottero;
+- un deposito di carburante guarda sempre a destra; un ponte sta sempre di traverso sul
+  rettilineo, che ha ogni volta la stessa forma.
+
+Le file del nuovo oggetto entrano una riga alla volta, come tutto il resto. Finché sta ancora
+entrando, la riva controlla ogni passo contro di esso, così non ci finisce mai dentro.
+
+Dal livello 7, circa una volta su quattro, sulla riva viene messo anche un **carro armato**
+quando all'inizio di un blocco entra un elicottero, una mongolfiera, una nave o un deposito di
+carburante, nelle sezioni centrali di un tratto: sulla strada lungo la riva (o su un'isola),
+rivolto verso il fiume, in un punto calcolato dalla larghezza del fiume e da dove sta una casa.
+All'inizio del rettilineo di un ponte, se non c'è un carro armato, ne viene messo uno sul ponte
+stesso, pronto ad attraversarlo.
+
 ## Movimento
 
 All'inizio gli oggetti non si muovono da soli: ogni 16 immagini una fascia a caso viene "svegliata"
