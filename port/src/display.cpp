@@ -115,9 +115,9 @@ void Game::display() {
 		switch (sprite) {
 		case 0: bits = g.pm.player(0, l); hpos = panel ? 0 : g.shellX; break;
 		case 1: bits = g.pm.player(1, l); hpos = panel ? 0 : s.tankX; break;
-		case 2: bits = g.pm.player(2, l); hpos = g.planeX; break;
+		case 2: bits = g.pm.player(2, l); hpos = g.plane.x; break;
 		case 4: bits = uint8_t(g.pm.missiles(l) & 3); hpos = panel ? 0 : s.missileX; size = 1; break;
-		default: bits = uint8_t((g.pm.missiles(l) >> 4) & 3); hpos = uint8_t(g.planeX + 4); break;
+		default: bits = uint8_t((g.pm.missiles(l) >> 4) & 3); hpos = uint8_t(g.plane.x + 4); break;
 		}
 	};
 	auto pfAt = [&](int l) -> const Runs * {
@@ -256,10 +256,10 @@ void Game::drawRiver(uint8_t out[240][kRowWidth]) const {
 			if (line >= o.first && line < o.first + int(o.rows.size()))
 				player(row, o.rows[size_t(line - o.first)], o.x, o.size, o.colours[size_t(line - o.first)]);
 		const uint8_t planeColour = g.player ? 0x8E : 0x1E;                 // COLPM2 (B542)
-		player(row, g.pm.player(2, line), g.planeX, 0, planeColour);        // the plane
+		player(row, g.pm.player(2, line), g.plane.x, 0, planeColour);        // the plane
 		const uint8_t m2 = (g.pm.missiles(line) >> 4) & 0x03;               // its bullet
 		for (int b = 0; b < 2; b++)
-			if (m2 & (2 >> b)) put(row, 2 * (g.planeX + 4 + b - 32), 2, planeColour);
+			if (m2 & (2 >> b)) put(row, 2 * (g.plane.x + 4 + b - 32), 2, planeColour);
 		player(row, g.pm.player(1, line), s.tankX, 0, 0x00);                // tank, COLPM1 = 0
 		const uint8_t m0 = g.pm.missiles(line) & 0x03;                      // helicopter missile, double width
 		for (int b = 0; b < 2; b++)

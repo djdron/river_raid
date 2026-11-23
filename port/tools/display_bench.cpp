@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
 	// results that would end it are dropped after the display, so the game goes on for long
 	g.afterDisplay = [&g] {
 		g.g.hit.planeHitBank = g.g.hit.planeHitObject = g.g.hit.planeHitShell = g.g.hit.missileHitPlane = 0xFF;
-		g.g.fuel = 0xFF;
+		g.g.plane.fuel = 0xFF;
 	};
 	long inGame = 0, attractFrames = 0, games = 0;
 	bool menu = true;          // choosing the game: SELECT until it is the one asked for, then START
@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
 		} else {
 			inGame++;
 			// steer to the middle of the water run nearest the plane, 30 lines above it
-			const int px = g.g.planeX - 32 + 4;
+			const int px = g.g.plane.x - 32 + 4;
 			const int row = 0xAA - 28 - 30;
 			int target = px;
 			if (row >= 0 && size_t(row) < g.runLines.size()) {

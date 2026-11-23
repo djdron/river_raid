@@ -137,7 +137,7 @@ public:
 			if (g.idleTime & 0x80) {
 				std::memset(screen_, 0, sizeof screen_);   // screen off after a long time unused
 			} else {
-				rr::drawStatusBar(rom_, charsets_, g.panel, g.fuel, g.scroller, g.logoShown, screen_, pal_);
+				rr::drawStatusBar(rom_, charsets_, g.panel, g.plane.fuel, g.scroller, g.logoShown, screen_, pal_);
 			}
 		}
 		random_.nextFrame();

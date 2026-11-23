@@ -26,6 +26,7 @@
 
 #include "river_draw.h"
 #include "bullet.h"
+#include "plane.h"
 #include "river_gen.h"
 #include "status_bar.h"
 
@@ -90,21 +91,9 @@ struct GameState {
 	uint8_t respawned = 0;      // $79 1 once a plane of this game has been lost (the panel marks the player)
 	uint8_t highScore[16] = {}; // $80-$8F 3 BCD bytes for each pair of games, at 4-byte steps
 	uint8_t highScoreCheck[16] = {};  // $90-$9F check bytes of the high scores (kept over a reset)
-	// the plane
-	// $76: 0 flying; $FE-$80 exploding; $7F-$30 river refilling; $2F waiting for the player;
-	// $FF no plane (attract mode, game over)
-	uint8_t planeState = 0;
-	uint8_t planeX = 0;         // $57
-	uint8_t planeXFrac = 0;     // $58
-	uint8_t planeAccel = 0;     // $2B sideways acceleration
-	uint8_t planeFrame = 0;     // $5E shape: 7/8/9 banking left / right / level, 6-0 explosion
-	uint8_t speed = 0;          // $59 scrolling, (lines per frame) x 128: $40 slow .. $FE fast
-	uint8_t scrollFrac = 0;     // $30
-	uint8_t fuel = 0;           // $5B $FF full
-	uint8_t fuelFrac = 0;       // $5C
+	Plane plane;                // $76, $57-$59, $5B-$5C, $5E, $2B, $19, $B9
 	Bullet bullet;              // $56 the plane's bullet
-	uint8_t joystick = 0x0F;    // $19 stick bits of this frame (0 = pressed)
-	uint8_t joystickPrev = 0;   // $B9 those of the previous frame, << 4
+	uint8_t scrollFrac = 0;     // $30 the river's scrolling: the plane's speed added to it twice a frame
 	// the tank's shell and the helicopter's missile (more in RiverState)
 	uint8_t shellFrame = 0;     // $3B shape: 0 none, 1 flying, 2.. explosion
 	uint8_t shellX = 0;         // $3C
@@ -205,7 +194,7 @@ public:
 	// set they sound in the attract mode too, and channel 1 plays the engine of a plane flying
 	// at normal speed. Only g.pokey changes: the game itself runs the same.
 	bool attractSound = false;
-	// The attract mode's engine (with attractSound): its pitch (AUDF; 0: from g.speed, as a game
+	// The attract mode's engine (with attractSound): its pitch (AUDF; 0: from g.plane.speed, as a game
 	// does) and the stick its tone follows (up: speeding up, down: slowing down).
 	uint8_t attractEnginePitch = 0;
 	uint8_t attractEngineStick = 0x0F;
@@ -261,8 +250,6 @@ private:
 	void selectGame();                            // A699-A6DC
 	bool respawnOrGameOver();                     // A36E-A3B6
 	void flyPlane(const Input &input);            // A3E9-A5B4
-	void steer();                                 // A455-A496
-	void changeSpeed();                           // A497-A4B5
 	void crash(uint8_t sound, uint8_t length);    // sub $B1C0
 	void explode(int n, uint8_t kind);            // A4E0-A589
 	void removePlaneThings();                     // B204-B220

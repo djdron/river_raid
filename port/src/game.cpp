@@ -18,12 +18,9 @@ constexpr uint16_t kTankMemory = 0x0D00;       // player 1: the tank on the road
 constexpr uint16_t kPlaneMemory = 0x0EAA;      // player 2 from row $AA: the plane
 constexpr uint8_t kMissile0 = 0x03;            // the helicopter's missile
 
-// GameState::planeState
-constexpr uint8_t kFlying = 0;
-constexpr uint8_t kWaiting = 0x2F;             // at the bridge, until the player moves
-constexpr uint8_t kLifeLost = 0x30;            // the river has been refilled
-constexpr uint8_t kCrashed = 0xFE;             // the explosion starts; down to $80
-constexpr uint8_t kNoPlane = 0xFF;             // attract mode, game over
+// the plane's states
+constexpr uint8_t kFlying = Plane::kFlying, kWaiting = Plane::kWaiting, kLifeLost = Plane::kLifeLost;
+constexpr uint8_t kCrashed = Plane::kCrashed, kNoPlane = Plane::kNoPlane;
 
 // GameState::pauseState: a key press pauses, the next press resumes
 constexpr uint8_t kPlaying = 0, kResuming = 1, kPaused = 2, kPausing = 3;
@@ -106,11 +103,11 @@ void Game::startAttract(bool pal) {
 	g.screenOn = 1;
 	g.attractFlags = 0x81;
 	g.attractTimer = 0xFF;
-	g.planeState = kNoPlane;
-	g.speed = 0x80;
-	g.fuel = 0xFF;
-	g.fuelFrac = 0xFF;
-	g.planeX = 0x7C;
+	g.plane.state = kNoPlane;
+	g.plane.speed = 0x80;
+	g.plane.fuel = 0xFF;
+	g.plane.fuelFrac = 0xFF;
+	g.plane.x = 0x7C;
 	g.colourBank = bankColour(gen.s);
 	// the scrolling line has been moving since frame 11 (VBI steps up to frame 38; 9 to 25 on PAL)
 	g.scroller = Scroller();
@@ -279,7 +276,7 @@ void Game::prepare() {
 		s.shellY = 0;
 	}
 	copyShape(rom_.shellShape(g.shellFrame), uint16_t(kShellMemory + shellY), 16);
-	copyShape(rom_.planeShape(g.planeFrame), kPlaneMemory, 14);
+	copyShape(rom_.planeShape(g.plane.frame), kPlaneMemory, 14);
 	// AF3A-AF58: lives, bridges and score into the panel
 	if (g.attractTimer == 0) showLives();
 	showBridges();
@@ -369,19 +366,19 @@ void Game::mainLoop(const Input &input, const std::function<uint8_t()> &random) 
 	}
 	// A312: the joystick of the player whose turn it is
 	const int stick = g.player & 1;
-	g.joystickPrev = lo(g.joystick << 4);
-	g.joystick = input.stick[stick] & 0x0F;
-	if ((g.joystick != 0x0F || input.trigger[stick]) && g.planeState == kWaiting) {
-		g.planeState = kFlying;                   // A332: the waiting plane goes
-		g.speed = 0x40;
+	g.plane.stickPrev = lo(g.plane.stick << 4);
+	g.plane.stick = input.stick[stick] & 0x0F;
+	if ((g.plane.stick != 0x0F || input.trigger[stick]) && g.plane.state == kWaiting) {
+		g.plane.state = kFlying;                   // A332: the waiting plane goes
+		g.plane.speed = 0x40;
 	}
 	// A33F: the plane
-	const uint8_t state = g.planeState;
+	const uint8_t state = g.plane.state;
 	if (state & 0x80) {                           // A35C: exploding (or no plane)
 		if (state != kNoPlane) {
-			if (!(lo(state + 1) & 7) && g.planeFrame) g.planeFrame--;   // explosion frames
-			g.planeState--;
-			if (!(g.planeState & 0x80) && respawnOrGameOver()) return;
+			if (!(lo(state + 1) & 7) && g.plane.frame) g.plane.frame--;   // explosion frames
+			g.plane.state--;
+			if (!(g.plane.state & 0x80) && respawnOrGameOver()) return;
 		}
 	} else if (state == kFlying) {
 		flyPlane(input);
@@ -390,7 +387,7 @@ void Game::mainLoop(const Input &input, const std::function<uint8_t()> &random) 
 			g.crashPitch = 0x80;
 			g.lives--;
 		}
-		g.planeState--;
+		g.plane.state--;
 	}
 	mainLoopEnd(input);
 }
@@ -415,11 +412,11 @@ void Game::mainLoopEnd(const Input &input) {
 	}
 
 	// A6DE: scrolling
-	if (g.planeState & 0x80) {
+	if (g.plane.state & 0x80) {
 		if (!attract(g)) return;                  // exploding: the river stops
-		g.speed = g.gameNumber < 4 ? 0x80 : 0xFE; // A6F1: attract mode
-	} else if (g.planeState == kWaiting) {        // the plane level, no scrolling
-		g.planeFrame = 9;
+		g.plane.speed = g.gameNumber < 4 ? 0x80 : 0xFE; // A6F1: attract mode
+	} else if (g.plane.state == kWaiting) {        // the plane level, no scrolling
+		g.plane.frame = 9;
 		return;
 	}
 	scrollRiver();
@@ -444,12 +441,12 @@ void Game::reset(bool full) {
 	gen.restoreCheckpoint();   // the river's part: $4D-$5F, $2B-$4C and $0500-$05FF, the bridge in slot 10
 	// (restoreCheckpoint also continues from the checkpoint, A3C8; finishRespawn() does it again)
 	g.bullet.y = table(0x56);
-	g.planeX = table(0x57);
-	g.planeXFrac = table(0x58);
-	g.speed = table(0x59);
-	g.fuel = table(0x5B);
-	g.fuelFrac = table(0x5C);
-	g.planeFrame = table(0x5E);
+	g.plane.x = table(0x57);
+	g.plane.xFrac = table(0x58);
+	g.plane.speed = table(0x59);
+	g.plane.fuel = table(0x5B);
+	g.plane.fuelFrac = table(0x5C);
+	g.plane.frame = table(0x5E);
 	if (full) {
 		g.bridges[0] = table(0x61);
 		g.bridges[1] = table(0x62);
@@ -462,10 +459,10 @@ void Game::reset(bool full) {
 		for (int i = 0; i < 3; i++) g.other.score[i] = table(uint16_t(0x6E + i));
 		for (int i = 0; i < 4; i++) g.other.checkpoint[i] = table(uint16_t(0x71 + i));
 		g.other.lives = table(0x75);
-		g.planeState = table(0x76);
+		g.plane.state = table(0x76);
 	}
 	// $2B-$4C cleared (the river's part in restoreCheckpoint)
-	g.planeAccel = 0;
+	g.plane.accel = 0;
 	g.scrollFrac = 0;
 	g.bridgeFlash = 0;
 	g.shellFrame = g.shellX = g.shellXFrac = 0;
@@ -553,7 +550,7 @@ bool Game::respawnOrGameOver() {
 	if (pal_) {
 		vbiSeesBeforeGameOver_ = true;
 		beforeGameOver_[0] = g.frameCount;
-		beforeGameOver_[1] = g.planeState;
+		beforeGameOver_[1] = g.plane.state;
 		beforeGameOver_[2] = g.attractTimer;
 	}
 	gameOverScreen();
@@ -568,7 +565,7 @@ void Game::finishRespawn() {
 	s.rndB = s.checkpoint[1];
 	s.rndC = s.checkpoint[2];
 	s.bank = s.checkpoint[3];
-	g.planeX = lo(s.bank + 0x26 + s.islandWidth);
+	g.plane.x = lo(s.bank + 0x26 + s.islandWidth);
 	if (attract(g)) gameOverScreen();
 }
 
@@ -580,7 +577,7 @@ void Game::driveTank() {
 	if (every & g.frameCount) return;
 	bool drive = false;
 	if (s.shellTimer & 0x80) {                    // no shell in flight
-		if (attract(g) || g.planeState == kFlying) {
+		if (attract(g) || g.plane.state == kFlying) {
 			if (s.tankFires & 0x80) {
 				if (s.tankY >= 0x1A) {
 					if (g.hit.tankAtEdge & 0x80) drive = true;   // not at the river edge yet
@@ -613,7 +610,7 @@ void Game::moveObjects() {
 				kind = obj.kind;
 			}
 		}
-		if (!attract(g) && g.planeState != kFlying) continue;   // nothing moves until the plane flies
+		if (!attract(g) && g.plane.state != kFlying) continue;   // nothing moves until the plane flies
 		if ((s.level >> 1) == 0) continue;               // nothing moves before bridge 2
 		if (kind != kJet) {                               // jets always fly; others:
 			if (kind < kJet) continue;                    // not explosions
@@ -651,7 +648,7 @@ void Game::moveMissile() {
 		if (s.missileX) {                                 // flying
 			if (g.hit.missileHitBank & 0x80) x = lo(s.missileX + g.missileStep);
 		} else {
-			if (!attract(g) && g.planeState != kFlying) {
+			if (!attract(g) && g.plane.state != kFlying) {
 				s.missileX = 0;
 				return;
 			}
@@ -712,7 +709,7 @@ void Game::moveShell() {
 		if (count) {
 			uint8_t timer = lo(s.shellTimer + 1);         // A65E
 			if (timer >= 0x39) {                          // over: the tank fires again (no shell after a crash)
-				timer = g.planeState ? 0xFF : 0;
+				timer = g.plane.state ? 0xFF : 0;
 				frame = 0;
 			}
 			s.shellTimer = timer;
@@ -756,8 +753,8 @@ void Game::skipFrame() {
 // line. Speeds $FE and up give a line on both steps.
 void Game::scrollRiver() {
 	for (int step = 0; step < 2; step++) {
-		if (g.speed < 0xFE) {
-			const int sum = g.scrollFrac + g.speed;
+		if (g.plane.speed < 0xFE) {
+			const int sum = g.scrollFrac + g.plane.speed;
 			g.scrollFrac = lo(sum);
 			if (sum < 0x100) continue;
 		}
@@ -769,7 +766,7 @@ void Game::scrollRiver() {
 void Game::vbi(const std::function<uint8_t()> &random) {
 	if (vbiSeesBeforeGameOver_) {                 // PAL: sub $B21A comes after this VBI
 		g.frameCount = beforeGameOver_[0];
-		g.planeState = beforeGameOver_[1];
+		g.plane.state = beforeGameOver_[1];
 		g.attractTimer = beforeGameOver_[2];
 	}
 	soundDriver(random);
@@ -797,7 +794,7 @@ void Game::vbi(const std::function<uint8_t()> &random) {
 	if (vbiSeesBeforeGameOver_) {
 		vbiSeesBeforeGameOver_ = false;
 		g.frameCount = 0xFF;
-		g.planeState = kNoPlane;
+		g.plane.state = kNoPlane;
 		g.attractTimer = 0xFF;
 	}
 	if (gameOverText_) {                          // A3B4: "Game over" scrolls past first
@@ -848,17 +845,17 @@ void Game::soundDriver(const std::function<uint8_t()> &random) {
 			g.eventSound = 0;
 			last = 0;
 		}
-	} else if (g.planeState != kFlying && !(attractSound && attract(g))) {   // B2F9: no plane: channel 1 off
-		last = g.planeState;
+	} else if (g.plane.state != kFlying && !(attractSound && attract(g))) {   // B2F9: no plane: channel 1 off
+		last = g.plane.state;
 		setPitch = false;
 	} else {
 		bool engine = true;
-		if (g.fuel < 0x40) {                      // B2FD: low fuel: a beep every 63 frames
+		if (g.plane.fuel < 0x40) {                      // B2FD: low fuel: a beep every 63 frames
 			uint8_t time = g.eventSoundTime ? g.eventSoundTime : 0x3F;
 			g.eventSoundTime = --time;
 			uint8_t beep = 0;
-			if (g.fuel < 0x04) {                  // almost empty: a tone falling with the fuel
-				beep = uint8_t((g.fuel << 2) | (g.fuelFrac >> 6));
+			if (g.plane.fuel < 0x04) {                  // almost empty: a tone falling with the fuel
+				beep = uint8_t((g.plane.fuel << 2) | (g.plane.fuelFrac >> 6));
 				beep = uint8_t(lo((beep ^ 0xFF) + 0x20) << 1);
 			}
 			if (beep == 0 && time >= 0x1C) beep = time;   // the first frames of each 63
@@ -869,9 +866,9 @@ void Game::soundDriver(const std::function<uint8_t()> &random) {
 			}
 		}
 		if (engine) {                             // B32C: the engine, pitch from the speed
-			pitch = lo(0x1F - (g.speed >> 4));
+			pitch = lo(0x1F - (g.plane.speed >> 4));
 			if (g.crashPitch >= 0x1B) pitch = g.crashPitch--;   // falling pitch after a crash
-			control = last = rom_.engineTone(g.joystick);       // tone from up/down
+			control = last = rom_.engineTone(g.plane.stick);       // tone from up/down
 			if (attractSound && attract(g)) {     // (not in the original: the viewer's plane)
 				if (attractEnginePitch) pitch = attractEnginePitch;
 				control = last = rom_.engineTone(attractEngineStick);
@@ -942,15 +939,8 @@ void Game::flyPlane(const Input &input) {
 				explode(touched, kRammed);
 				return;
 			}
-			// A40A: a fuel depot: +2 per frame (ADC #1 with the carry of CMP #$0E)
-			int fuel = g.fuel + 2;
-			uint8_t sound = kRefuelSound;
-			if (fuel > 0xFF) {
-				fuel = 0xFF;
-				g.fuelFrac = 0xFF;
-				sound = kTankFullSound;
-			}
-			g.fuel = lo(fuel);
+			// A40A: a fuel depot
+			const uint8_t sound = g.plane.refuel() ? kTankFullSound : kRefuelSound;
 			if (sound != g.eventSound) {
 				g.eventSound = sound;
 				g.eventSoundTime = 8;
@@ -964,20 +954,12 @@ void Game::flyPlane(const Input &input) {
 		crash(kCrashSound, 0x1F);
 		return;
 	}
-	// A43F: fuel, $20 / 256 per frame
-	{
-		const int frac = g.fuelFrac - 0x20;
-		if (frac < 0) {
-			if (g.fuel == 0) {
-				crash(kOutOfFuelSound, 0x23);
-				return;
-			}
-			g.fuel--;
-		}
-		g.fuelFrac = lo(frac);
+	if (!g.plane.burnFuel()) {                    // A43F
+		crash(kOutOfFuelSound, 0x23);
+		return;
 	}
-	steer();
-	changeSpeed();
+	g.plane.steer();
+	g.plane.changeSpeed();
 	// A4B6: the bullet hit an object
 	const uint8_t shot = g.hit.bulletHitObject;
 	if (!(shot & 0x80) && s.slot[shot].kind >= kJet) {
@@ -1000,62 +982,6 @@ void Game::flyPlane(const Input &input) {
 		moveBullet(0xA9);
 	} else {
 		moveBullet(1);
-	}
-}
-
-// A455-A496: steering. Left or right accelerates (+8 per frame up to $F8); the plane moves a
-// pixel each time the fraction overflows, every frame at full speed. Plane frames 7/8/9:
-// banking left / right / level.
-void Game::steer() {
-	const uint8_t stick = g.joystick;
-	uint8_t frame = 9;
-	const bool left = !(stick & 0x04), right = !(stick & 0x08);
-	if (!left && !right) {
-		g.planeAccel = 0;
-		g.planeXFrac = 0;
-	} else {
-		const int accel = g.planeAccel + 8;
-		const bool full = accel > 0xFF;           // already at full speed
-		if (!full) g.planeAccel = lo(accel);
-		if (!right) {                             // left
-			frame = 7;
-			if (full) {
-				g.planeX--;
-				g.planeXFrac = 0x08;              // (what AND #$08 left in A)
-			} else {
-				const int frac = g.planeXFrac - g.planeAccel;
-				if (frac < 0) g.planeX--;
-				g.planeXFrac = lo(frac);
-			}
-		} else {
-			frame = 8;
-			if (full) {
-				g.planeX++;
-				g.planeXFrac = 0;                 // (what AND #$08 left in A)
-			} else {
-				const uint8_t start = (g.joystickPrev & 0x80) ? 0xFF : g.planeXFrac;   // just pressed: move now
-				const int frac = start + g.planeAccel;
-				if (frac > 0xFF) g.planeX++;
-				g.planeXFrac = lo(frac);
-			}
-		}
-	}
-	g.planeFrame = frame;
-}
-
-// A497-A4B5: speed: up +2 (up to $FE), down -2 (down to $40), neither: back towards $80.
-void Game::changeSpeed() {
-	const uint8_t stick = g.joystick;
-	const uint8_t speed = g.speed;
-	bool faster;
-	if (!(stick & 0x01)) faster = true;           // up (also when both are pressed)
-	else if (!(stick & 0x02)) faster = false;     // down
-	else if (speed == 0x80) return;               // neither, at normal speed
-	else faster = speed < 0x80;
-	if (faster) {
-		if (speed <= 0xFD) g.speed = lo(speed + 2);
-	} else if (speed >= 0x41) {
-		g.speed = lo(speed - 2);
 	}
 }
 
@@ -1120,9 +1046,9 @@ void Game::crash(uint8_t sound, uint8_t length) {
 			std::memcpy(s.checkpoint, s.prevCheckpoint, 4);
 		}
 	}
-	g.planeFrame = 6;
+	g.plane.frame = 6;
 	// B200
-	g.planeState = kCrashed;
+	g.plane.state = kCrashed;
 	g.attractTimer = 0;
 	removePlaneThings();
 }
@@ -1130,7 +1056,7 @@ void Game::crash(uint8_t sound, uint8_t length) {
 // sub $B21A: no plane (game over or attract mode).
 void Game::gameOverScreen() {
 	g.frameCount = 0xFF;
-	g.planeState = kNoPlane;
+	g.plane.state = kNoPlane;
 	g.attractTimer = 0xFF;
 	removePlaneThings();
 }
@@ -1228,7 +1154,7 @@ void Game::powerOn(bool pal) {
 	setUpGame();
 	g.powerOnDone = 1;
 	g.attractTimer = 1;
-	g.planeState = kNoPlane;
+	g.plane.state = kNoPlane;
 }
 
 }  // namespace rr

@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
 	g.afterDisplay = [&] {
 		if (ghost) {
 			g.g.hit.planeHitBank = g.g.hit.planeHitObject = g.g.hit.planeHitShell = g.g.hit.missileHitPlane = 0xFF;
-			g.g.fuel = 0xFF;
+			g.g.plane.fuel = 0xFF;
 		}
 		std::memset(screen, 0, sizeof screen);
 		g.drawRiver(screen);
@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
 			if (g.g.gameNumber != (game - 1) % 8) in.select = true;
 			else if (!attract && !(f & 1)) { in.start = true; menu = false; }
 		} else {
-			const int px = g.g.planeX - 32 + 4;
+			const int px = g.g.plane.x - 32 + 4;
 			const int row = 0xAA - 28 - 30;
 			int target = px;
 			if (row >= 0 && size_t(row) < g.runLines.size()) {
@@ -118,12 +118,12 @@ int main(int argc, char **argv) {
 		const GameState &s = g.g;
 		const RiverState &r = g.gen.s;
 		if (s.idleTime & 0x80) std::memset(screen, 0, sizeof screen);
-		else drawStatusBar(rom, cs, s.panel, s.fuel, s.scroller, s.logoShown, screen, pal);
+		else drawStatusBar(rom, cs, s.panel, s.plane.fuel, s.scroller, s.logoShown, screen, pal);
 
 		std::printf("%ld fc%02X at%02X/%02X ps%02X pz%02X game%u pl%u busy%d", f, s.frameCount, s.attractFlags,
-			s.attractTimer, s.pauseState, s.planeState, s.gameNumber, s.player, g.busy() ? 1 : 0);
-		std::printf(" | plane %02X.%02X a%02X f%u sp%02X.%02X fuel%02X.%02X bul%02X", s.planeX, s.planeXFrac,
-			s.planeAccel, s.planeFrame, s.speed, s.scrollFrac, s.fuel, s.fuelFrac, s.bullet.y);
+			s.attractTimer, s.pauseState, s.plane.state, s.gameNumber, s.player, g.busy() ? 1 : 0);
+		std::printf(" | plane %02X.%02X a%02X f%u sp%02X.%02X fuel%02X.%02X bul%02X", s.plane.x, s.plane.xFrac,
+			s.plane.accel, s.plane.frame, s.plane.speed, s.scrollFrac, s.plane.fuel, s.plane.fuelFrac, s.bullet.y);
 		std::printf(" | tank %02X %02X,%02X fire%02X shell t%02X f%u %02X.%02X,%02X v%02X.%02X | missile %02X,%02X st%02X",
 			r.tankKind, r.tankX, r.tankY, r.tankFires, r.shellTimer, s.shellFrame, s.shellX, s.shellXFrac, r.shellY,
 			r.shellSpeed, r.shellSpeedFrac, r.missileX, r.missileY, s.missileStep);
