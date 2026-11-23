@@ -25,7 +25,7 @@
 | [docs/HOW_IT_WORKS.zh.md](docs/HOW_IT_WORKS.zh.md) | 游戏如何运作，写给所有人：河、敌人、桥、碰撞、为什么越来越难 |
 | [docs/NOTES.zh.md](docs/NOTES.zh.md) | 带地址的发现 |
 | [docs/DLI_REMOVAL.zh.md](docs/DLI_REMOVAL.zh.md) | 实验：去掉 DLI 模型的显示（分支 `dli_removal`、`dli_removed`） |
-| [docs/OOP.md](docs/OOP.md) | 面向对象的重写（分支 `oop`）：规则、检查、步骤（暂为英文） |
+| [docs/OOP.zh.md](docs/OOP.zh.md) | 面向对象的重写（分支 `oop`）：规则、检查、步骤 |
 | `disasm/river_raid_a8.asm` | 带文件头的完整反汇编（入口点、帧、变量） |
 | `tools/dis6502.py` | 反汇编器：`python dis6502.py <rom> <out.asm> B500 B2A5 B485` |
 | `tools/check_lfsr.py`、`tools/verify_trace.py` | 用参考记录检验文档中的规则 |
@@ -61,7 +61,7 @@
 这个分支（从 `dli_removal` 分出）没有 DLI：`Game::displayGeometry` 把每个物体放在其槽位的 y 上，把碰撞当作简单的几何来计算——只要精灵和物体的行有任何接触就算；河岸和边缘用一行的第一个和最后一个点与该行的色段比较。这里它是默认模式（`RR_DISPLAY=geometry`）；`RR_DISPLAY=simple` 是带读取的 DLI 循环，与原版一样，`beam` 是周期模型，`check` 两者都跑。游戏在 0.01–0.25% 的帧上与原版不同（原版晚一帧才看到或根本看不到的接触），所以与原版比较的 `game_check` 要用 `RR_DISPLAY=simple` 运行；`RR_DISPLAY=simple RR_GEOMCHECK=1` 统计几何与读取不一致的帧（`=2` 逐帧打印）。ZX Spectrum Next 和 TS-Conf 的移植版（[river_raid_zx](https://github.com/djdron/river_raid_zx)）建立在这种显示之上，并逐帧与它比较。各步骤及其检验：[docs/DLI_REMOVAL.zh.md](docs/DLI_REMOVAL.zh.md)。
 
 ## 分支 `oop`
-本分支（自 `dli_removed`）是同一个游戏，用各自保存状态的对象写成：飞机、它的子弹、河道生成器（`RiverGen`，只管河道）、河上的物体（`Objects`，每种行为一个类）、坦克、它的炮弹和导弹、玩家、面板、声音、屏幕上的河；`World` 让河道和物体一起推进，`Game` 持有一切并运行每一帧。字节和 BCD 与原版的存放方式相同，没有浮点数；没有 player-missile 内存，也没有任何 DLI 模型（`RR_DISPLAY` 已去掉：显示就是 `dli_removed` 的几何）。它的运行与 `dli_removed` 完全相同：`port/tools/trace/compare.sh` 把 17 段录制与参考提交逐帧比较（`-quick`：5 段）。每个类列出自己在原版 RAM 中的字节（`mapRam`），因此 `game_check` 和 ZX 移植的检查仍然可用。步骤：[docs/OOP.md](docs/OOP.md)（暂为英文）。
+本分支（自 `dli_removed`）是同一个游戏，用各自保存状态的对象写成：飞机、它的子弹、河道生成器（`RiverGen`，只管河道）、河上的物体（`Objects`，每种行为一个类）、坦克、它的炮弹和导弹、玩家、面板、声音、屏幕上的河；`World` 让河道和物体一起推进，`Game` 持有一切并运行每一帧。字节和 BCD 与原版的存放方式相同，没有浮点数；没有 player-missile 内存，也没有任何 DLI 模型（`RR_DISPLAY` 已去掉：显示就是 `dli_removed` 的几何）。它的运行与 `dli_removed` 完全相同：`port/tools/trace/compare.sh` 把 17 段录制与参考提交逐帧比较（`-quick`：5 段）。每个类列出自己在原版 RAM 中的字节（`mapRam`），因此 `game_check` 和 ZX 移植的检查仍然可用。步骤：[docs/OOP.zh.md](docs/OOP.zh.md)。
 
 ## 方法
 规则先从反汇编中读出，再用参考记录检验（`tools/verify_trace.py`，然后是 C++ 比对工具）。记录本身只用来找该看哪里。不应改变行为的修改（重命名、重构）用 `port/tools/equivalence` 与旧提交对比：要求 0 差异，并通过 [port/README.zh.md](port/README.zh.md)“验证”中的所有检查。面向对象的重写（分支 `oop`）则用 `port/tools/trace/compare.sh` 检查：游戏的 17 段录制与参考提交逐帧对比。

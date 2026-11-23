@@ -1,0 +1,121 @@
+# La riscrittura a oggetti (branch `oop`)
+
+[English](OOP.md) | [Русский](OOP.ru.md) | [Українська](OOP.uk.md) | [Deutsch](OOP.de.md) | [Polski](OOP.pl.md) | Italiano | [Español](OOP.es.md) | [中文](OOP.zh.md) | [日本語](OOP.ja.md)
+
+Branch `oop`, da `dli_removed`. L'obiettivo: il gioco del port come oggetti con un nome (il
+fiume, l'aereo, il suo proiettile, il carro armato e il suo proiettile, il missile
+dell'elicottero, le navi, gli elicotteri, i jet, i palloni, i depositi di carburante, i ponti e
+le esplosioni nei loro slot, i giocatori e il pannello, il suono) invece della RAM dell'originale
+disposta per indirizzi, mentre il gioco gioca esattamente come su `dli_removed`, fotogramma per
+fotogramma e bit per bit. I port per ZX Spectrum seguono `dli_removed` e sono verificati contro di
+esso; `oop` è una riscrittura dello stesso gioco, non un gioco nuovo.
+
+## Le regole
+
+- **Lo stesso gioco.** A ogni fotogramma lo stesso stato, gli stessi registri del suono, la
+  stessa immagine di `dli_removed`. Niente float: posizioni, velocità, carburante e timer restano
+  byte che si avvolgono, con i loro byte di frazione; punti, ponti e record restano in BCD.
+  Restano anche le stranezze: l'ordine delle cose in un fotogramma, gli slot e il loro ordine, un
+  oggetto che si trasforma in un altro, quante volte e quando si legge RANDOM, i fotogrammi del
+  reset, lo scambio dei due giocatori.
+- **Verificato dopo ogni passo** con `tools/trace/compare.sh` (sotto): tutte le partite uguali,
+  altrimenti il passo non è fatto.
+- **Una cosa alla volta**, ognuna con il suo commit: un nuovo tipo o una nuova classe prima
+  avvolge lo stato così com'è, poi il codice ci si sposta dentro, poi il vecchio stato se ne va.
+- **La RAM dell'originale resta raggiungibile**: `saveToRam` / `loadFromRam` / `diffWithRam`
+  (`ram_map.h`, `game_ram.cpp`) mantengono la disposizione dell'originale, per `game_check` e per
+  le verifiche dei port ZX (`nxcheck`, `tscheck`), qualunque cosa tengano dentro le classi.
+
+## Le verifiche
+
+`port/tools/game_trace` scrive una riga per fotogramma di ciò che fa il gioco, per nome: l'aereo,
+il proiettile, il carro armato, il suo proiettile, il missile, ogni slot, punti, vite, l'altro
+giocatore, i record, il generatore del fiume, i registri del suono, i risultati delle collisioni
+e un hash dell'immagine (fiume e pannello). Gioca con il pilota automatico di `display_bench`;
+senza `-ghost` l'aereo si schianta e resta senza carburante, così vite, ripartenze e fine
+partita sono nelle partite.
+
+`port/tools/trace/runs.txt` elenca 17 partite, 700 000 fotogrammi: la modalità dimostrativa, i
+giochi 1–8 su NTSC e PAL, due giocatori, `-wild` (guida a caso, anche sopra le rive), lunghe
+partite `-ghost` dai ponti 60 e 100. `golden.txt` contiene l'hash delle righe di ogni partita come
+le gioca `dli_removed`, fatto al commit in `REFERENCE`.
+
+```
+port/tools/trace/compare.sh <rom> [build dir] [runs...]
+```
+
+le gioca (~2 minuti) e confronta. In caso di differenza compila il commit di `REFERENCE` in un
+worktree temporaneo, gioca la partita anche lì e stampa il primo fotogramma diverso, entrambe le
+righe. `tools/fixed_check` verifica i tipi numerici (sotto) su ogni ingresso contro il codice che
+sostituiscono.
+
+## Fatto
+
+1. `game_trace`, le partite, il riferimento.
+2. `PokeyRandom` senza le sue ~1 MB di tabelle: un salto del contatore di n cicli è lineare su
+   GF(2), quindi è fatto di 17 mappe (2^k passi, 1,2 KB), e le lunghezze che il gioco usa sono
+   tenute come mappe lette 4 bit alla volta, come fanno i port per ZX Spectrum (5 accessi per
+   lettura). Verificato contro la vecchia classe su 6 milioni di letture.
+3. La visualizzazione solo come geometria: i modelli del DLI (`displayBeam`, `displaySimple`, le
+   modalità `RR_DISPLAY`, `RR_GEOMCHECK`, la classe `Beam`, gli interruttori degli esperimenti)
+   sono stati tolti da questo branch; restano su `dli_removal`. `display.cpp`: 276 righe invece
+   di 1331.
+4. `src/fixed.h`: `Fixed8` (un byte e il suo byte di frazione, somma / sottrazione con il
+   riporto), `Bcd<N>` (contatori BCD: somma con il riporto verso l'alto, il confronto
+   dell'originale), `addBcd`.
+5. Il proiettile (`bullet.h`) e l'aereo (`plane.h`: guida, velocità, carburante) come tipi propri.
+6. Niente memoria player-missile: le righe degli sprite vengono dal loro stato
+   (`Game::spriteRow`: ogni forma dalla ROM alla sua riga, il missile una riga, il proiettile 8),
+   mostrate dall'inizio di ogni fotogramma finché un reset non le cancella. La condivisione di
+   quella memoria nell'originale (le righe del proiettile cancellano quelle del missile) viene
+   annullata dalla copia del fotogramma successivo prima che qualcuno la legga, quindi il gioco è
+   lo stesso. `saveToRam` scrive ancora la memoria come la ha l'originale.
+7. Il carro armato, il suo proiettile e il missile dell'elicottero (`tank.h`, `tank.cpp`): una
+   struttura ciascuno, tenuti dal fiume (scorrono con esso; dal passo 13 da `Objects`), con i
+   loro movimenti (`Tank::drive`, `Shell::move`, `Missile::move`).
+8. Gli oggetti negli slot (`objects.h`, `objects.cpp`): una classe per ogni tipo di
+   comportamento (`Explosion`, `Jet`, `Helicopter`, `Balloon`, `Ship`, `Bridge`, `FuelDepot`). Uno
+   slot tiene i byte dell'originale; il suo tipo è anche il suo fotogramma di animazione e cambia
+   quando viene colpito, così `objectKind(kind)` dà a ogni fotogramma l'oggetto della classe che
+   sa che cosa fa quel tipo: la sua animazione, il suo movimento (il jet attraverso lo schermo;
+   elicotteri, palloni e navi avanti e indietro una volta svegliati, girando al bordo), se la
+   visualizzazione lo verifica contro il bordo.
+9. I giocatori (`players.h`): `PlayerData` (l'altro giocatore) con ponti `Bcd<2>` e punti
+   `Bcd<3>`, gli stessi tipi per il giocatore attivo, `HighScores` (la tabella e i suoi byte di
+   controllo); il pannello (`panel.h`): i suoi 60 caratteri con `print` (cifre BCD),
+   `showLives`, `markPlayers`, `showGameNumber`.
+10. Il suono (`sound.h`, `sound.cpp`): `Sounds` tiene ciò che il gioco chiede (il bip di avvio, il
+    suono dell'evento e la sua durata, esplosione, sparo, bonus, missile, il tono che scende dopo
+    uno schianto) e il suo `drive()` è il driver (B2A5–B3D8), a cui l'aereo, la pausa, la
+    modalità dimostrativa e il proiettile sono dati tramite un `SoundContext`; anche `PokeyRegs`
+    si è spostato lì.
+11. Il fiume sullo schermo (`river.h`, `river.cpp`): le sue righe, le stesse senza decorazioni, i
+    loro tratti, l'indirizzo della riga in cima nella memoria dello schermo dell'originale e gli
+    stati del generatore per salvataggi piccoli; `push()` aggiunge la riga successiva del
+    generatore, `rebuild()` le rifà quando si carica uno stato.
+12. Niente `GameState`: i suoi campi sono i membri di `Game` stesso (`eachState()` li elenca per
+    salvare, caricare e azzerare).
+13. Il fiume separato dagli oggetti (`world.h`, `world.cpp`): `RiverGen` fa solo il fiume
+    (`RiverState`: rive, isole, sezioni, l'LFSR); gli slot, il carro armato, il suo proiettile e
+    il missile sono `Objects`, che piazza i nuovi oggetti dopo ogni riga (`afterLine`,
+    $ABE1–$AE93) e dice al generatore dove si trova l'oggetto che sta entrando (`BankObstacle`),
+    così la riva lo evita. `World` tiene entrambi e li fa avanzare riga per riga; il suo `State` è
+    ciò che tengono i salvataggi e gli stati delle righe del fiume.
+14. L'esportazione della RAM dalle classi (`ram_map.h`, `ram_map.cpp`): ogni classe elenca i
+    propri byte con i loro indirizzi nel suo `mapRam(RamMap &)` (l'aereo, il proiettile, i suoni,
+    le collisioni, i giocatori, i record, il pannello, la scritta scorrevole, il fiume, gli slot,
+    il carro armato, il suo proiettile e il missile, la riga in cima allo schermo); `World` e
+    `Game` mettono insieme le liste, e `RamMap` le carica, le scrive e le confronta. Ciò che si
+    calcola invece di tenerlo (la memoria player-missile, le righe dello schermo dalla display
+    list) resta in `game_ram.cpp` e `River`.
+15. I documenti: le tabelle dei file dei README e le loro parti su codice, generatore e verifica,
+    HANDOFF (il branch), NOTES (i salvataggi), HOW_IT_WORKS (le collisioni), in tutte le lingue;
+    i commenti nel sorgente che parlavano ancora del DLI o del fiume che tiene gli oggetti.
+16. La fine: tutte le 17 partite uguali (700 000 fotogrammi), anche su una build con
+    AddressSanitizer, UndefinedBehaviorSanitizer e le asserzioni della libreria standard, senza
+    alcuna segnalazione; questo documento in ogni lingua.
+
+## Prossimi passi
+
+Niente in programma. Una modifica da qui in poi si verifica allo stesso modo: `compare.sh -quick`
+dopo ogni passo, tutte le 17 partite alla fine.

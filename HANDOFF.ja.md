@@ -25,7 +25,7 @@ River Raid（Activision、Atari 800、1983、作者 Carol Shaw）の C++ 移植�
 | [docs/HOW_IT_WORKS.ja.md](docs/HOW_IT_WORKS.ja.md) | ゲームのしくみ、誰でも読める解説：川、敵、橋、衝突、なぜ難しくなるか |
 | [docs/NOTES.ja.md](docs/NOTES.ja.md) | アドレス付きの調査結果 |
 | [docs/DLI_REMOVAL.ja.md](docs/DLI_REMOVAL.ja.md) | 実験：DLI モデルなしの表示（ブランチ `dli_removal`、`dli_removed`） |
-| [docs/OOP.md](docs/OOP.md) | オブジェクト指向への書き直し（ブランチ `oop`）：方針、確認、手順（当面は英語） |
+| [docs/OOP.ja.md](docs/OOP.ja.md) | オブジェクト指向への書き直し（ブランチ `oop`）：方針、確認、手順 |
 | `disasm/river_raid_a8.asm` | ヘッダー付きの完全な逆アセンブル（エントリーポイント、フレーム、変数） |
 | `tools/dis6502.py` | 逆アセンブラ：`python dis6502.py <rom> <out.asm> B500 B2A5 B485` |
 | `tools/check_lfsr.py`、`tools/verify_trace.py` | 文書化した規則を基準の記録で確認する |
@@ -61,7 +61,7 @@ River Raid（Activision、Atari 800、1983、作者 Carol Shaw）の C++ 移植�
 このブランチ（`dli_removal` から分岐）には DLI がありません。`Game::displayGeometry` は各物体をそのスロットの y に置き、衝突を単純な幾何として計算します。スプライトと物体の行が少しでも触れればそこで衝突です。岸と縁は、行の最初と最後の点をその行のランと比べます。ここではこれが既定です（`RR_DISPLAY=geometry`）。`RR_DISPLAY=simple` は読み取りのある DLI のループで元のゲームと同じ、`beam` はサイクルのモデル、`check` は両方です。ゲームはフレームの 0.01–0.25% で元のゲームと違います（元のゲームが 1 フレーム遅れて見る、または見ない接触）。そのため元のゲームとの `game_check` は `RR_DISPLAY=simple` で実行します。`RR_DISPLAY=simple RR_GEOMCHECK=1` は幾何と読み取りが違うフレームを数えます（`=2` で各フレームを表示）。ZX Spectrum Next と TS-Conf の移植（[river_raid_zx](https://github.com/djdron/river_raid_zx)）はこの表示の上に作られ、フレームごとにこれと比べて検証されます。各段階とその検証：[docs/DLI_REMOVAL.ja.md](docs/DLI_REMOVAL.ja.md)。
 
 ## ブランチ `oop`
-このブランチ（`dli_removed` から）は、同じゲームを、自分の状態を持つオブジェクトで書いたものです：飛行機、その弾、川の生成器（`RiverGen`、川だけ）、川の上の物体（`Objects`、振る舞いの種類ごとのクラス）、戦車、その砲弾とミサイル、プレイヤー、パネル、音、画面上の川。`World` が川とその物体をいっしょに進め、`Game` がすべてを持ってフレームを実行します。バイトと BCD はオリジナルの持ち方のままで、浮動小数点は使いません。プレイヤー/ミサイルのメモリーも DLI のモデルもありません（`RR_DISPLAY` はなくなり、表示は `dli_removed` の幾何です）。動きは `dli_removed` とまったく同じです：`port/tools/trace/compare.sh` が 17 本の走行を基準コミットとフレームごとに比べます（`-quick`：5 本）。各クラスはオリジナルの RAM での自分のバイトを列挙する（`mapRam`）ので、`game_check` と ZX 移植版の確認もそのまま使えます。手順：[docs/OOP.md](docs/OOP.md)（当面は英語）。
+このブランチ（`dli_removed` から）は、同じゲームを、自分の状態を持つオブジェクトで書いたものです：飛行機、その弾、川の生成器（`RiverGen`、川だけ）、川の上の物体（`Objects`、振る舞いの種類ごとのクラス）、戦車、その砲弾とミサイル、プレイヤー、パネル、音、画面上の川。`World` が川とその物体をいっしょに進め、`Game` がすべてを持ってフレームを実行します。バイトと BCD はオリジナルの持ち方のままで、浮動小数点は使いません。プレイヤー/ミサイルのメモリーも DLI のモデルもありません（`RR_DISPLAY` はなくなり、表示は `dli_removed` の幾何です）。動きは `dli_removed` とまったく同じです：`port/tools/trace/compare.sh` が 17 本の走行を基準コミットとフレームごとに比べます（`-quick`：5 本）。各クラスはオリジナルの RAM での自分のバイトを列挙する（`mapRam`）ので、`game_check` と ZX 移植版の確認もそのまま使えます。手順：[docs/OOP.ja.md](docs/OOP.ja.md)。
 
 ## 方法
 規則は逆アセンブルから読み取り、その後で基準の記録で確認します（`tools/verify_trace.py`、次に C++ の照合ツール）。記録だけでは、どこを見ればよいかを探すのにしか使いません。動作を変えないはずの変更（名前の変更、構成の見直し）は `port/tools/equivalence` で古いコミットと比べます：差分 0 が必要で、さらに [port/README.ja.md](port/README.ja.md) の「検証」のすべての確認を通ること。オブジェクト指向への書き直し（ブランチ `oop`）は代わりに `port/tools/trace/compare.sh` で確認します：ゲームの 17 本の走行を、基準コミットとフレームごとに比べます。

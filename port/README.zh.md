@@ -140,7 +140,7 @@ river_view [rom] [选项]
 
 ## 代码
 移植版写得不需要手边有原版的反汇编也能读懂：
-- 游戏由各自保存状态、知道自己该做什么的对象组成：飞机、它的子弹、河道（`RiverGen`）、河上的物体（`Objects`，每种行为一个类）、坦克、它的炮弹和导弹、玩家、面板、声音；`World` 逐行推进河道及其物体，`Game` 持有一切并像原版一样运行每一帧（[docs/OOP.md](../docs/OOP.md)：代码是如何走到这一步的）；
+- 游戏由各自保存状态、知道自己该做什么的对象组成：飞机、它的子弹、河道（`RiverGen`）、河上的物体（`Objects`，每种行为一个类）、坦克、它的炮弹和导弹、玩家、面板、声音；`World` 逐行推进河道及其物体，`Game` 持有一切并像原版一样运行每一帧（[docs/OOP.zh.md](../docs/OOP.zh.md)：代码是如何走到这一步的）；
 - 字段、函数和常量按含义命名（`plane.state`、`shell.timer`、`enteringSlot`、`positionObject`、`kFacingLeft`）；每个字段的注释给出它在原版 RAM 中的地址，每个函数给出它所来自的代码地址，因此仍可对照反汇编（`disasm/`）和记录；每个类还列出自己的字节及其地址（`mapRam`），因此状态可以与原版的 RAM 比较；
 - 卡带的表通过 `src/rom.h` 中的具名访问函数读取（`rom.points(type)`、`rom.objectHeight(type)`、`rom.shellRise(t)`……），而不是按地址；
 - 原版中 8 位回绕的值在这里也保持 8 位回绕（`lo()`），因为位置会绕过屏幕边缘；原版把 6502 的进位标志从一次加法带到下一次时，`addWithCarry`/`subtractWithBorrow` 会明确写出来；BCD 计数器（`Bcd<N>`，`src/fixed.h`）按 6502 十进制模式的方式相加，没有浮点数；
