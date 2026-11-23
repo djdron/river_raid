@@ -173,7 +173,7 @@ alcuni dei suoi bit per decidere: `c & 15` guida la riva, `a & 15` dà la larghe
 sezione, `b` decide nemici e carburante. Un nuovo fiume è solo un altro valore iniziale
 (`-seed` nel port).
 
-**Lo stato** (i nomi veri, da `port/src/river_gen.h`): la riga nel blocco (`lineInBlock`,
+**Lo stato** (i nomi veri, da `port/src/river_gen.h` e `objects.h`): la riga nel blocco (`lineInBlock`,
 0…31), i blocchi rimasti nella sezione e le sezioni fino al ponte, il livello; la riva sinistra
 (`bank`) e la sua direzione (`bankDir`); la terra tra le rive o la mezza larghezza dell'isola
 (`islandWidth`) e la larghezza verso cui va; se c'è un'isola; la casa in disegno; gli 11 posti
@@ -182,7 +182,7 @@ per gli oggetti.
 **Una riga** (`nextLine`), in ordine: contare la riga (nuovo blocco, nuova sezione, ponte), far
 fare un passo all'LFSR (non sul rettilineo di un ponte), spostare la larghezza di un punto verso
 il suo obiettivo, spostare la riva di un punto o no, forse iniziare una casa, disegnare, e ogni
-16 righe mettere un oggetto. Ognuna di queste è una piccola funzione in `river_gen.cpp`, con
+16 righe mettere un oggetto. Ognuna di queste è una piccola funzione in `river_gen.cpp` o `objects.cpp`, con
 l'indirizzo della cartuccia nel commento.
 
 **Coordinate.** Una riga è di 192 punti. Dalla riva sinistra parte un alveo largo 128 punti;
@@ -198,7 +198,7 @@ livello pari, la riga più nuova in alto, un carattere ogni 4 punti: `.` terra, 
 
 ```python
 """A small model of how River Raid builds its river: one line at a time, from a
-pseudo-random number generator. Simplified; port/src/river_gen.cpp has every rule."""
+pseudo-random number generator. Simplified; port/src/river_gen.cpp and objects.cpp have every rule."""
 
 class Lfsr:
     """24 bits in three bytes a, b, c, stirred once per line (the cartridge's sub $B183)."""
@@ -356,7 +356,7 @@ larghezza 0, non subito prima di un ponte, e un'isola stretta si disegna come ac
 `chooseSectionWidth`, `drawLine`); il rettilineo del ponte, che nell'originale segue una tabella
 fissa di passi della riva; le vere decorazioni (immagini di varie misure da tabelle, messe in
 base alla larghezza: `startDecoration`); la tabella esatta dei nemici e le posizioni degli
-oggetti (`chooseEnemy`, `positionObject`); gli elicotteri che sparano, il carro armato, i due
+oggetti (`chooseEnemy`, `positionObject`, `objects.cpp`); gli elicotteri che sparano, il carro armato, i due
 colori della riva; e il disegno in byte con i pezzi di bordo (`drawLine`). Il generatore in C++
 ha tutto questo e dà le righe dell'originale byte per byte (`terrain_check`);
 `port/build/river_view` mostra il suo fiume.

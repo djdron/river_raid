@@ -172,7 +172,7 @@ start, the same sequence. The generator steps it once per line and then *reads* 
 bits to decide things: `c & 15` drives the bank, `a & 15` gives a section's width, `b` decides
 enemies and fuel. A new river is just another start value (the port's `-seed`).
 
-**The state** (the real names, from `port/src/river_gen.h`): the line within the block
+**The state** (the real names, from `port/src/river_gen.h` and `objects.h`): the line within the block
 (`lineInBlock`, 0…31), blocks left in the section, sections left to the bridge, the level; the
 left bank (`bank`) and its direction (`bankDir`); the land inside the banks or the island's
 half width (`islandWidth`) and the width it moves towards; whether there is an island; the
@@ -181,7 +181,7 @@ house being drawn; the 11 object slots.
 **One line** (`nextLine`), in order: count the line (new block, new section, bridge), step the
 LFSR (not on a bridge's run-up), move the width one dot towards its target, walk the bank one
 dot or not, perhaps start a house, draw, and every 16 lines place an object. Each of these is
-a small function in `river_gen.cpp`, with the cartridge's address in its comment.
+a small function in `river_gen.cpp` or `objects.cpp`, with the cartridge's address in its comment.
 
 **Coordinates.** A line is 192 dots. From the left bank there is a 128-dot corridor; inside it
 the game puts `inner` dots of land on both sides, so the water is `128 - 2 × inner` wide. With
@@ -196,7 +196,7 @@ letters for objects.
 
 ```python
 """A small model of how River Raid builds its river: one line at a time, from a
-pseudo-random number generator. Simplified; port/src/river_gen.cpp has every rule."""
+pseudo-random number generator. Simplified; port/src/river_gen.cpp and objects.cpp have every rule."""
 
 class Lfsr:
     """24 bits in three bytes a, b, c, stirred once per line (the cartridge's sub $B183)."""
@@ -353,7 +353,7 @@ not just before a bridge, and a narrow island is drawn as water: `chooseSectionW
 `drawLine`); the bridge's run-up, which in the original follows a fixed table of bank steps;
 the real decorations (pictures of several sizes from tables, placed by the width:
 `startDecoration`); the exact enemy table and object positions (`chooseEnemy`,
-`positionObject`); helicopters that fire, the tank, two bank colours; and the drawing in bytes
+`positionObject`, `objects.cpp`); helicopters that fire, the tank, two bank colours; and the drawing in bytes
 with edge pieces (`drawLine`). The C++ generator has all of it and gives the original's lines
 byte for byte (`terrain_check`); `port/build/river_view` shows its river.
 

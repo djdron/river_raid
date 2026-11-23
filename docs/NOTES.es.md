@@ -173,7 +173,7 @@ línea y luego *lee* algunos de sus bits para decidir: `c & 15` guía la orilla,
 ancho de una sección, `b` decide enemigos y combustible. Un río nuevo es solo otro valor inicial
 (`-seed` en el port).
 
-**El estado** (los nombres reales, de `port/src/river_gen.h`): la línea dentro del bloque
+**El estado** (los nombres reales, de `port/src/river_gen.h` y `objects.h`): la línea dentro del bloque
 (`lineInBlock`, 0…31), los bloques que quedan en la sección y las secciones hasta el puente, el
 nivel; la orilla izquierda (`bank`) y su dirección (`bankDir`); la tierra entre las orillas o la
 mitad del ancho de la isla (`islandWidth`) y el ancho hacia el que va; si hay isla; la casa que
@@ -182,7 +182,7 @@ se está dibujando; las 11 plazas de objetos.
 **Una línea** (`nextLine`), en orden: contar la línea (bloque nuevo, sección nueva, puente), dar
 un paso al LFSR (no en la recta de un puente), mover el ancho un punto hacia su objetivo, mover
 la orilla un punto o no, quizá empezar una casa, dibujar, y cada 16 líneas poner un objeto. Cada
-una de estas cosas es una función pequeña en `river_gen.cpp`, con la dirección del cartucho en
+una de estas cosas es una función pequeña en `river_gen.cpp` o `objects.cpp`, con la dirección del cartucho en
 su comentario.
 
 **Coordenadas.** Una línea tiene 192 puntos. Desde la orilla izquierda hay un cauce de 128
@@ -198,7 +198,7 @@ para los objetos.
 
 ```python
 """A small model of how River Raid builds its river: one line at a time, from a
-pseudo-random number generator. Simplified; port/src/river_gen.cpp has every rule."""
+pseudo-random number generator. Simplified; port/src/river_gen.cpp and objects.cpp have every rule."""
 
 class Lfsr:
     """24 bits in three bytes a, b, c, stirred once per line (the cartridge's sub $B183)."""
@@ -356,7 +356,7 @@ de ancho 0, no justo antes de un puente, y una isla estrecha se dibuja como agua
 `chooseSectionWidth`, `drawLine`); la recta del puente, que en el original sigue una tabla fija
 de pasos de la orilla; las decoraciones de verdad (imágenes de varios tamaños sacadas de tablas,
 colocadas según el ancho: `startDecoration`); la tabla exacta de enemigos y las posiciones de
-los objetos (`chooseEnemy`, `positionObject`); los helicópteros que disparan, el tanque, los dos
+los objetos (`chooseEnemy`, `positionObject`, `objects.cpp`); los helicópteros que disparan, el tanque, los dos
 colores de la orilla; y el dibujo en bytes con piezas de borde (`drawLine`). El generador en C++
 lo tiene todo y da las líneas del original byte a byte (`terrain_check`);
 `port/build/river_view` muestra su río.

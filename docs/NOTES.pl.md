@@ -172,7 +172,7 @@ się dokładnie: ten sam początek, ten sam ciąg. Generator robi krok raz na li
 odcinka, `b` decyduje o wrogach i paliwie. Nowa rzeka to po prostu inna wartość początkowa
 (`-seed` w porcie).
 
-**Stan** (prawdziwe nazwy z `port/src/river_gen.h`): linia w bloku (`lineInBlock`, 0…31), ile
+**Stan** (prawdziwe nazwy z `port/src/river_gen.h` i `objects.h`): linia w bloku (`lineInBlock`, 0…31), ile
 zostało bloków w odcinku i odcinków do mostu, poziom; lewy brzeg (`bank`) i jego kierunek
 (`bankDir`); ląd między brzegami albo połowa szerokości wyspy (`islandWidth`) i szerokość, do
 której zmierza; czy jest wyspa; rysowany dom; 11 miejsc na obiekty.
@@ -180,7 +180,7 @@ której zmierza; czy jest wyspa; rysowany dom; 11 miejsc na obiekty.
 **Jedna linia** (`nextLine`), po kolei: policz linię (nowy blok, nowy odcinek, most), zrób krok
 LFSR (nie na podejściu do mostu), przesuń szerokość o punkt w stronę celu, przesuń brzeg o
 punkt albo nie, może zacznij dom, narysuj i co 16 linii postaw obiekt. Każde z tego to mała
-funkcja w `river_gen.cpp`, z adresem w kartridżu w komentarzu.
+funkcja w `river_gen.cpp` lub `objects.cpp`, z adresem w kartridżu w komentarzu.
 
 **Współrzędne.** Linia to 192 punkty. Od lewego brzegu biegnie koryto szerokie na 128 punktów;
 w nim gra kładzie `inner` punktów lądu z obu stron, więc woda ma szerokość `128 - 2 × inner`.
@@ -195,7 +195,7 @@ parzystego, najnowsza linia na górze, znak na każde 4 punkty: `.` ląd, `~` wo
 
 ```python
 """A small model of how River Raid builds its river: one line at a time, from a
-pseudo-random number generator. Simplified; port/src/river_gen.cpp has every rule."""
+pseudo-random number generator. Simplified; port/src/river_gen.cpp and objects.cpp have every rule."""
 
 class Lfsr:
     """24 bits in three bytes a, b, c, stirred once per line (the cartridge's sub $B183)."""
@@ -351,7 +351,7 @@ przy dużych zmianach (`countLines`); zasad wyspy (otwiera się tylko przez odci
 0, nie tuż przed mostem, a wąską wyspę rysuje się jako wodę: `chooseSectionWidth`, `drawLine`);
 podejścia do mostu, które w oryginale idzie według stałej tabeli kroków brzegu; prawdziwych
 dekoracji (obrazki kilku rozmiarów z tabel, miejsce według szerokości: `startDecoration`);
-dokładnej tabeli wrogów i położeń obiektów (`chooseEnemy`, `positionObject`); strzelających
+dokładnej tabeli wrogów i położeń obiektów (`chooseEnemy`, `positionObject`, `objects.cpp`); strzelających
 helikopterów, czołgu, dwóch kolorów brzegu; i rysowania bajtami z kawałkami krawędzi
 (`drawLine`). Generator w C++ ma to wszystko i daje linie oryginału bajt w bajt
 (`terrain_check`); `port/build/river_view` pokazuje jego rzekę.

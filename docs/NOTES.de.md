@@ -173,7 +173,7 @@ pro Zeile und *liest* dann einige seiner Bits, um zu entscheiden: `c & 15` lenkt
 `a & 15` gibt die Breite eines Abschnitts, `b` entscheidet über Gegner und Treibstoff. Ein neuer
 Fluss ist nur ein anderer Startwert (`-seed` im Port).
 
-**Der Zustand** (die echten Namen, aus `port/src/river_gen.h`): die Zeile im Block
+**Der Zustand** (die echten Namen, aus `port/src/river_gen.h` und `objects.h`): die Zeile im Block
 (`lineInBlock`, 0…31), die übrigen Blöcke im Abschnitt und Abschnitte bis zur Brücke, der
 Level; das linke Ufer (`bank`) und seine Richtung (`bankDir`); das Land innerhalb der Ufer oder
 die halbe Breite der Insel (`islandWidth`) und die Breite, auf die es zugeht; ob es eine Insel
@@ -183,7 +183,7 @@ gibt; das Haus, das gerade gezeichnet wird; die 11 Objektplätze.
 Brücke), das LFSR einen Schritt machen lassen (nicht auf der Anfahrt zu einer Brücke), die
 Breite um einen Punkt auf ihr Ziel zu bewegen, das Ufer einen Punkt bewegen oder nicht,
 vielleicht ein Haus beginnen, zeichnen, und alle 16 Zeilen ein Objekt setzen. Jedes davon ist
-eine kleine Funktion in `river_gen.cpp`, mit der Adresse im Modul im Kommentar.
+eine kleine Funktion in `river_gen.cpp` oder `objects.cpp`, mit der Adresse im Modul im Kommentar.
 
 **Koordinaten.** Eine Zeile hat 192 Punkte. Vom linken Ufer aus gibt es ein 128 Punkte breites
 Flussbett; darin legt das Spiel `inner` Punkte Land auf beide Seiten, das Wasser ist also
@@ -198,7 +198,7 @@ Brücke, Buchstaben für Objekte.
 
 ```python
 """A small model of how River Raid builds its river: one line at a time, from a
-pseudo-random number generator. Simplified; port/src/river_gen.cpp has every rule."""
+pseudo-random number generator. Simplified; port/src/river_gen.cpp and objects.cpp have every rule."""
 
 class Lfsr:
     """24 bits in three bytes a, b, c, stirred once per line (the cartridge's sub $B183)."""
@@ -355,7 +355,7 @@ sich bei großen Änderungen um 2 Punkte pro Zeile ändert (`countLines`); die R
 schmale Insel wird als Wasser gezeichnet: `chooseSectionWidth`, `drawLine`); die Anfahrt zur
 Brücke, die im Original einer festen Tabelle von Uferschritten folgt; die echten Dekorationen
 (Bilder mehrerer Größen aus Tabellen, nach der Breite gesetzt: `startDecoration`); die genaue
-Gegnertabelle und die Lage der Objekte (`chooseEnemy`, `positionObject`); schießende
+Gegnertabelle und die Lage der Objekte (`chooseEnemy`, `positionObject`, `objects.cpp`); schießende
 Hubschrauber, den Panzer, zwei Uferfarben; und das Zeichnen in Bytes mit Randstücken
 (`drawLine`). Der C++-Generator hat all das und liefert die Zeilen des Originals Byte für Byte
 (`terrain_check`); `port/build/river_view` zeigt seinen Fluss.

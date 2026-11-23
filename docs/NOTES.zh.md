@@ -161,9 +161,9 @@
 
 **“随机”从哪里来。** 线性反馈移位寄存器（LFSR）：24 位，这里放在三个字节 `a`、`b`、`c` 中。走一步就把 24 位全部左移一位，并在空出的那一位放入 `b` 的两位（第 7 位和第 2 位）的异或。这些位看起来是随机的，但会严格重复：同样的起点，同样的序列。生成器每行让它走一步，然后*读*其中几位来做决定：`c & 15` 驱动河岸，`a & 15` 给出段的宽度，`b` 决定敌人和燃料。新的河只是另一个起始值（移植版的 `-seed`）。
 
-**状态**（真实名字，来自 `port/src/river_gen.h`）：块内的行（`lineInBlock`，0…31），段内剩余的块和到桥剩余的段，关卡；左岸（`bank`）和它的方向（`bankDir`）；两岸内的陆地或岛的半宽（`islandWidth`）以及它要变到的宽度；有没有岛；正在画的房子；11 个物体槽位。
+**状态**（真实名字，来自 `port/src/river_gen.h`和`objects.h`）：块内的行（`lineInBlock`，0…31），段内剩余的块和到桥剩余的段，关卡；左岸（`bank`）和它的方向（`bankDir`）；两岸内的陆地或岛的半宽（`islandWidth`）以及它要变到的宽度；有没有岛；正在画的房子；11 个物体槽位。
 
-**一行**（`nextLine`），依次：给行计数（新块、新段、桥），让 LFSR 走一步（通往桥的直道上不走），把宽度向目标移动一个点，让河岸移动一个点或不动，也许开始一座房子，画出来，并且每 16 行放一个物体。每一步都是 `river_gen.cpp` 中的一个小函数，注释里写着它在卡带中的地址。
+**一行**（`nextLine`），依次：给行计数（新块、新段、桥），让 LFSR 走一步（通往桥的直道上不走），把宽度向目标移动一个点，让河岸移动一个点或不动，也许开始一座房子，画出来，并且每 16 行放一个物体。每一步都是 `river_gen.cpp`或`objects.cpp` 中的一个小函数，注释里写着它在卡带中的地址。
 
 **坐标。** 一行有 192 个点。从左岸起有一条宽 128 个点的河道；游戏在河道里两边各放 `inner` 个点的陆地，所以水宽 `128 - 2 × inner`。有岛时陆地改放在中间：水、宽 `2 × inner` 的岛、水。奇数关卡总是用 `inner = 28`；偶数关卡每段选一个 2…15 的宽度 `w`，用 `inner = 4w`；桥前那一段用 54。
 
@@ -171,7 +171,7 @@
 
 ```python
 """A small model of how River Raid builds its river: one line at a time, from a
-pseudo-random number generator. Simplified; port/src/river_gen.cpp has every rule."""
+pseudo-random number generator. Simplified; port/src/river_gen.cpp and objects.cpp have every rule."""
 
 class Lfsr:
     """24 bits in three bytes a, b, c, stirred once per line (the cartridge's sub $B183)."""
@@ -320,7 +320,7 @@ for line in reversed(lines):                              # the newest line is a
 ......................~~~~......................
 ```
 
-**模型省略了什么**（以及真正的规则在哪里）：河岸的其他规则（有 `r = 13` 时的掉头，但没有 15 时“河窄就不动”，也没有给正在进入的物体让路：`moveBank`、`bankWouldHitObject`）；变化大时宽度每行变 2 个点（`countLines`）；岛的规则（岛只通过宽度为 0 的段出现，不会紧挨在桥前，而窄岛画成水：`chooseSectionWidth`、`drawLine`）；通往桥的直道，原版按一张固定的河岸步进表走；真正的装饰（来自表格的几种大小的图片，按宽度放置：`startDecoration`）；准确的敌人表和物体位置（`chooseEnemy`、`positionObject`）；会开火的直升机、坦克、两种河岸颜色；以及用岸边块按字节绘制（`drawLine`）。C++ 生成器全都有，并且逐字节给出与原版相同的行（`terrain_check`）；`port/build/river_view` 可以看它的河。
+**模型省略了什么**（以及真正的规则在哪里）：河岸的其他规则（有 `r = 13` 时的掉头，但没有 15 时“河窄就不动”，也没有给正在进入的物体让路：`moveBank`、`bankWouldHitObject`）；变化大时宽度每行变 2 个点（`countLines`）；岛的规则（岛只通过宽度为 0 的段出现，不会紧挨在桥前，而窄岛画成水：`chooseSectionWidth`、`drawLine`）；通往桥的直道，原版按一张固定的河岸步进表走；真正的装饰（来自表格的几种大小的图片，按宽度放置：`startDecoration`）；准确的敌人表和物体位置（`chooseEnemy`、`positionObject`，`objects.cpp`）；会开火的直升机、坦克、两种河岸颜色；以及用岸边块按字节绘制（`drawLine`）。C++ 生成器全都有，并且逐字节给出与原版相同的行（`terrain_check`）；`port/build/river_view` 可以看它的河。
 
 **可以试试。** 改变 `Lfsr` 的起点（另一条河，和 `-seed` 一样），从 `level=3` 开始（奇数：没有岛，一种宽度，游走更宽）或 `level=40`（更多敌人），或者在每行旁边打印 `river.bank`，看随机游走。
 
