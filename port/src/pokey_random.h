@@ -16,15 +16,25 @@ public:
 	static constexpr int kCyclesPerLine = TvSystem::kCyclesPerLine;
 
 	explicit PokeyRandom(uint32_t seed = 1, const TvSystem &tv = kNtsc)
-		: state_(seed % kPeriod ? seed % kPeriod : 1), cyclesPerFrame_(tv.cyclesPerFrame()) {}
+		: frameState_(seed % kPeriod ? seed % kPeriod : 1), cyclesPerFrame_(tv.cyclesPerFrame()) {}
 
-	// Value read on `scanline` at cycle `cycle` of the current frame.
+	// Value read on `scanline` at cycle `cycle` of the current frame: the counter's state at
+	// the frame's start, a jump on to that cycle. (A read at or before this frame's last read
+	// returns that read's state again: the counter does not go back.)
 	uint8_t read(int scanline, int cycle) {
-		advanceTo(frameStart_ + uint64_t(scanline) * kCyclesPerLine + uint64_t(cycle));
-		return uint8_t(state_ >> 9);
+		const uint64_t at = uint64_t(scanline) * kCyclesPerLine + uint64_t(cycle);
+		if (!readThisFrame_ || at > lastAt_) {
+			lastState_ = jump(at, frameState_);
+			lastAt_ = at;
+			readThisFrame_ = true;
+		}
+		return uint8_t(lastState_ >> 9);
 	}
-	// Start of the next frame.
-	void nextFrame() { frameStart_ += uint64_t(cyclesPerFrame_); }
+	// Start of the next frame: the counter a whole frame on.
+	void nextFrame() {
+		frameState_ = jump(uint64_t(cyclesPerFrame_), frameState_);
+		readThisFrame_ = false;
+	}
 
 	// The counter `steps` cycles on. Each step is linear over GF(2) (a shift and an XOR), so
 	// any number of steps is too: the new state is the XOR of the images of the old state's set
@@ -63,25 +73,25 @@ private:
 		return t;
 	}
 
-	uint32_t state_;
+	uint32_t frameState_;           // at the start of this frame
 	long cyclesPerFrame_;
-	uint64_t cycle_ = 0, frameStart_ = 0;
+	uint32_t lastState_ = 0;        // at this frame's last read
+	uint64_t lastAt_ = 0;           // its cycle in the frame
+	bool readThisFrame_ = false;
 
-	// The jumps the game makes are nearly always the same few lengths (from one frame's reads
-	// to the next's), so each length met is kept as a map read 4 bits at a time (as the ZX
-	// Spectrum ports keep their frame's map): 5 lookups and XORs a read.
+	// The jumps are always the same few lengths: a whole frame (nextFrame), and from a frame's
+	// start to the places the game reads RANDOM at (two or three). Each is kept as a map read 4
+	// bits at a time (as the ZX Spectrum ports keep their frame's map): 5 lookups and XORs.
 	struct Jump {
 		uint64_t steps = 0;
 		uint32_t nibble[5][16] = {};
 	};
-	std::array<Jump, 4> cache_{};
+	std::array<Jump, 6> cache_{};
 	size_t nextJump_ = 0;
 
-	void advanceTo(uint64_t cycle) {
-		if (cycle <= cycle_) return;
-		const uint64_t steps = (cycle - cycle_) % kPeriod;
-		cycle_ = cycle;
-		if (!steps) return;   // (a whole number of cycles of the counter; also: no cached jump has 0 steps)
+	uint32_t jump(uint64_t cycles, uint32_t s) {
+		const uint64_t steps = cycles % kPeriod;
+		if (!steps) return s;   // a whole number of the counter's cycles
 		const Jump *j = nullptr;
 		for (const Jump &c : cache_)
 			if (c.steps == steps) j = &c;
@@ -93,8 +103,7 @@ private:
 				for (uint32_t v = 0; v < (k < 4 ? 16u : 2u); v++) c.nibble[k][v] = advance(v << (4 * k), steps);
 			j = &c;
 		}
-		const uint32_t s = state_;
-		state_ = j->nibble[0][s & 15] ^ j->nibble[1][(s >> 4) & 15] ^ j->nibble[2][(s >> 8) & 15] ^
+		return j->nibble[0][s & 15] ^ j->nibble[1][(s >> 4) & 15] ^ j->nibble[2][(s >> 8) & 15] ^
 			j->nibble[3][(s >> 12) & 15] ^ j->nibble[4][s >> 16];
 	}
 };

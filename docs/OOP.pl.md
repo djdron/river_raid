@@ -159,6 +159,15 @@ zastępują.
     podczas gdy wektor przesuwał je wszystkie przy każdej linii. Nie ma już kopiowania przy
     każdej linii: 0,54 mld instrukcji na 20 000 klatek (1,17 mld przed krokiem 23), a
     `display_bench` (1 000 000 klatek) jest o 25–40% szybszy niż `dli_removed`.
+25. RANDOM od początku klatki: `PokeyRandom` trzyma stan licznika na początku klatki;
+    `nextFrame()` przesuwa go o całą klatkę, a odczyt skacze stamtąd na swoje miejsce w klatce.
+    To zawsze te same trzy-cztery długości, więc ich odwzorowania (krok 2) tworzy się raz;
+    wcześniej odczyt skakał od poprzedniego odczytu, gra spotykała około 20 długości, pamięć
+    podręczna na 4 odwzorowania chybiała przy 11% odczytów, a każde chybienie kosztowało około
+    100 000 instrukcji. Teraz około 9 ns na klatkę (tablica 1 MB: 4 ns), te same wartości co
+    tablica na 3,4 mln odczytów, a `display_bench` (1 000 000 klatek) trwa 2,2–2,5 s wobec
+    5,1–5,4 s w `dli_removed`. Skok przeglądarki o 100 mostów (102 000 klatek) wydłuża się o 0,6
+    ms przy 30 ms.
 
 ## Dalej
 

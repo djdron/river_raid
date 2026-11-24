@@ -171,6 +171,15 @@ sostituiscono.
     senza spostare le altre, mentre un vettore le spostava tutte a ogni riga. Niente più copie
     per riga: 0,54 miliardi di istruzioni per 20 000 fotogrammi (1,17 miliardi prima del passo
     23), e `display_bench` (1 000 000 di fotogrammi) è più veloce di `dli_removed` del 25–40%.
+25. RANDOM dall'inizio del fotogramma: `PokeyRandom` tiene lo stato del contatore all'inizio del
+    fotogramma; `nextFrame()` lo fa saltare di un fotogramma intero, e una lettura salta da lì
+    al suo punto nel fotogramma. Sono sempre le stesse tre o quattro lunghezze, quindi le loro
+    mappe (passo 2) si fanno una volta; prima una lettura saltava dall'ultima lettura, il gioco
+    incontrava circa 20 lunghezze, una cache di 4 mappe falliva sull'11% delle letture e ogni
+    fallimento costava circa 100 000 istruzioni. Ora circa 9 ns a fotogramma (la tabella da 1
+    MB: 4 ns), gli stessi valori della tabella su 3,4 milioni di letture, e `display_bench` (1
+    000 000 di fotogrammi) impiega 2,2–2,5 s contro i 5,1–5,4 s di `dli_removed`. Il salto del
+    visualizzatore di 100 ponti (102 000 fotogrammi) si allunga di 0,6 ms, su 30 ms.
 
 ## Prossimi passi
 

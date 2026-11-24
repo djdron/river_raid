@@ -49,6 +49,7 @@ port/tools/trace/compare.sh <rom> [build dir] [runs...]
 22. 小清理。`game.h` 中只有河道查看器和工具才用的内容（`frame()` 的各部分、`skipFrame` 和 `SkipState`、`attractSound`、`playSound`、`stayAwake`、`ghost`、RAM 映像、`setPokey`）集中到游戏自身接口之后的一个块里；`resetState` 和 `eachState` 改为私有。查看器演示模式的声音设置合成一个 `AttractSound`（sound.h）。`game_internal.h` 改用 `namespace rr::game_detail` 和 `inline constexpr`，不再在头文件里用匿名命名空间。面板上的对局数字是 `Scoreboard`（match.h），对局、面板和演示模式只传一次；`showOtherScore` 改名为 `player2Score`，并说明它为什么打印轮到的那位玩家的分数（$63-$65）——sub $B068 就是这样做的。
 23. 速度：屏幕上物体的各行（`DrawnObject`）改为固定大小的数组（最多 $80 行），放在一个保留容量的 vector 中，不再每帧为每个物体重新创建两个字节 vector。现在一帧不做任何内存分配：指令减少 44%，`display_bench`（1 000 000 帧）比 `dli_removed` 快 8–17%，此前则慢 25%。
 24. 河道各行改用环形缓冲（`Recent`，river.h）：各行、去掉装饰的同样各行、它们的线段以及每行之前的状态（各 256 个）加入新行时不再移动其他行，而原来的 vector 每加一行都要整体移动。每行的复制没有了：20 000 帧只需 0.54 G 条指令（第 23 步之前是 1.17 G），`display_bench`（1 000 000 帧）比 `dli_removed` 快 25–40%。
+25. RANDOM 从帧开头算起：`PokeyRandom` 保存计数器在帧开头的状态；`nextFrame()` 让它跳过整整一帧，读取则从那里跳到它在帧中的位置。这些总是同样的三四种长度，所以它们的映射（第 2 步）只建一次；以前读取是从上一次读取开始跳，游戏会遇到约 20 种长度，4 个映射的缓存在 11% 的读取上未命中，每次未命中约需 100 000 条指令。现在每帧约 9 ns（1 MB 的表：4 ns），在 340 万次读取上与表的值相同，`display_bench`（1 000 000 帧）用时 2.2–2.5 s，`dli_removed` 为 5.1–5.4 s。河道查看器跳过 100 座桥（102 000 帧）多用 0.6 ms，总共约 30 ms。
 
 ## 接下来
 

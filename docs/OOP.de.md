@@ -175,6 +175,15 @@ den sie ersetzen.
     die anderen zu verschieben, wo ein Vektor bei jeder Zeile alle verschob. Kein Kopieren mehr
     pro Zeile: 0,54 Mrd. Befehle für 20 000 Bilder (1,17 Mrd. vor Schritt 23), und
     `display_bench` (1 000 000 Bilder) ist 25–40 % schneller als `dli_removed`.
+25. RANDOM ab dem Anfang des Bilds: `PokeyRandom` hält den Zustand des Zählers am Anfang des
+    Bilds; `nextFrame()` springt ihn ein ganzes Bild weiter, und ein Lesen springt von dort an
+    seine Stelle im Bild. Das sind immer dieselben drei oder vier Längen, also werden ihre
+    Abbildungen (Schritt 2) einmal erstellt; vorher sprang ein Lesen vom letzten Lesen aus, das
+    Spiel traf etwa 20 Längen, ein Cache für 4 Abbildungen verfehlte 11 % der Lesevorgänge, und
+    jeder Fehlgriff kostete etwa 100 000 Befehle. Jetzt etwa 9 ns pro Bild (die 1-MB-Tabelle: 4
+    ns), dieselben Werte wie die Tabelle bei 3,4 Millionen Lesevorgängen, und `display_bench` (1
+    000 000 Bilder) braucht 2,2–2,5 s gegen 5,1–5,4 s bei `dli_removed`. Der Sprung des
+    Flussbetrachters um 100 Brücken (102 000 Bilder) wird um 0,6 ms länger, bei 30 ms.
 
 ## Als Nächstes
 

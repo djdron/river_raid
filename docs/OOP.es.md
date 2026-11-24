@@ -173,6 +173,16 @@ código que sustituyen.
     mover las demás, mientras que un vector las desplazaba todas en cada línea. Ya no hay copia
     por línea: 0,54 G instrucciones para 20 000 fotogramas (1,17 G antes del paso 23), y
     `display_bench` (1 000 000 de fotogramas) es un 25–40 % más rápido que `dli_removed`.
+25. RANDOM desde el inicio del fotograma: `PokeyRandom` guarda el estado del contador al inicio
+    del fotograma; `nextFrame()` lo hace saltar un fotograma entero, y una lectura salta desde
+    ahí a su lugar en el fotograma. Son siempre las mismas tres o cuatro longitudes, así que sus
+    aplicaciones (paso 2) se hacen una vez; antes una lectura saltaba desde la anterior, el
+    juego encontraba unas 20 longitudes, una caché de 4 aplicaciones fallaba en el 11 % de las
+    lecturas y cada fallo costaba unas 100 000 instrucciones. Ahora unos 9 ns por fotograma (la
+    tabla de 1 MB: 4 ns), los mismos valores que la tabla en 3,4 millones de lecturas, y
+    `display_bench` (1 000 000 de fotogramas) tarda 2,2–2,5 s frente a 5,1–5,4 s de
+    `dli_removed`. El salto del visor de 100 puentes (102 000 fotogramas) se alarga 0,6 ms sobre
+    30 ms.
 
 ## Lo siguiente
 

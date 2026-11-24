@@ -159,6 +159,14 @@ replace.
     where a vector shifted all of them for every line. No more copying per line: 0.54 G
     instructions for 20 000 frames (1.17 G before step 23), and `display_bench` (1 000 000
     frames) is 25-40% faster than `dli_removed`.
+25. RANDOM from the frame's start: `PokeyRandom` keeps the counter's state at the start of the
+    frame; `nextFrame()` jumps it a whole frame on, and a read jumps from there to its place in
+    the frame. These are always the same three or four lengths, so their maps (step 2) are made
+    once; before, a read jumped from the last read, the game met some 20 lengths, a 4-map cache
+    missed on 11% of the reads and each miss cost about 100 000 instructions. Now about 9 ns a
+    frame (the 1 MB table: 4 ns), the same values as the table on 3.4 million reads, and
+    `display_bench` (1 000 000 frames) takes 2.2-2.5 s against `dli_removed`'s 5.1-5.4 s. The
+    river viewer's jump of 100 bridges (102 000 frames) gets 0.6 ms longer, on 30 ms.
 
 ## Next
 
