@@ -190,6 +190,15 @@ código que sustituyen.
     antes en 207 millones (los registros del juego y escrituras aleatorias con frecuencias de
     muestreo poco habituales, NTSC y PAL); unos 30 µs por fotograma en lugar de 85–95, antes la
     mayor parte del trabajo de un fotograma.
+27. Los recuadros de las colisiones a lo ancho: el recuadro de cada sprite y cada objeto sobre
+    todas sus filas (`XBox`, los ciclos del punto encendido más a la izquierda al más a la
+    derecha) se hace una vez por fotograma, y dos cuyos recuadros no se tocan no se comprueban
+    línea a línea (los recuadros a lo alto ya estaban). El primer y el último punto de una fila
+    salen de una tabla del bit encendido más alto y más bajo de cada byte en lugar de un bucle;
+    los tramos de una línea del río se hacen de 4 en 4 píxeles donde un byte es todo del color
+    del tramo, y una fila frente a los tramos se detiene pasado su borde derecho. Los 17
+    recorridos iguales; `display_bench` (1 000 000 de fotogramas) 1,84–1,88 s en lugar de
+    2,5–2,7.
 
 ## Lo siguiente
 

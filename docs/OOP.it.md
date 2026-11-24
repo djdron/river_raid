@@ -187,6 +187,14 @@ sostituiscono.
     stessi campioni di prima su 207 milioni (i registri del gioco e scritture casuali a
     frequenze di campionamento insolite, NTSC e PAL); circa 30 µs a fotogramma invece di 85–95,
     prima la parte più grande del lavoro di un fotogramma.
+27. I riquadri delle collisioni in larghezza: il riquadro di ogni sprite e oggetto su tutte le
+    sue righe (`XBox`, i cicli dal punto acceso più a sinistra a quello più a destra) si fa una
+    volta a fotogramma, e due i cui riquadri non si incontrano non vengono verificati riga per
+    riga (i riquadri in altezza c'erano già). Il primo e l'ultimo punto di una riga vengono da
+    una tabella del bit acceso più alto e più basso di ogni byte invece che da un ciclo; i
+    tratti di una riga del fiume si fanno 4 pixel alla volta dove un byte è tutto del colore del
+    tratto, e una riga contro i tratti si ferma oltre il suo bordo destro. Tutte le 17 partite
+    uguali; `display_bench` (1 000 000 di fotogrammi) 1,84–1,88 s invece di 2,5–2,7.
 
 ## Prossimi passi
 

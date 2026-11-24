@@ -37,20 +37,45 @@ struct Span {
 	int left = 0, right = 0;
 };
 int dotWidth(uint8_t size) { return (size & 3) == 3 ? 4 : (size & 3) == 1 ? 2 : 1; }
-Span spriteSpan(uint8_t bits, int count, uint8_t hpos, uint8_t size) {
+// The highest and the lowest set bit of each byte (for the spans: no loop over the bits)
+struct BitEnds {
+	uint8_t high[256] = {}, low[256] = {};
+	constexpr BitEnds() {
+		for (int v = 1; v < 256; v++) {
+			int h = 7, l = 0;
+			while (!(v & (1 << h))) h--;
+			while (!(v & (1 << l))) l++;
+			high[v] = uint8_t(h);
+			low[v] = uint8_t(l);
+		}
+	}
+};
+constexpr BitEnds kBitEnds;
+inline Span spriteSpan(uint8_t bits, int count, uint8_t hpos, uint8_t size) {
 	Span sp;
 	sp.bits = bits;
 	sp.count = count;
 	sp.hpos = hpos;
 	sp.width = dotWidth(size);
 	if (!bits) return sp;
-	int first = 0, last = count - 1;
-	while (!(bits & (1 << (count - 1 - first)))) first++;
-	while (!(bits & (1 << (count - 1 - last)))) last--;
+	const BitEnds &e = kBitEnds;   // dot k of the row is bit count - 1 - k
+	const int first = count - 1 - e.high[bits], last = count - 1 - e.low[bits];
 	sp.left = hpos - 32 + first * sp.width;
 	sp.right = hpos - 32 + (last + 1) * sp.width;
 	return sp;
 }
+
+// A sprite's or an object's bounding box across: the clocks from the leftmost to the rightmost
+// set dot over all its rows. Two whose boxes do not meet do not touch on any line.
+struct XBox {
+	int left = 1 << 30, right = -(1 << 30);
+	void add(const Span &sp) {
+		if (!sp.bits) return;
+		left = std::min(left, sp.left);
+		right = std::max(right, sp.right);
+	}
+	bool meets(const XBox &o) const { return left < o.right && o.left < right; }
+};
 
 // The colour clocks of a line, one bit each.
 struct Mask {
@@ -74,9 +99,9 @@ uint8_t spanTouches(uint8_t bits, int count, uint8_t hpos, uint8_t size, const R
 	if (!bits || !runs) return 0;
 	const Span sp = spriteSpan(bits, count, hpos, size);
 	uint8_t hits = 0;
-	for (int i = 0; i < runs->n; i++) {
+	for (int i = 0; i < runs->n && runs->a[i] < sp.right; i++) {   // (the runs go left to right)
 		const uint8_t bit = uint8_t(1 << (runs->colour[i] - 1));
-		if ((wanted & bit) && runs->b[i] > sp.left && runs->a[i] < sp.right) hits |= bit;
+		if ((wanted & bit) && runs->b[i] > sp.left) hits |= bit;
 	}
 	return hits;
 }
@@ -141,7 +166,21 @@ void Game::display() {
 		}
 		return false;
 	};
-	auto pairAny = [&](int a, const Rows &ba, int b, const Rows &bb) {
+	// each sprite's box across, over its rows
+	auto xBoxOf = [&](int sprite, const Rows &b) {
+		XBox x;
+		for (int l = b.y0; l <= b.y1; l++) {
+			uint8_t bits, hpos, size;
+			int count;
+			spriteAt(sprite, l, bits, count, hpos, size);
+			x.add(spriteSpan(bits, count, hpos, size));
+		}
+		return x;
+	};
+	const XBox shellX = xBoxOf(0, shellBox), planeX = xBoxOf(2, planeBox), missileX = xBoxOf(4, missileBox),
+		bulletX = xBoxOf(5, bulletBox);
+	auto pairAny = [&](int a, const Rows &ba, const XBox &xa, int b, const Rows &bb, const XBox &xb) {
+		if (!xa.meets(xb)) return false;
 		for (int l = std::max(ba.y0, bb.y0); l <= std::min(ba.y1, bb.y1); l++) {
 			uint8_t bitsA, hposA, sizeA, bitsB, hposB, sizeB;
 			int countA, countB;
@@ -155,13 +194,14 @@ void Game::display() {
 	if (pfAny(2, planeBox, 1)) hit_.planeHitBank = 0;
 	if (pfAny(4, missileBox, 3)) hit_.missileHitBank = 0;
 	if (pfAny(5, bulletBox, 3)) hit_.bulletHitBank = 0;
-	if (pairAny(2, planeBox, 0, shellBox)) hit_.planeHitShell = 0;
-	if (pairAny(4, missileBox, 2, planeBox)) hit_.missileHitPlane = 0;
+	if (pairAny(2, planeBox, planeX, 0, shellBox, shellX)) hit_.planeHitShell = 0;
+	if (pairAny(4, missileBox, missileX, 2, planeBox, planeX)) hit_.missileHitPlane = 0;
 
 	using ObjectRows = DrawnObject;
 	std::vector<ObjectRows> &objects = drawn_;   // this frame's, kept for drawRiver()
 	objects.clear();
-	auto touches = [&](int sprite, const Rows &b, const ObjectRows &o) {
+	auto touches = [&](int sprite, const Rows &b, const XBox &x, const ObjectRows &o) {
+		if (!x.meets(XBox{o.left, o.right})) return false;
 		const int y0 = std::max(o.first, b.y0), y1 = std::min(o.first + o.count - 1, b.y1);
 		for (int l = y0; l <= y1; l++) {
 			uint8_t bits, hpos, size;
@@ -205,20 +245,24 @@ void Game::display() {
 			o.edge = objectKind(sl.kind).turnsAtEdge();
 			o.bridge = bridge;
 			o.count = count;
+			XBox box;
 			for (int k = 0; k < count; k++) {
 				o.rows[size_t(k)] = rom_.at(uint16_t(shapes + row - k));
+				box.add(spriteSpan(o.rows[size_t(k)], 8, o.x, o.size));
 				o.colours[size_t(k)] = rom_.at(uint16_t(colours + row - k));
 				if (bridge && &out == &objects) from(x0 + k - 69 + 1, rom_.roadColour(row - k));
 			}
+			o.left = box.left;
+			o.right = box.right;
 			if (bridge && &out == &objects && x0 + count <= 0xFF) from(x0 + count - 69 + 1, s.sectionBankColour);
 		}
 	};
 	place(objects);
 	for (const ObjectRows &o : objects) {
 		const uint8_t n = uint8_t(o.slot);
-		if (touches(5, bulletBox, o)) hit_.bulletHitObject = n;
-		if (!o.bridge && touches(0, shellBox, o)) hit_.shellHitObject = n;
-		if (touches(2, planeBox, o)) hit_.planeHitObject = n;
+		if (touches(5, bulletBox, bulletX, o)) hit_.bulletHitObject = n;
+		if (!o.bridge && touches(0, shellBox, shellX, o)) hit_.shellHitObject = n;
+		if (touches(2, planeBox, planeX, o)) hit_.planeHitObject = n;
 		if (o.slot < kSlots) {
 			Slot &obj = objs.slot[size_t(o.slot)];
 			obj.flags = uint8_t((obj.flags & ~slotflag::kTouchingEdge) | (edgeOf(o) ? slotflag::kTouchingEdge : 0));

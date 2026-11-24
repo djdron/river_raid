@@ -240,6 +240,7 @@ private:
 		bool edge = false;        // tested against the river's edge (turnsAtEdge)
 		bool bridge = false;
 		int count = 0;            // rows
+		int left = 0, right = 0;  // the box across: the clocks of the set dots over all rows
 		std::array<uint8_t, kMaxRows> rows{}, colours{};
 	};
 	std::vector<DrawnObject> drawn_;

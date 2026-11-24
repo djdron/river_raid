@@ -173,6 +173,13 @@ replace.
     Spectrum Next's port jumps from pulse to pulse the same way). The same samples as before on
     207 million (the game's registers and random writes at odd sample rates, NTSC and PAL);
     about 30 µs a frame instead of 85-95, the most of a frame's work before.
+27. The collisions' boxes across: each sprite's and each object's box over all its rows (`XBox`,
+    the clocks from the leftmost to the rightmost set dot) is made once a frame, and two whose
+    boxes do not meet are not tested line by line (the boxes down were there already). A row's
+    first and last dot come from a table of the bytes' highest and lowest set bits instead of a
+    loop; a line's runs are made 4 pixels at a time where a byte is all the run's colour, and a
+    row against the runs stops past its right end. All 17 runs the same; `display_bench` (1 000
+    000 frames) 1.84-1.88 s instead of 2.5-2.7.
 
 ## Next
 

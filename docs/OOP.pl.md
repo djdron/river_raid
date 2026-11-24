@@ -175,6 +175,14 @@ zastępują.
     wcześniej na 207 milionach (rejestry gry i losowe zapisy przy nietypowych częstotliwościach
     próbkowania, NTSC i PAL); około 30 µs na klatkę zamiast 85–95 — wcześniej największa część
     pracy klatki.
+27. Ramki kolizji w poziomie: ramkę każdego sprite'a i obiektu po wszystkich jego wierszach
+    (`XBox`, takty od najbardziej lewej do najbardziej prawej zapalonej kropki) tworzy się raz
+    na klatkę, a dwóch, których ramki się nie spotykają, nie sprawdza się linia po linii (ramki
+    w pionie już były). Pierwsza i ostatnia kropka wiersza biorą się z tablicy najwyższego i
+    najniższego ustawionego bitu bajtu zamiast z pętli; odcinki linii rzeki tworzy się po 4
+    piksele tam, gdzie bajt jest cały w kolorze odcinka, a wiersz wobec odcinków zatrzymuje się
+    za swoim prawym końcem. Wszystkie 17 przebiegów takie same; `display_bench` (1 000 000
+    klatek) 1,84–1,88 s zamiast 2,5–2,7.
 
 ## Dalej
 

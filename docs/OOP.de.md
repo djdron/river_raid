@@ -191,6 +191,15 @@ den sie ersetzen.
     Dieselben Samples wie zuvor bei 207 Millionen (die Register des Spiels und zufällige
     Schreibzugriffe bei ungewöhnlichen Abtastraten, NTSC und PAL); etwa 30 µs pro Bild statt
     85–95, vorher der größte Teil der Arbeit eines Bilds.
+27. Die Kollisionsrahmen in der Breite: Der Rahmen jedes Sprites und jedes Objekts über alle
+    seine Zeilen (`XBox`, die Takte vom linkesten bis zum rechtesten gesetzten Punkt) wird
+    einmal pro Bild erstellt, und zwei, deren Rahmen sich nicht treffen, werden nicht Zeile für
+    Zeile geprüft (die Rahmen in der Höhe gab es schon). Erster und letzter Punkt einer Zeile
+    kommen aus einer Tabelle des höchsten und niedrigsten gesetzten Bits eines Bytes statt aus
+    einer Schleife; die Abschnitte einer Flusszeile werden 4 Pixel auf einmal gebildet, wo ein
+    Byte ganz die Farbe des Abschnitts hat, und eine Zeile gegen die Abschnitte hört hinter
+    ihrem rechten Ende auf. Alle 17 Läufe gleich; `display_bench` (1 000 000 Bilder) 1,84–1,88 s
+    statt 2,5–2,7.
 
 ## Als Nächstes
 

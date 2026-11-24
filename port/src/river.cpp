@@ -8,12 +8,16 @@ namespace rr {
 River::Runs River::makeRuns(const uint8_t *line) {
 	Runs r;
 	int prev = 0;
-	for (int p = 0; p < kLineBytes * 4; p++) {
-		const int v = (line[p >> 2] >> (6 - 2 * (p & 3))) & 3;
-		if (v == prev) continue;
-		if (prev) r.b[r.n++] = uint8_t(p);
-		if (v) { r.a[r.n] = uint8_t(p); r.colour[r.n] = uint8_t(v); }
-		prev = v;
+	for (int i = 0; i < kLineBytes; i++) {
+		const uint8_t byte = line[i];
+		if (byte == uint8_t(prev * 0x55)) continue;   // 4 pixels of the run's colour (most bytes)
+		for (int p = 4 * i; p < 4 * i + 4; p++) {
+			const int v = (byte >> (6 - 2 * (p & 3))) & 3;
+			if (v == prev) continue;
+			if (prev) r.b[r.n++] = uint8_t(p);
+			if (v) { r.a[r.n] = uint8_t(p); r.colour[r.n] = uint8_t(v); }
+			prev = v;
+		}
 	}
 	if (prev) r.b[r.n++] = uint8_t(kLineBytes * 4);
 	return r;
