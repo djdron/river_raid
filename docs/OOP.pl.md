@@ -168,6 +168,13 @@ zastępują.
     tablica na 3,4 mln odczytów, a `display_bench` (1 000 000 klatek) trwa 2,2–2,5 s wobec
     5,1–5,4 s w `dli_removed`. Skok przeglądarki o 100 mostów (102 000 klatek) wydłuża się o 0,6
     ms przy 30 ms.
+26. Dźwięk POKEY od impulsu do impulsu (`pokey_sound.cpp`): między dwoma impulsami takty 64 kHz
+    tylko odliczają kanały w dół, a poziom się nie zmienia, więc `run` skacze do następnego
+    impulsu, a `count` dodaje odcinek taktów na jednym poziomie naraz zamiast takt po takcie
+    (port na ZX Spectrum Next tak samo skacze od impulsu do impulsu). Te same próbki co
+    wcześniej na 207 milionach (rejestry gry i losowe zapisy przy nietypowych częstotliwościach
+    próbkowania, NTSC i PAL); około 30 µs na klatkę zamiast 85–95 — wcześniej największa część
+    pracy klatki.
 
 ## Dalej
 

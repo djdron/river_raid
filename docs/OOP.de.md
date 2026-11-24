@@ -184,6 +184,13 @@ den sie ersetzen.
     ns), dieselben Werte wie die Tabelle bei 3,4 Millionen Lesevorgängen, und `display_bench` (1
     000 000 Bilder) braucht 2,2–2,5 s gegen 5,1–5,4 s bei `dli_removed`. Der Sprung des
     Flussbetrachters um 100 Brücken (102 000 Bilder) wird um 0,6 ms länger, bei 30 ms.
+26. POKEYs Ton von Impuls zu Impuls (`pokey_sound.cpp`): Zwischen zwei Impulsen zählen die
+    64-kHz-Takte die Kanäle nur herunter, und der Pegel bleibt, also springt `run` zum nächsten
+    Impuls, und `count` addiert eine Strecke von Takten auf einem Pegel auf einmal statt Takt
+    für Takt (die Portierung für den ZX Spectrum Next springt genauso von Impuls zu Impuls).
+    Dieselben Samples wie zuvor bei 207 Millionen (die Register des Spiels und zufällige
+    Schreibzugriffe bei ungewöhnlichen Abtastraten, NTSC und PAL); etwa 30 µs pro Bild statt
+    85–95, vorher der größte Teil der Arbeit eines Bilds.
 
 ## Als Nächstes
 

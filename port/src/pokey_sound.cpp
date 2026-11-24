@@ -60,44 +60,75 @@ void PokeySound::tick() {
 	level_ = level();
 }
 
-// Cycles with the output level unchanged: averaged into samples.
+// Cycles with the output level unchanged: averaged into samples. A whole stretch at once: up to
+// each sample's end, then the rest.
 void PokeySound::count(long cycles, std::vector<int16_t> &out) {
 	const double cyclesPerSample = clock_ / sampleRate_;
-	for (long i = 0; i < cycles; i++) {
-		sum_ += level_;
-		sumCycles_++;
-		samplePos_ += 1;
-		if (samplePos_ >= cyclesPerSample) {
-			samplePos_ -= cyclesPerSample;
-			const double v = double(sum_) / double(sumCycles_);   // average over the sample: 0..60
-			sum_ = sumCycles_ = 0;
-			dcLevel_ += (v - dcLevel_) * 0.0005;                 // slow DC removal, as a speaker does
-			const double s = (v - dcLevel_) * 800.0;
-			out.push_back(int16_t(std::clamp(s, -32767.0, 32767.0)));
+	if (samplePos_ + double(cycles) < cyclesPerSample) {   // within the sample (most calls)
+		sum_ += long(level_) * cycles;
+		sumCycles_ += cycles;
+		samplePos_ += double(cycles);
+		return;
+	}
+	while (cycles > 0) {
+		// the sample ends on the cycle that takes samplePos_ to cyclesPerSample
+		long toSample = long(std::ceil(cyclesPerSample - samplePos_));
+		if (toSample < 1) toSample = 1;
+		if (toSample > cycles) {
+			sum_ += long(level_) * cycles;
+			sumCycles_ += cycles;
+			samplePos_ += double(cycles);
+			return;
 		}
+		sum_ += long(level_) * toSample;
+		sumCycles_ += toSample;
+		samplePos_ += double(toSample) - cyclesPerSample;
+		const double v = double(sum_) / double(sumCycles_);   // average over the sample: 0..60
+		sum_ = sumCycles_ = 0;
+		dcLevel_ += (v - dcLevel_) * 0.0005;                 // slow DC removal, as a speaker does
+		const double s = (v - dcLevel_) * 800.0;
+		out.push_back(int16_t(std::clamp(s, -32767.0, 32767.0)));
+		cycles -= toSample;
 	}
 }
 
+// From pulse to pulse: between them the 64 kHz ticks only count the channels down and the level
+// does not change, so the cycles up to the next pulse are counted at once (as the ZX Spectrum
+// Next's port jumps from pulse to pulse).
 void PokeySound::run(long cycles, std::vector<int16_t> &out) {
+	auto wrap = [](uint32_t &pos, long n, long size) {   // (a division only for long stretches)
+		pos = uint32_t(n < size ? (pos + n >= uint32_t(size) ? pos + n - size : pos + n) : (pos + n) % size);
+	};
 	auto advancePolys = [&](long n) {
-		poly4Pos_ = uint32_t((poly4Pos_ + n) % long(poly4().size()));
-		poly5Pos_ = uint32_t((poly5Pos_ + n) % long(poly5().size()));
-		poly17Pos_ = uint32_t((poly17Pos_ + n) % long(poly17().size()));
+		wrap(poly4Pos_, n, long(poly4().size()));
+		wrap(poly5Pos_, n, long(poly5().size()));
+		wrap(poly17Pos_, n, long(poly17().size()));
 	};
 	while (cycles > 0) {
-		const long toTick = std::max(tick_, 1);   // the tick is on this cycle
-		if (toTick > cycles) {                    // no tick in what is left
+		const long toTick = std::max(tick_, 1);     // the next tick is on this cycle
+		int ticks = counter_[0];                    // the next pulse: on tick counter + 1
+		for (int c = 1; c < 4; c++) ticks = std::min(ticks, counter_[c]);
+		ticks++;
+		const long toPulse = toTick + long(ticks - 1) * kCyclesPer64k;
+		if (toPulse > cycles) {                     // no pulse in what is left: ticks only count down
+			if (cycles >= toTick) {
+				const long passed = 1 + (cycles - toTick) / kCyclesPer64k;
+				for (int c = 0; c < 4; c++) counter_[c] -= int(passed);
+				tick_ = int(kCyclesPer64k - (cycles - toTick - (passed - 1) * kCyclesPer64k));
+			} else {
+				tick_ -= int(cycles);
+			}
 			advancePolys(cycles);
-			tick_ -= int(cycles);
 			count(cycles, out);
 			return;
 		}
-		count(toTick - 1, out);
-		advancePolys(toTick);
+		for (int c = 0; c < 4; c++) counter_[c] -= ticks - 1;
+		count(toPulse - 1, out);
+		advancePolys(toPulse);
 		tick_ = kCyclesPer64k;
 		tick();
 		count(1, out);
-		cycles -= toTick;
+		cycles -= toPulse;
 	}
 }
 

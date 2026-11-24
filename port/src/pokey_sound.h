@@ -1,4 +1,4 @@
-// POKEY sound: the four channels of the Atari's sound chip, generated cycle by cycle.
+// POKEY sound: the four channels of the Atari's sound chip, from pulse to pulse (pokey_sound.cpp).
 //
 // Each channel divides a base clock (64 kHz by default) by AUDF+1; every time its counter runs
 // out it produces a pulse. AUDC selects what a pulse does to the channel's output bit

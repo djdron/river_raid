@@ -180,6 +180,13 @@ sostituiscono.
     MB: 4 ns), gli stessi valori della tabella su 3,4 milioni di letture, e `display_bench` (1
     000 000 di fotogrammi) impiega 2,2–2,5 s contro i 5,1–5,4 s di `dli_removed`. Il salto del
     visualizzatore di 100 ponti (102 000 fotogrammi) si allunga di 0,6 ms, su 30 ms.
+26. Il suono di POKEY da impulso a impulso (`pokey_sound.cpp`): tra due impulsi i tick a 64 kHz
+    contano solo i canali all'indietro e il livello resta, quindi `run` salta all'impulso
+    successivo, e `count` somma un tratto di cicli a un livello in una volta invece che ciclo
+    per ciclo (il port per ZX Spectrum Next salta allo stesso modo da impulso a impulso). Gli
+    stessi campioni di prima su 207 milioni (i registri del gioco e scritture casuali a
+    frequenze di campionamento insolite, NTSC e PAL); circa 30 µs a fotogramma invece di 85–95,
+    prima la parte più grande del lavoro di un fotogramma.
 
 ## Prossimi passi
 

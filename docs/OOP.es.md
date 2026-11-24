@@ -183,6 +183,13 @@ código que sustituyen.
     `display_bench` (1 000 000 de fotogramas) tarda 2,2–2,5 s frente a 5,1–5,4 s de
     `dli_removed`. El salto del visor de 100 puentes (102 000 fotogramas) se alarga 0,6 ms sobre
     30 ms.
+26. El sonido de POKEY de pulso en pulso (`pokey_sound.cpp`): entre dos pulsos los ticks de 64
+    kHz solo cuentan los canales hacia abajo y el nivel se mantiene, así que `run` salta al
+    siguiente pulso, y `count` suma de una vez un tramo de ciclos a un nivel en lugar de ciclo a
+    ciclo (el port para ZX Spectrum Next salta igual de pulso en pulso). Las mismas muestras que
+    antes en 207 millones (los registros del juego y escrituras aleatorias con frecuencias de
+    muestreo poco habituales, NTSC y PAL); unos 30 µs por fotograma en lugar de 85–95, antes la
+    mayor parte del trabajo de un fotograma.
 
 ## Lo siguiente
 

@@ -167,6 +167,12 @@ replace.
     frame (the 1 MB table: 4 ns), the same values as the table on 3.4 million reads, and
     `display_bench` (1 000 000 frames) takes 2.2-2.5 s against `dli_removed`'s 5.1-5.4 s. The
     river viewer's jump of 100 bridges (102 000 frames) gets 0.6 ms longer, on 30 ms.
+26. POKEY's sound from pulse to pulse (`pokey_sound.cpp`): between two pulses the 64 kHz ticks
+    only count the channels down and the level stays, so `run` jumps to the next pulse, and
+    `count` adds a stretch of cycles at one level at once instead of cycle by cycle (the ZX
+    Spectrum Next's port jumps from pulse to pulse the same way). The same samples as before on
+    207 million (the game's registers and random writes at odd sample rates, NTSC and PAL);
+    about 30 µs a frame instead of 85-95, the most of a frame's work before.
 
 ## Next
 
