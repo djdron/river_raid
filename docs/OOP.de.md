@@ -199,7 +199,10 @@ den sie ersetzen.
     einer Schleife; die Abschnitte einer Flusszeile werden 4 Pixel auf einmal gebildet, wo ein
     Byte ganz die Farbe des Abschnitts hat, und eine Zeile gegen die Abschnitte hört hinter
     ihrem rechten Ende auf. Alle 17 Läufe gleich; `display_bench` (1 000 000 Bilder) 1,84–1,88 s
-    statt 2,5–2,7.
+    statt 2,5–2,7. Ein Rahmen in der Breite entsteht aus den mit OR verknüpften Bits der Zeilen
+    (sie haben eine Position und Breite), ein OR pro Zeile statt einer Spanne pro Zeile: Die
+    erste Fassung kostete mehr, als sie sparte (0,394 Mrd. Befehle gegen 0,380 Mrd. ganz ohne
+    Rahmen), jetzt 0,356 Mrd.; 1,64–1,69 s.
 
 ## Als Nächstes
 

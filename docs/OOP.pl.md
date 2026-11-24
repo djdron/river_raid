@@ -182,7 +182,11 @@ zastępują.
     najniższego ustawionego bitu bajtu zamiast z pętli; odcinki linii rzeki tworzy się po 4
     piksele tam, gdzie bajt jest cały w kolorze odcinka, a wiersz wobec odcinków zatrzymuje się
     za swoim prawym końcem. Wszystkie 17 przebiegów takie same; `display_bench` (1 000 000
-    klatek) 1,84–1,88 s zamiast 2,5–2,7.
+    klatek) 1,84–1,88 s zamiast 2,5–2,7. Ramka w poziomie powstaje z bitów wierszy połączonych
+    przez OR (wszystkie mają jedną pozycję i szerokość), jedna operacja na wiersz zamiast
+    szukania skrajnych kropek w każdym wierszu: pierwsza wersja kosztowała więcej, niż
+    oszczędzała (0,394 mld instrukcji wobec 0,380 mld w ogóle bez ramek), teraz 0,356 mld;
+    1,64–1,69 s.
 
 ## Dalej
 

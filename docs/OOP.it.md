@@ -194,7 +194,11 @@ sostituiscono.
     una tabella del bit acceso più alto e più basso di ogni byte invece che da un ciclo; i
     tratti di una riga del fiume si fanno 4 pixel alla volta dove un byte è tutto del colore del
     tratto, e una riga contro i tratti si ferma oltre il suo bordo destro. Tutte le 17 partite
-    uguali; `display_bench` (1 000 000 di fotogrammi) 1,84–1,88 s invece di 2,5–2,7.
+    uguali; `display_bench` (1 000 000 di fotogrammi) 1,84–1,88 s invece di 2,5–2,7. Un riquadro
+    in larghezza si fa dai bit delle righe uniti con OR (hanno una sola posizione e dimensione),
+    un OR per riga invece di un intervallo per riga: la prima versione costava più di quanto
+    risparmiava (0,394 miliardi di istruzioni contro 0,380 senza riquadri), ora 0,356 miliardi;
+    1,64–1,69 s.
 
 ## Prossimi passi
 

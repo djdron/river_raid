@@ -179,7 +179,10 @@ replace.
     first and last dot come from a table of the bytes' highest and lowest set bits instead of a
     loop; a line's runs are made 4 pixels at a time where a byte is all the run's colour, and a
     row against the runs stops past its right end. All 17 runs the same; `display_bench` (1 000
-    000 frames) 1.84-1.88 s instead of 2.5-2.7.
+    000 frames) 1.84-1.88 s instead of 2.5-2.7. A box across is made from its rows' bits ORed
+    (they share one position and size), one OR a row instead of a span a row: the first version
+    cost more than it saved (0.394 G instructions against 0.380 G with no boxes), now 0.356 G;
+    1.64-1.69 s.
 
 ## Next
 

@@ -166,15 +166,26 @@ void Game::display() {
 		}
 		return false;
 	};
-	// each sprite's box across, over its rows
+	// each sprite's box across, over its rows: all its rows have the same position and size
+	// (but for the rows below the river, at 0), so the box is the span of their bits ORed
 	auto xBoxOf = [&](int sprite, const Rows &b) {
-		XBox x;
+		uint8_t inRiver = 0, below = 0;
+		uint8_t hposIn = 0, hposBelow = 0, size = 0;
+		int count = 0;
 		for (int l = b.y0; l <= b.y1; l++) {
-			uint8_t bits, hpos, size;
-			int count;
+			uint8_t bits, hpos;
 			spriteAt(sprite, l, bits, count, hpos, size);
-			x.add(spriteSpan(bits, count, hpos, size));
+			if (l >= endLine + 1) {
+				below |= bits;
+				hposBelow = hpos;
+			} else {
+				inRiver |= bits;
+				hposIn = hpos;
+			}
 		}
+		XBox x;
+		x.add(spriteSpan(inRiver, count, hposIn, size));
+		x.add(spriteSpan(below, count, hposBelow, size));
 		return x;
 	};
 	const XBox shellX = xBoxOf(0, shellBox), planeX = xBoxOf(2, planeBox), missileX = xBoxOf(4, missileBox),
@@ -245,13 +256,15 @@ void Game::display() {
 			o.edge = objectKind(sl.kind).turnsAtEdge();
 			o.bridge = bridge;
 			o.count = count;
-			XBox box;
+			uint8_t bits = 0;   // all its rows ORed: its box across
 			for (int k = 0; k < count; k++) {
 				o.rows[size_t(k)] = rom_.at(uint16_t(shapes + row - k));
-				box.add(spriteSpan(o.rows[size_t(k)], 8, o.x, o.size));
+				bits |= o.rows[size_t(k)];
 				o.colours[size_t(k)] = rom_.at(uint16_t(colours + row - k));
 				if (bridge && &out == &objects) from(x0 + k - 69 + 1, rom_.roadColour(row - k));
 			}
+			XBox box;
+			box.add(spriteSpan(bits, 8, o.x, o.size));
 			o.left = box.left;
 			o.right = box.right;
 			if (bridge && &out == &objects && x0 + count <= 0xFF) from(x0 + count - 69 + 1, s.sectionBankColour);

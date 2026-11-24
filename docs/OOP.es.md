@@ -198,7 +198,10 @@ código que sustituyen.
     los tramos de una línea del río se hacen de 4 en 4 píxeles donde un byte es todo del color
     del tramo, y una fila frente a los tramos se detiene pasado su borde derecho. Los 17
     recorridos iguales; `display_bench` (1 000 000 de fotogramas) 1,84–1,88 s en lugar de
-    2,5–2,7.
+    2,5–2,7. Un recuadro a lo ancho se hace con los bits de las filas unidos con OR (comparten
+    posición y tamaño), un OR por fila en lugar de un tramo por fila: la primera versión costaba
+    más de lo que ahorraba (0,394 G instrucciones frente a 0,380 G sin recuadros), ahora 0,356
+    G; 1,64–1,69 s.
 
 ## Lo siguiente
 
