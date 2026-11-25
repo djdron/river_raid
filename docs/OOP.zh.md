@@ -15,7 +15,7 @@
 
 `port/tools/game_trace` 每帧写一行游戏做了什么，按名称：飞机、子弹、坦克、炮弹、导弹、每个槽位、分数、生命、另一位玩家、最高分、河道生成器、声音寄存器、碰撞结果和画面的哈希（河和面板）。它用 `display_bench` 的自动驾驶来玩；不加 `-ghost` 时飞机会坠毁、会耗尽燃料，所以录制中有生命、重生和游戏结束。
 
-`port/tools/trace/runs.txt` 列出 17 段录制，共 700 000 帧：演示模式、NTSC 和 PAL 上的游戏 1–8、双人、`-wild`（随机转向，也飞到河岸上空）、从第 60 和第 100 座桥开始的长 `-ghost` 录制。`golden.txt` 保存每段录制各行的哈希，即 `dli_removed` 的运行结果，在 `REFERENCE` 中的提交上生成。
+`port/tools/trace/runs.txt` 列出 17 段录制，共 700 000 帧：演示模式、NTSC 和 PAL 上的游戏 1–8、双人、`-wild`（随机转向，也飞到河岸上空）、从第 60 和第 100 座桥开始的长 `-ghost` 录制。`golden.txt` 保存每段录制各行的哈希，即 `dli_removed` 的运行结果，在 `REFERENCE` 第一行的提交上、叠加其后各行的提交（按行的河岸颜色，`f9b51e5`）生成。
 
 ```
 port/tools/trace/compare.sh <rom> [build dir] [runs...]

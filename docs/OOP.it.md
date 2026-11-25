@@ -38,7 +38,7 @@ partita sono nelle partite.
 `port/tools/trace/runs.txt` elenca 17 partite, 700 000 fotogrammi: la modalità dimostrativa, i
 giochi 1–8 su NTSC e PAL, due giocatori, `-wild` (guida a caso, anche sopra le rive), lunghe
 partite `-ghost` dai ponti 60 e 100. `golden.txt` contiene l'hash delle righe di ogni partita come
-le gioca `dli_removed`, fatto al commit in `REFERENCE`.
+le gioca `dli_removed`, fatto al commit della prima riga di `REFERENCE` con sopra quelli delle righe seguenti (il colore della riva per riga, `f9b51e5`).
 
 ```
 port/tools/trace/compare.sh <rom> [build dir] [runs...]

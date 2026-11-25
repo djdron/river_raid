@@ -332,6 +332,26 @@ quindi ogni collisione con il playfield è un solo test: le due estremità della
 sequenze della riga. Gli sprite tra loro (proiettile, colpo e aereo contro un oggetto, aereo e
 colpo, missile e aereo) restano bit per bit: il passo 2 ha mostrato che lì i buchi contano.
 
+### Il colore della riva per riga
+
+L'originale imposta il colore della riva (COLPF0) per scanline: in alto il verde del VBI, sulle
+righe dello slot del ponte i colori della strada, sotto il verde della sezione. Qui ogni riga
+tiene il colore con cui è entrata (`lineBankColour`; `Game::lineBank` accanto a `screen`,
+`drawRiver` colora ogni riga con esso): il colore della strada della riga del ponte che la riga
+mostra, altrimenti `bankColour()`. La riga del ponte è y + altezza − $5E, una riga più vecchia
+che all'ingresso della riga: la visualizzazione viene prima della nuova riga del frame, quindi
+a una riga per frame l'originale mostra lì proprio quella riga del ponte. Il verde della nuova
+sezione inizia subito sopra la strada, 11 righe prima che il generatore cambi livello:
+`bankColour()` si inverte mentre il ponte entra. Verificato con `display_bench` (200 000 frame
+ciascuno: il bot, `-wild`, con schianti e ripartenze, PAL, giochi 3 e 7): a una riga per frame
+ogni riga ha il colore dell'originale, entrambi i verdi e la strada. La differenza: quando il
+fiume avanza di 2 righe in un frame, o di nessuna, la strada dell'originale si spostava di una
+riga lungo le righe dello schermo e tornava (le righe ai suoi estremi cambiavano colore; dopo
+una ripartenza la strada in fondo allo schermo sfarfallava); qui resta con le sue righe, e lo
+sprite del ponte si sposta rispetto a esse come tutti gli oggetti. Così un port ZX non ha
+bisogno di cambiare colore per riga: una palette con i due verdi e i colori della strada, ogni
+riga disegnata col proprio.
+
 ### Quanto costa e a cosa serve
 
 La visualizzazione ora è tre cicli: i riquadri degli sprite contro le sequenze delle loro righe, le

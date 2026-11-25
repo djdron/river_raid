@@ -35,7 +35,7 @@ końce gry są w przebiegach.
 `port/tools/trace/runs.txt` wymienia 17 przebiegów, 700 000 klatek: tryb demonstracyjny, gry 1–8
 na NTSC i PAL, dwóch graczy, `-wild` (sterowanie losowe, także nad brzegami), długie przebiegi
 `-ghost` od mostów 60 i 100. `golden.txt` zawiera skrót linii każdego przebiegu tak, jak gra je
-`dli_removed`, zrobiony przy commicie z `REFERENCE`.
+`dli_removed`, zrobiony przy commicie z pierwszej linii `REFERENCE` z commitami z kolejnych linii na wierzchu (kolor brzegu według linii, `f9b51e5`).
 
 ```
 port/tools/trace/compare.sh <rom> [build dir] [runs...]

@@ -39,7 +39,7 @@ están en los recorridos.
 `port/tools/trace/runs.txt` enumera 17 recorridos, 700 000 fotogramas: el modo de demostración,
 los juegos 1–8 en NTSC y PAL, dos jugadores, `-wild` (dirección al azar, también sobre las
 orillas), largos recorridos `-ghost` desde los puentes 60 y 100. `golden.txt` guarda el hash de
-las líneas de cada recorrido tal como lo juega `dli_removed`, hecho en el commit de `REFERENCE`.
+las líneas de cada recorrido tal como lo juega `dli_removed`, hecho en el commit de la primera línea de `REFERENCE` con los de las líneas siguientes encima (el color de la orilla por línea, `f9b51e5`).
 
 ```
 port/tools/trace/compare.sh <rom> [build dir] [runs...]

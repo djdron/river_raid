@@ -38,7 +38,7 @@ Wiedereinstiege und Spielenden in den Läufen vorkommen.
 `port/tools/trace/runs.txt` listet 17 Läufe auf, 700 000 Bilder: den Demo-Modus, die Spiele 1–8
 auf NTSC und PAL, zwei Spieler, `-wild` (zufällig gesteuert, auch über die Ufer), lange
 `-ghost`-Läufe ab den Brücken 60 und 100. `golden.txt` enthält den Hash der Zeilen jedes Laufs,
-wie `dli_removed` ihn spielt, erstellt beim Commit in `REFERENCE`.
+wie `dli_removed` ihn spielt, erstellt beim Commit in der ersten Zeile von `REFERENCE`, mit den Commits der folgenden Zeilen darauf (die Uferfarbe je Zeile, `f9b51e5`).
 
 ```
 port/tools/trace/compare.sh <rom> [build dir] [runs...]

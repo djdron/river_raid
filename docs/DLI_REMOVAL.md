@@ -324,6 +324,24 @@ every collision with the playfield is one test: the row's two ends against the l
 The sprites with each other (the bullet, shell and plane against an object, the plane and the
 shell, the missile and the plane) stay bit by bit: step 2 showed the holes matter there.
 
+### The bank's colour by line
+
+The original sets the bank's colour (COLPF0) by scanline: the VBI's green at the top, the road
+colours on the rows of the bridge's slot, the section's green below them. Here each line keeps
+the colour it entered with (`lineBankColour`; `Game::lineBank` beside `screen`, `drawRiver`
+colours each line by it): the road colour of the bridge row the line shows, `bankColour()`
+otherwise. The row is y + height - $5E, a line older than as the line enters: the display
+comes before the frame's new line, so at a line a frame the original shows that row there.
+The new section's green starts right above the road, 11 lines before the generator's level
+changes: `bankColour()` is switched while the bridge is entering. Checked with `display_bench`
+(200 000 frames each: the bot, `-wild`, with crashes and restarts, PAL, games 3 and 7): at a
+line a frame every line has the original's colour, both greens and the road. The difference:
+when the river moves 2 lines in a frame, or none, the original's road moved a line along the
+screen's lines and back (the lines at its ends changed colour; after a restart the road at the
+bottom of the screen flickered); here it stays with its lines, and the bridge's sprite moves
+against them as all the objects do. So a ZX port needs no colour change by line: one palette
+with the two greens and the road's colours, each line drawn with its own.
+
 ### What it costs and what it is for
 
 The display is now three loops: the sprites' boxes against the runs of their lines, the pairs

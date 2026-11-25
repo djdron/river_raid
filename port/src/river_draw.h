@@ -31,6 +31,13 @@ constexpr int kVisibleLast = 359;
 // Bank colour (COLPF0) of a line when it enters the screen (sub $AFD0).
 uint8_t bankColour(const RiverState &s, const Objects &objects);
 
+// The bank colour a line keeps on screen (Game::display), from the state right after
+// generating it: the road colour of the bridge row it shows, else bankColour(). The row is the
+// one the original shows at a line a frame (y + height - $5E, a line older than as it enters,
+// as the display came before that frame's new line); faster, the original's road moved down
+// by a line on the screen's lines (one per extra line that frame) and back: here it does not.
+uint8_t lineBankColour(const Rom &rom, const RiverState &s, const Objects &objects);
+
 // Draws generated line `line` (state `s` right after generating it) into out[kRowWidth]
 // as Atari colour codes (hue << 4 | luminance).
 void drawScreenLine(const Rom &rom, const RiverState &s, const Objects &objects, const uint8_t line[kLineBytes], uint8_t out[kRowWidth]);

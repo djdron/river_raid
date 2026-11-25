@@ -1,6 +1,7 @@
 #!/bin/sh
 # Plays the runs in runs.txt with this tree's game_trace and compares each with the reference
-# (golden.txt: a hash of each run's lines, made at the commit in REFERENCE). On a difference it
+# (golden.txt: a hash of each run's lines, made at the commit in REFERENCE's first line, with the
+# commits on its next lines picked onto it). On a difference it
 # builds the reference commit in a temporary worktree, plays the run there too and prints the
 # first frame that differs, both lines.
 #
@@ -41,8 +42,9 @@ grep -v '^#' "$here/runs.txt" | while read -r name frames args; do
 	if [ "$sum" = "$want" ]; then echo "$name: same ($frames frames)"; continue; fi
 	echo "$name: DIFFERENT"
 	if [ -z "$refbuilt" ]; then
-		ref=$(cat "$here/REFERENCE")
+		ref=$(head -n 1 "$here/REFERENCE")
 		git -C "$port" worktree add -q --detach "$out/ref" "$ref"
+		for c in $(tail -n +2 "$here/REFERENCE"); do git -C "$out/ref" cherry-pick -n "$c" > /dev/null; done
 		cmake -S "$out/ref/port" -B "$out/refbuild" -DCMAKE_BUILD_TYPE=Release -DRR_VIEWER=OFF > /dev/null
 		cmake --build "$out/refbuild" --target game_trace -j4 > /dev/null
 		refbuilt=1

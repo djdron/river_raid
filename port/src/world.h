@@ -20,6 +20,7 @@ public:
 
 	RiverGen gen;
 	Objects objects;
+	const Rom &rom() const { return *rom_; }
 
 	// Both together, for keeping (saved states, the river before each line) and going back
 	struct State {

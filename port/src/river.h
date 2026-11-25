@@ -50,6 +50,9 @@ struct River {
 	Recent<Line, kKept> lines;       // newest first
 	Recent<Line, kKept> bankLines;   // the same without decoration
 	Recent<Runs, kKept> runs;        // bankLines as runs
+	// The bank colour each line keeps on screen (lineBankColour(), as it enters; none for the
+	// lines read from the original's RAM): Game::display colours the bank by them
+	Recent<uint8_t, kKept> lineBank;
 	// $3F04/$3F05: screen memory address of the top line. Screen memory is a ring of two
 	// 80-line blocks, $2000-$2EFF and $3000-$3EFF; the address moves up a line with each line.
 	uint16_t top = 0x2000;
@@ -74,7 +77,7 @@ struct River {
 	int lineDifferingFromRam(const uint8_t *ram) const;
 
 private:
-	void add(const Line &line, const Line &bank);
+	void add(const World &world, const Line &line, const Line &bank);
 };
 
 }  // namespace rr

@@ -334,6 +334,26 @@ fila frente a los tramos de la línea. Los sprites entre sí (bala, proyectil y 
 objeto, avión y proyectil, misil y avión) siguen bit a bit: el paso 2 mostró que ahí los huecos
 importan.
 
+### El color de la orilla por línea
+
+El original pone el color de la orilla (COLPF0) por scanline: arriba el verde del VBI, en las
+filas del slot del puente los colores de la carretera, debajo el verde de la sección. Aquí cada
+línea guarda el color con el que entró (`lineBankColour`; `Game::lineBank` junto a `screen`,
+`drawRiver` pinta cada línea con él): el color de carretera de la fila del puente que la línea
+muestra, si no `bankColour()`. La fila del puente es y + altura − $5E, una línea más vieja que
+al entrar la línea: la visualización va antes de la línea nueva del frame, así que a una línea
+por frame el original muestra ahí justo esa fila del puente. El verde de la sección nueva empieza
+justo encima de la carretera, 11 líneas antes de que el generador cambie de nivel:
+`bankColour()` se invierte mientras el puente entra. Comprobado con `display_bench` (200 000
+frames cada uno: el bot, `-wild`, con choques y reinicios, PAL, juegos 3 y 7): a una línea por
+frame cada línea tiene el color del original, los dos verdes y la carretera. La diferencia:
+cuando el río avanza 2 líneas en un frame, o ninguna, la carretera del original se movía una
+línea por las líneas de la pantalla y volvía (las líneas de sus extremos cambiaban de color;
+tras un reinicio la carretera abajo de la pantalla parpadeaba); aquí se queda con sus líneas, y
+el sprite del puente se mueve respecto a ellas como todos los objetos. Así un port de ZX no
+necesita cambiar de color por línea: una paleta con los dos verdes y los colores de la
+carretera, cada línea dibujada con el suyo.
+
 ### Cuánto cuesta y para qué
 
 La visualización son ahora tres bucles: las cajas de los sprites frente a los tramos de sus

@@ -13,7 +13,9 @@
 // dots against the line's edge runs (no bit by bit, so a run in a hole of a row counts); the
 // other sprites against the bank and the edge (tank, plane, missile, bullet) the same way. The
 // game differs from the original on 0.01-0.25% of frames (docs/DLI_REMOVAL.md, RR_GEOMCHECK on
-// the branch dli_removal): a touch the original sees a frame later or not at all.
+// the branch dli_removal): a touch the original sees a frame later or not at all. The bank's
+// colour by line, not by scanline: each line keeps the one it entered with (River::lineBank:
+// the bridge's road rows, the two greens), so it never changes on screen.
 #include <algorithm>
 
 #include "game.h"
@@ -120,20 +122,11 @@ bool spritesTouch(uint8_t bitsA, int countA, uint8_t hposA, uint8_t sizeA, uint8
 }  // namespace
 
 void Game::display() {
-	RiverState &s = world_.gen.s;
 	Objects &objs = world_.objects;
 	scan_ = {};
 	hit_ = Collisions();
 	constexpr int kLines = 262;
 	constexpr int kFirstLine = 24;
-	uint8_t bank[kLines];
-	bool setBank[kLines] = {};
-	auto from = [&](int l, uint8_t v) {
-		if (l < 0 || l >= kLines) return;
-		bank[l] = v;
-		setBank[l] = true;
-	};
-	from(0, colourBank_);
 	const int endLine = 187;   // the river's last scanline
 	auto spriteAt = [&](int sprite, int l, uint8_t &bits, int &count, uint8_t &hpos, uint8_t &size) {
 		const bool belowRiver = l >= endLine + 1;
@@ -261,13 +254,11 @@ void Game::display() {
 				o.rows[size_t(k)] = rom_.at(uint16_t(shapes + row - k));
 				bits |= o.rows[size_t(k)];
 				o.colours[size_t(k)] = rom_.at(uint16_t(colours + row - k));
-				if (bridge && &out == &objects) from(x0 + k - 69 + 1, rom_.roadColour(row - k));
 			}
 			XBox box;
 			box.add(spriteSpan(bits, 8, o.x, o.size));
 			o.left = box.left;
 			o.right = box.right;
-			if (bridge && &out == &objects && x0 + count <= 0xFF) from(x0 + count - 69 + 1, s.sectionBankColour);
 		}
 	};
 	place(objects);
@@ -281,11 +272,15 @@ void Game::display() {
 			obj.flags = uint8_t((obj.flags & ~slotflag::kTouchingEdge) | (edgeOf(o) ? slotflag::kTouchingEdge : 0));
 		}
 	}
-	// the bank colour of each scanline
+	// the bank colour of each scanline: each river line keeps its own (lineBank, from as it
+	// entered: the road's rows too), the VBI's above the river and on lines not yet drawn
 	const int last = endLine + 3;
-	for (int l = 1; l <= last; l++)
-		if (!setBank[l]) bank[l] = bank[l - 1];
-	for (int l = kFirstLine; l <= last; l++) scan_[size_t(l)].bankColour = bank[l];
+	uint8_t bank = colourBank_;
+	for (int l = kFirstLine; l <= last; l++) {
+		const int r = l - kRiverFirstLine;
+		if (console_.screenOn && r >= 0 && r < kRiverLines && size_t(r) < river_.lineBank.size()) bank = river_.lineBank[size_t(r)];
+		scan_[size_t(l)].bankColour = bank;
+	}
 }
 
 // The sprites' rows from their state: each shape from the ROM at its row (as the original
@@ -319,8 +314,9 @@ void Game::drawRiver(uint8_t out[240][kRowWidth]) const {
 	for (int k = 0; k < kRiverLines; k++) {
 		const int line = kRiverFirstLine + k;
 		uint8_t *row = out[line - 8];
-		const Scanline &sc = scan_[size_t(line)];
-		const uint8_t colours[4] = {0x00, sc.bankColour, colourEdge_, colourWater_};
+		// the bank by the line's own colour (scan_'s is from before the frame's new lines)
+		const uint8_t bank = console_.screenOn && size_t(k) < river_.lineBank.size() ? river_.lineBank[size_t(k)] : colourBank_;
+		const uint8_t colours[4] = {0x00, bank, colourEdge_, colourWater_};
 		if (size_t(k) < river_.lines.size()) {
 			const uint8_t *src = river_.lines[size_t(k)].data();
 			for (int i = 0; i < kLineBytes; i++) {   // 4 pixels per byte, 2 columns per pixel

@@ -35,7 +35,7 @@ runs out of fuel, so lives, respawns and game overs are in the runs.
 `port/tools/trace/runs.txt` lists 17 runs, 700 000 frames: the attract mode, games 1-8 on NTSC
 and PAL, two players, `-wild` (steering at random, over the banks too), long `-ghost` runs from
 bridges 60 and 100. `golden.txt` holds the hash of each run's lines as `dli_removed` plays them,
-made at the commit in `REFERENCE`.
+made at the commit on `REFERENCE`'s first line with those on its next lines picked onto it (the bank's colour by line, `f9b51e5`).
 
 ```
 port/tools/trace/compare.sh <rom> [build dir] [runs...]

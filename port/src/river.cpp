@@ -3,6 +3,8 @@
 
 #include <cstring>
 
+#include "river_draw.h"
+
 namespace rr {
 
 River::Runs River::makeRuns(const uint8_t *line) {
@@ -27,11 +29,13 @@ void River::clear() {
 	lines.clear();
 	bankLines.clear();
 	runs.clear();
+	lineBank.clear();
 	lineStates.clear();
 }
 
-void River::add(const Line &line, const Line &bank) {
+void River::add(const World &world, const Line &line, const Line &bank) {
 	lines.push(line);
+	lineBank.push(lineBankColour(world.rom(), world.gen.s, world.objects));
 	bankLines.push(bank);
 	runs.push(makeRuns(bank.data()));
 }
@@ -40,7 +44,7 @@ void River::push(World &world) {
 	Line line, bank;
 	if (keepLineStates) lineStates.push(world.state());
 	world.nextLine(line.data(), bank.data());
-	add(line, bank);
+	add(world, line, bank);
 	uint8_t topLo = uint8_t(top), topHi = uint8_t(top >> 8);
 	if (topLo < kLineBytes) topHi--;
 	topLo = uint8_t(topLo - kLineBytes);
@@ -56,7 +60,7 @@ void River::rebuild(World world, const World::State &oldest, int count) {
 	for (int i = 0; i < count; i++) {
 		if (keepLineStates) lineStates.push(world.state());
 		world.nextLine(line.data(), bank.data());
-		add(line, bank);
+		add(world, line, bank);
 	}
 }
 
@@ -86,6 +90,7 @@ std::vector<River::Line> screenFromRam(const uint8_t *ram) {
 void River::linesFromRam(const uint8_t *ram) {
 	const auto shown = screenFromRam(ram);   // top first
 	lines.clear();
+	lineBank.clear();
 	for (size_t i = shown.size(); i-- > 0;) lines.push(shown[i]);
 }
 
