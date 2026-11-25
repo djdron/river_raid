@@ -717,7 +717,9 @@ void Game::drawRiver(uint8_t out[240][kRowWidth]) const {
 		const int line = kRiverFirstLine + k;
 		uint8_t *row = out[line - 8];
 		const Scanline &sc = scan[size_t(line)];
-		const uint8_t colours[4] = {0x00, sc.bankColour, g.colourEdge, g.colourWater};
+		uint8_t bank = sc.bankColour;
+		if (bankByLine) bank = g.screenOn && size_t(k) < lineBank.size() ? lineBank[size_t(k)] : g.colourBank;
+		const uint8_t colours[4] = {0x00, bank, g.colourEdge, g.colourWater};
 		if (size_t(k) < screen.size()) {
 			const uint8_t *src = screen[size_t(k)].data();
 			for (int i = 0; i < kLineBytes; i++) {   // 4 pixels per byte, 2 columns per pixel
@@ -1124,20 +1126,14 @@ void Game::displaySimple() {
 // the edge (tank, plane, missile, bullet) the same way, by their rows' ends (spanTouches). Placed so, the objects are where the
 // DLI's loop put them (checked over 120 000 frames against its counter: the loop never fell
 // behind an object, so only the river's top and end cut them).
+// The bank's colour by line, not by scanline: each line keeps the one it entered with
+// (lineBank: the bridge's road rows, the two greens), so it never changes on screen.
 void Game::displayGeometry() {
 	RiverState &s = gen.s;
 	scan = {};
 	g.hit = Collisions();
 	constexpr int kLines = 262;
 	constexpr int kFirstLine = 24;
-	uint8_t bank[kLines];
-	bool setBank[kLines] = {};
-	auto from = [&](int l, uint8_t v) {
-		if (l < 0 || l >= kLines) return;
-		bank[l] = v;
-		setBank[l] = true;
-	};
-	from(0, g.colourBank);
 	const int endLine = 187;   // the river's last scanline
 	auto spriteAt = [&](int sprite, int l, uint8_t &bits, int &count, uint8_t &hpos, uint8_t &size) {
 		const bool panel = l >= endLine + 1;
@@ -1232,9 +1228,7 @@ void Game::displayGeometry() {
 			for (int k = 0; k < count; k++) {
 				out.back().rows.push_back(rom_.at(uint16_t(shapes + row - k)));
 				out.back().colours.push_back(rom_.at(uint16_t(colours + row - k)));
-				if (bridge && &out == &objects) from(x0 + k - 69 + 1, rom_.roadColour(row - k));
 			}
-			if (bridge && &out == &objects && x0 + count <= 0xFF) from(x0 + count - 69 + 1, s.sectionBankColour);
 		}
 	};
 	place(objects);
@@ -1248,11 +1242,15 @@ void Game::displayGeometry() {
 			obj.flags = uint8_t((obj.flags & ~slotflag::kTouchingEdge) | (edgeOf(o) ? slotflag::kTouchingEdge : 0));
 		}
 	}
-	// the bank colour of each scanline
+	// the bank colour of each scanline: each river line keeps its own (lineBank, from as it
+	// entered: the road's rows too), the VBI's above the river and on lines not yet drawn
 	const int last = endLine + 3;
-	for (int l = 1; l <= last; l++)
-		if (!setBank[l]) bank[l] = bank[l - 1];
-	for (int l = kFirstLine; l <= last; l++) scan[size_t(l)].bankColour = bank[l];
+	uint8_t bank = g.colourBank;
+	for (int l = kFirstLine; l <= last; l++) {
+		const int r = l - kRiverFirstLine;
+		if (g.screenOn && r >= 0 && r < kRiverLines && size_t(r) < lineBank.size()) bank = lineBank[size_t(r)];
+		scan[size_t(l)].bankColour = bank;
+	}
 	drawn.clear();
 	for (const ObjectRows &o : objects) drawn.push_back({o.slot, o.first, o.x, o.size, o.rows, o.colours});
 }
@@ -1261,10 +1259,12 @@ void Game::display() {
 	static const char *mode = std::getenv("RR_DISPLAY");
 	if (!mode || !std::strcmp(mode, "geometry")) {   // (the default on this branch)
 		simpleDisplay = true;
+		bankByLine = true;
 		displayGeometry();
 		return;
 	}
 	simpleDisplay = !std::strcmp(mode, "simple");
+	bankByLine = false;
 	// RR_TIME: the time display() takes, printed at the end
 	struct Timer {
 		bool on = std::getenv("RR_TIME") != nullptr;

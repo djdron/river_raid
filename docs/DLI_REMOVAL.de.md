@@ -336,6 +336,26 @@ Läufe der Zeile. Die Sprites untereinander (Kugel, Geschoss und Flugzeug gegen 
 Flugzeug und Geschoss, Rakete und Flugzeug) bleiben Bit für Bit: Schritt 2 zeigte, dass dort die
 Löcher zählen.
 
+### Die Uferfarbe je Zeile
+
+Das Original setzt die Uferfarbe (COLPF0) je Scanline: oben das Grün des VBI, auf den Zeilen
+des Brücken-Slots die Straßenfarben, darunter das Grün des Abschnitts. Hier behält jede Zeile
+die Farbe, mit der sie hereinkam (`lineBankColour`; `Game::lineBank` neben `screen`,
+`drawRiver` färbt jede Zeile damit): die Straßenfarbe der Brückenzeile, die die Zeile zeigt,
+sonst `bankColour()`. Die Brückenzeile ist y + Höhe − $5E, eine Zeile älter als beim Eintritt
+der Zeile: die Anzeige kommt vor der neuen Zeile des Frames, bei einer Zeile pro Frame zeigt das
+Original diese Brückenzeile also genau dort. Das Grün des neuen Abschnitts beginnt direkt über
+der Straße, 11 Zeilen bevor der Generator die Stufe wechselt: `bankColour()` wird umgeschaltet,
+solange die Brücke hereinkommt. Geprüft mit `display_bench` (je 200 000 Frames: der Bot,
+`-wild`, mit Abstürzen und Neustarts, PAL, Spiele 3 und 7): bei einer Zeile pro Frame hat jede
+Zeile die Farbe des Originals, beide Grüntöne und die Straße. Der Unterschied: rückt der Fluss
+in einem Frame 2 Zeilen weiter oder gar nicht, wanderte die Straße des Originals um eine Zeile
+über die Zeilen des Bildschirms und zurück (die Zeilen an ihren Enden wechselten die Farbe;
+nach einem Neustart flackerte die Straße unten am Bildschirm); hier bleibt sie bei ihren Zeilen,
+und das Sprite der Brücke verschiebt sich gegen sie wie alle Objekte. Ein ZX-Port braucht also
+keinen Farbwechsel je Zeile: eine Palette mit den zwei Grüntönen und den Straßenfarben, jede
+Zeile mit ihrer eigenen gezeichnet.
+
 ### Was es kostet und wofür
 
 Die Anzeige besteht jetzt aus drei Schleifen: die Rahmen der Sprites gegen die Läufe ihrer

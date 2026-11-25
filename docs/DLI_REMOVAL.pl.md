@@ -315,6 +315,24 @@ kolizja z tłem to jeden test: dwa końce wiersza względem odcinków linii. Spr
 (pocisk, pocisk czołgu i samolot względem obiektu, samolot i pocisk czołgu, rakieta i samolot)
 zostają bit po bicie: krok 2 pokazał, że tam dziury się liczą.
 
+### Kolor brzegu według linii
+
+Oryginał ustawia kolor brzegu (COLPF0) według linii skanowania: u góry zieleń z VBI, na
+wierszach slotu mostu kolory drogi, pod nimi zieleń sekcji. Tu każda linia zachowuje kolor, z
+którym weszła (`lineBankColour`; `Game::lineBank` obok `screen`, `drawRiver` maluje nim każdą
+linię): kolor drogi tego wiersza mostu, który linia pokazuje, inaczej `bankColour()`. Wiersz
+mostu to y + wysokość − $5E, o linię starszy niż przy wejściu linii: wyświetlanie odbywa się
+przed nową linią klatki, więc przy linii na klatkę oryginał pokazuje ten wiersz właśnie tam.
+Zieleń nowej sekcji zaczyna się tuż nad drogą, 11 linii przed zmianą poziomu w generatorze:
+`bankColour()` przełącza się, gdy most wjeżdża. Sprawdzone `display_bench` (po 200 000 klatek:
+bot, `-wild`, z rozbiciami i restartami, PAL, gry 3 i 7): przy linii na klatkę każda linia ma
+kolor oryginału, obie zielenie i droga. Różnica: gdy rzeka przesuwa się w klatce o 2 linie albo
+wcale, droga oryginału przesuwała się po liniach ekranu o linię i z powrotem (linie na jej
+końcach zmieniały kolor; po restarcie droga na dole ekranu migotała); tu zostaje ze swoimi
+liniami, a sprite mostu przesuwa się względem nich jak wszystkie obiekty. Port na ZX nie
+potrzebuje więc zmiany koloru według linii: jedna paleta z dwiema zieleniami i kolorami drogi,
+każda linia rysowana swoim.
+
 ### Ile to kosztuje i po co
 
 Wyświetlanie to teraz trzy pętle: ramki sprite'ów względem odcinków ich linii, pary sprite'ów tam,

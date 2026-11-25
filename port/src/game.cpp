@@ -94,6 +94,7 @@ void Game::startAttract(bool pal) {
 	g = GameState();
 	screen.clear();
 	bankLines.clear();
+	lineBank.clear();
 	runLines.clear();
 	lineStates.clear();
 	drawLogoAndNeedle();
@@ -197,6 +198,7 @@ void Game::load(const std::vector<uint8_t> &data) {
 	run.s = oldest;
 	screen.clear();
 	bankLines.clear();
+	lineBank.clear();
 	runLines.clear();
 	lineStates.clear();
 	std::array<uint8_t, kLineBytes> line, bank;
@@ -205,6 +207,7 @@ void Game::load(const std::vector<uint8_t> &data) {
 		run.nextLine(line.data(), bank.data());
 		screen.insert(screen.begin(), line);
 		bankLines.insert(bankLines.begin(), bank);
+		lineBank.insert(lineBank.begin(), lineBankColour(rom_, run.s));
 		runLines.insert(runLines.begin(), makeRuns(bankRuns ? bank.data() : line.data()));
 	}
 	scan = {};
@@ -223,6 +226,8 @@ void Game::pushLine() {
 	if (screen.size() > 256) screen.pop_back();
 	bankLines.insert(bankLines.begin(), bank);
 	if (bankLines.size() > 256) bankLines.pop_back();
+	lineBank.insert(lineBank.begin(), lineBankColour(rom_, gen.s));
+	if (lineBank.size() > 256) lineBank.pop_back();
 	runLines.insert(runLines.begin(), makeRuns(bankRuns ? bank.data() : line.data()));
 	if (runLines.size() > 256) runLines.pop_back();
 	uint8_t topLo = uint8_t(g.screenTop), topHi = uint8_t(g.screenTop >> 8);
@@ -478,6 +483,7 @@ void Game::reset(bool full) {
 		for (int row = 1; row < 0xBC; row++) g.pm.bytes[size_t(page * 0x100 + row)] = 0;
 	screen.clear();
 	bankLines.clear();
+	lineBank.clear();
 	runLines.clear();
 	lineStates.clear();
 	g.screenOn = 0;                               // B101: colours off while clearing
@@ -1237,6 +1243,7 @@ void Game::powerOn(bool pal) {
 	g = GameState();
 	screen.clear();
 	bankLines.clear();
+	lineBank.clear();
 	runLines.clear();
 	lineStates.clear();
 	for (int i = 0; i < kPanelBytes; i++) g.panel[i] = rom_.panelText(i);

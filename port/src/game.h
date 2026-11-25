@@ -155,6 +155,12 @@ public:
 	// The same lines without their decoration (houses, roads): what the collisions with the
 	// playfield look at when bankRuns is set (display.cpp). RR_BANK_RUNS=0: the screen itself.
 	std::vector<std::array<uint8_t, kLineBytes>> bankLines;
+	// The bank colour of each line in `screen` (lineBankColour(), worked out as it enters):
+	// displayGeometry colours the bank by them
+	std::vector<uint8_t> lineBank;
+	// set by displayGeometry: drawRiver colours each line's bank by lineBank, so the colour
+	// stays with the line (scan's bankColour is from before the frame's new lines)
+	bool bankByLine = false;
 	// The same lines as runs of one colour (made once, as each line enters; displaySimple)
 	struct Runs {
 		int n = 0;

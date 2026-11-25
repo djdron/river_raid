@@ -27,6 +27,17 @@ uint8_t bankColour(const RiverState &s) {
 	return c;
 }
 
+uint8_t lineBankColour(const Rom &rom, const RiverState &s) {
+	for (int n = s.firstSlot; n < kSlots; n++) {
+		const Slot &sl = s.slot[size_t(n)];
+		if (!(sl.flags & slotflag::kBridge)) continue;
+		const uint8_t height = rom.objectHeight(sl.type);
+		const uint8_t row = uint8_t(sl.y + height - (kEntryScanline + 1));
+		if (row <= height && row < 0x80) return rom.roadColour(row);
+	}
+	return bankColour(s);
+}
+
 void drawScreenLine(const Rom &rom, const RiverState &s, const uint8_t line[kLineBytes], uint8_t out[kRowWidth]) {
 	uint8_t bank = bankColour(s);
 
